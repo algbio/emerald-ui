@@ -2,12 +2,101 @@ import { useState, useRef } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import PointGridPlot, { type Alignment } from './components/PointGridPlot'
 
 function App() {
   const [count, setCount] = useState(0)
   const [outputUrl, setOutputUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const emeraldModuleRef = useRef<any>(null)
+  const [alignments, setAlignments] = useState<Alignment[]>([])
+  const [representative, setRepresentative] = useState("MSFDLKSKFLG-")
+  const [member, setMember] = useState("MSKLKDFLFKS-")
+
+  // Function to parse JSON and create alignments
+  const parseJsonToAlignments = (jsonText: string) => {
+    try {
+      const data = JSON.parse(jsonText)
+      
+      // Set the sequences
+      setRepresentative(data.representative_string)
+      setMember(data.member_string)
+
+      // Create main alignment from alignment_graph edges
+      const mainEdges: Edge[] = []
+      
+      // Parse the alignment graph and create edges
+      data.alignment_graph.forEach((node: any) => {
+        const [fromX, fromY] = node.from
+        
+        // Add all edges from this node
+        node.edges.forEach((edge: any) => {
+          const [toX, toY, probability] = edge
+          
+          mainEdges.push({
+            from: [fromX, fromY],
+            to: [toX, toY],
+            probability: probability
+          })
+        })
+      })
+
+      // Create main alignment with all edges
+      const mainAlignment: Alignment = {
+        color: "blue",
+        edges: mainEdges
+      }
+
+      // Create separate alignments for different probability thresholds
+      const highProbabilityAlignment: Alignment = {
+        color: "red",
+        edges: mainEdges.filter(edge => edge.probability > 0.7)
+      }
+
+      const mediumProbabilityAlignment: Alignment = {
+        color: "orange", 
+        edges: mainEdges.filter(edge => edge.probability > 0.3 && edge.probability <= 0.7)
+      }
+
+      const lowProbabilityAlignment: Alignment = {
+        color: "black",
+        edges: mainEdges.filter(edge => edge.probability <= 0.3)
+      }
+
+      // Create window alignments (safety intervals)
+      const windowAlignments: Alignment[] = []
+      
+      if (data.windows_representative && data.windows_member) {
+        data.windows_representative.forEach((repWindow: number[], index: number) => {
+          const memberWindow = data.windows_member[index]
+          
+          if (memberWindow) {
+            const [repStart, repEnd] = repWindow
+            const [memStart, memEnd] = memberWindow
+            
+            windowAlignments.push({
+              color: "green",
+              edges: [],
+              startDot: { x: repStart, y: memStart },
+              endDot: { x: repEnd, y: memEnd }
+            })
+          }
+        })
+      }
+
+      // Return all alignments - you can choose which ones to display
+      return [
+        {
+          color: "black",
+          edges: mainEdges  // Show ALL edges in blue
+        },
+        ...windowAlignments
+      ]
+    } catch (error) {
+      console.error('Error parsing JSON:', error)
+      return []
+    }
+  }
 
   // Dynamically load the Emscripten script
   const loadEmeraldModule = async () => {
@@ -45,7 +134,7 @@ function App() {
     setOutputUrl(null)
 
     const inputName = 'ex1.fasta'
-    const outputName = 'output.out'
+    const outputName = 'result.json'
     const inputBuffer = await file.arrayBuffer()
 
     // Load emerald WASM module
@@ -68,22 +157,32 @@ function App() {
     // Run the main function with arguments
     try {
       console.log('Running emerald.wasm with input:', inputName)
-      mod.callMain(['-f', inputName, '-o', outputName])
+      mod.callMain(['-f', inputName, '-o', 'output.out', '-j', outputName, '-a', '0.75', '-d', '8'])
     } catch (err) {
       alert('Error running emerald.wasm: ' + err)
       setLoading(false)
       return
     }
 
-    // Read output file from FS
+    // Read JSON output file from FS
     let outputData
     try {
-      outputData = FS.readFile(outputName)
+      // List all files in the root directory
+      console.log('All files in FS root:', FS.readdir('/'))
+      
+      outputData = FS.readFile("testresult.json")
     } catch {
-      alert('Output file not found')
+      alert('JSON output file not found')
       setLoading(false)
       return
     }
+
+    // Parse JSON and create alignments
+    const jsonText = new TextDecoder().decode(outputData)
+    console.log('JSON output:', jsonText)
+    
+    const parsedAlignments = parseJsonToAlignments(jsonText)
+    setAlignments(parsedAlignments)
 
     // Create download link
     const blob = new Blob([outputData])
@@ -101,32 +200,39 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1>Emerald Alignment Viewer</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <div style={{ marginTop: 24 }}>
         <input
           type="file"
-          accept=".fasta"
+          accept=".fasta,.fast"
           onChange={handleFileChange}
           disabled={loading}
         />
         {loading && <p>Processing...</p>}
         {outputUrl && (
-          <a href={outputUrl} download="output.out">
-            Download Output
+          <a href={outputUrl} download="result.json">
+            Download JSON Result
           </a>
         )}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      
+      {alignments.length > 0 ? (
+        <PointGridPlot 
+          representative={representative}
+          member={member}
+          alignments={alignments}
+          width={900}
+          height={900}
+        />
+      ) : (
+        <PointGridPlot 
+          representative="MSFDLKSKFLG-"
+          member="MSKLKDFLFKS-"
+          alignments={[]}
+          width={900}
+          height={900}
+        />
+      )}
     </>
   )
 }
