@@ -163,7 +163,7 @@ function PointGridPlot({
       {/* Clipped content (grid and alignments) */}
       <g clipPath="url(#plot-area)">
         {/* Vertical grid lines */}
-        <g>
+        {<g>
           {xTicks.map((tick) =>
             <line
               key={`vgrid-${tick.value}`}
@@ -172,13 +172,13 @@ function PointGridPlot({
               y1={y.range()[1]}
               y2={y.range()[0]}
               stroke="#999"
-              strokeDasharray="2,7"
+              strokeDasharray="1,1"
             />
           )}
-        </g>
+        </g>}
 
         {/* Horizontal grid lines */}
-        <g>
+        {<g>
           {yTicks.map((tick) =>
             <line
               key={`hgrid-${tick.value}`}
@@ -187,10 +187,10 @@ function PointGridPlot({
               y1={tick.yOffset}
               y2={tick.yOffset}
               stroke="#999"
-              strokeDasharray="2,7"
+              strokeDasharray="1,1"
             />
           )}
-        </g>
+        </g>}
 
         {/* Alignment edges and dots */}
         {alignments.map((alignment, aIdx) => (
@@ -227,7 +227,7 @@ function PointGridPlot({
               <circle
                 cx={x(alignment.startDot.x)}
                 cy={y(alignment.startDot.y)}
-                r="8"
+                r="5"
                 fill={alignment.color || "orange"}
               >
                 <title>
@@ -241,7 +241,7 @@ function PointGridPlot({
               <circle
                 cx={x(alignment.endDot.x)}
                 cy={y(alignment.endDot.y)}
-                r="8"
+                r="5"
                 fill={alignment.color || "orange"}
               >
                 <title>

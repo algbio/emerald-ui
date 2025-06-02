@@ -1,14 +1,12 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import PointGridPlot, { type Alignment } from './components/PointGridPlot'
 import { FileUploader } from './components/FileUploader'
 
 function App() {
   const [alignments, setAlignments] = useState<Alignment[]>([])
-  const [representative, setRepresentative] = useState("MSFDLKSKFLG-")
-  const [member, setMember] = useState("MSKLKDFLFKS-")
+  const [representative, setRepresentative] = useState("")
+  const [member, setMember] = useState("")
 
   const handleAlignmentsGenerated = (data: {
     representative: string;
@@ -20,28 +18,30 @@ function App() {
     setAlignments(data.alignments)
   }
 
+  // Check if we have data to display
+  const hasData = representative && member && alignments.length > 0
+
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      
       <h1>Emerald Alignment Viewer</h1>
       
       <FileUploader onAlignmentsGenerated={handleAlignmentsGenerated} />
       
-      <PointGridPlot 
-        representative={representative}
-        member={member}
-        alignments={alignments}
-        width={900}
-        height={900}
-      />
+      {hasData && (
+        <PointGridPlot 
+          representative={representative}
+          member={member}
+          alignments={alignments}
+          width={900}
+          height={900}
+        />
+      )}
+      
+      {!hasData && (
+        <p style={{ textAlign: 'center', color: '#666', marginTop: '2rem' }}>
+          Upload a FASTA file to view alignment visualization
+        </p>
+      )}
     </>
   )
 }
