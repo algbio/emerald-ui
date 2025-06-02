@@ -40,6 +40,23 @@ function PointGridPlot({
   const svgRef = useRef<SVGSVGElement>(null);
   const [transform, setTransform] = useState(d3.zoomIdentity);
 
+  // Extract safety windows from alignments
+  const safetyWindows = alignments.filter(alignment => 
+    alignment.startDot && alignment.endDot
+  );
+
+  // Helper function to check if a position is within any safety window
+  const isInSafetyWindow = (position: number, axis: 'x' | 'y') => {
+    return safetyWindows.some(window => {
+      if (!window.startDot || !window.endDot) return false;
+      
+      const start = axis === 'x' ? window.startDot.x : window.startDot.y;
+      const end = axis === 'x' ? window.endDot.x : window.endDot.y;
+      
+      return position >= start && position <= end;
+    });
+  };
+
   // Scales: domain includes padding so (0,0) has space and all characters are visible
   const padding = 0.5; // Half a character width/height of padding
   const xBase = d3.scaleLinear(
@@ -107,7 +124,77 @@ function PointGridPlot({
             height={height - marginTop - marginBottom}
           />
         </clipPath>
+        <clipPath id="x-axis-area">
+          <rect
+            x={marginLeft}
+            y={marginTop - 50}
+            width={width - marginLeft - marginRight}
+            height={50}
+          />
+        </clipPath>
+        <clipPath id="y-axis-area">
+          <rect
+            x={marginLeft - 50}
+            y={marginTop}
+            width={50}
+            height={height - marginTop - marginBottom}
+          />
+        </clipPath>
       </defs>
+
+      {/* Safety windows on X axis - clipped to visible area */}
+      <g clipPath="url(#x-axis-area)">
+        {safetyWindows.map((window, idx) => {
+          if (!window.startDot || !window.endDot) return null;
+          
+          const startX = x(window.startDot.x);
+          const endX = x(window.endDot.x);
+          
+          // Scale rectangle height based on font size
+          const rectHeight = Math.max(8, fontSize * 0.8);
+          
+          return (
+            <rect
+              key={`x-safety-${idx}`}
+              x={startX}
+              y={marginTop - rectHeight - 5}
+              width={endX - startX}
+              height={rectHeight}
+              fill="lightgreen"
+              fillOpacity={0.6}
+              stroke="green"
+              strokeWidth={Math.max(1, fontSize * 0.1)}
+            />
+          );
+        })}
+      </g>
+
+      {/* Safety windows on Y axis - clipped to visible area */}
+      <g clipPath="url(#y-axis-area)">
+        {safetyWindows.map((window, idx) => {
+          if (!window.startDot || !window.endDot) return null;
+          
+          const startY = y(window.startDot.y);
+          const endY = y(window.endDot.y);
+          
+          // Scale rectangle width based on font size
+          const rectWidth = Math.max(8, fontSize * 0.8);
+          
+          return (
+            <rect
+              key={`y-safety-${idx}`}
+              x={marginLeft - rectWidth - 10}
+              y={Math.min(startY, endY)}
+              width={rectWidth+10}
+              height={Math.abs(endY - startY)}
+              fill="lightgreen"
+              fillOpacity={0.6}
+              stroke="green"
+              strokeWidth={Math.max(1, fontSize * 0.1)}
+            />
+          );
+        })}
+      </g>
 
       {/* X Axis (top) */}
       <line
@@ -117,22 +204,26 @@ function PointGridPlot({
         y2={marginTop}
         stroke="black"
       />
-      {/* X Axis labels (centered between ticks) */}
-      {xTicks.map(tick => (
-        tick.label && ( // Only render labels for actual characters
-          <g key={tick.value} transform={`translate(${x(tick.value + 0.5)},${marginTop})`}>
-            <text 
-              y="-10" 
-              textAnchor="middle" 
-              fontSize={fontSize} 
-              fontFamily="monospace"
-              fill="black"
-            >
-              {tick.label}
-            </text>
-          </g>
-        )
-      ))}
+      
+      {/* X Axis labels (centered between ticks) - clipped */}
+      <g clipPath="url(#x-axis-area)">
+        {xTicks.map(tick => (
+          tick.label && ( // Only render labels for actual characters
+            <g key={tick.value} transform={`translate(${x(tick.value + 0.5)},${marginTop})`}>
+              <text 
+                y="-10" 
+                textAnchor="middle" 
+                fontSize={fontSize} 
+                fontFamily="monospace"
+                fill={isInSafetyWindow(tick.value, 'x') ? "green" : "black"}
+                fontWeight={isInSafetyWindow(tick.value, 'x') ? "bold" : "normal"}
+              >
+                {tick.label}
+              </text>
+            </g>
+          )
+        ))}
+      </g>
 
       {/* Y Axis (left) */}
       <line
@@ -142,28 +233,32 @@ function PointGridPlot({
         y2={y.range()[0]}
         stroke="black"
       />
-      {/* Y Axis labels (centered between ticks) */}
-      {yTicks.map(tick => (
-        tick.label && ( // Only render labels for actual characters
-          <g key={tick.value} transform={`translate(${marginLeft},${y(tick.value + 0.5)})`}>
-            <text
-              x="-9"
-              dy="0.32em"
-              textAnchor="end"
-              fontSize={fontSize}
-              fontFamily="monospace"
-              fill="black"
-            >
-              {tick.label}
-            </text>
-          </g>
-        )
-      ))}
+      
+      {/* Y Axis labels (centered between ticks) - clipped */}
+      <g clipPath="url(#y-axis-area)">
+        {yTicks.map(tick => (
+          tick.label && ( // Only render labels for actual characters
+            <g key={tick.value} transform={`translate(${marginLeft},${y(tick.value + 0.5)})`}>
+              <text
+                x="-9"
+                dy="0.32em"
+                textAnchor="end"
+                fontSize={fontSize}
+                fontFamily="monospace"
+                fill={isInSafetyWindow(tick.value, 'y') ? "green" : "black"}
+                fontWeight={isInSafetyWindow(tick.value, 'y') ? "bold" : "normal"}
+              >
+                {tick.label}
+              </text>
+            </g>
+          )
+        ))}
+      </g>
 
       {/* Clipped content (grid and alignments) */}
       <g clipPath="url(#plot-area)">
         {/* Vertical grid lines */}
-        {<g>
+        <g>
           {xTicks.map((tick) =>
             <line
               key={`vgrid-${tick.value}`}
@@ -175,10 +270,10 @@ function PointGridPlot({
               strokeDasharray="1,1"
             />
           )}
-        </g>}
+        </g>
 
         {/* Horizontal grid lines */}
-        {<g>
+        <g>
           {yTicks.map((tick) =>
             <line
               key={`hgrid-${tick.value}`}
@@ -190,7 +285,7 @@ function PointGridPlot({
               strokeDasharray="1,1"
             />
           )}
-        </g>}
+        </g>
 
         {/* Alignment edges and dots */}
         {alignments.map((alignment, aIdx) => (
