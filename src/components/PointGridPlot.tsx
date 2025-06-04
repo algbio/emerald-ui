@@ -10,7 +10,9 @@ import {
   drawGridLines, 
   drawAlignmentEdges, 
   drawAlignmentDots, 
-  drawHoverHighlight 
+  drawHoverHighlight,
+  drawSafetyWindowHighlight,
+  findSafetyWindowsForCell,
 } from '../utils/canvasDrawing';
 import type { PointGridPlotProps, Alignment } from '../types/PointGrid';
 
@@ -28,6 +30,7 @@ function PointGridPlot({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [transform, setTransform] = useState(d3.zoomIdentity);
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
+  const [highlightedWindow, setHighlightedWindow] = useState<Alignment | null>(null);
 
   const { x, y, xDomain, yDomain, fontSize } = usePointGridScales({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
@@ -67,6 +70,11 @@ function PointGridPlot({
     // Draw safety windows
     drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft);
     
+    // Draw safety window highlight if applicable
+    if (highlightedWindow) {
+      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, safetyWindows, highlightedWindow);
+    }
+    
     // Draw axes
     drawAxes(ctx, x, y, marginTop, marginLeft);
     
@@ -85,7 +93,26 @@ function PointGridPlot({
 
     // Draw hover highlight
     if (hoveredCell) {
-      drawHoverHighlight(ctx, hoveredCell, x, y, marginTop, marginLeft, representative, member);
+      // Find all safety windows containing the hovered cell
+      const matchingWindows = findSafetyWindowsForCell(hoveredCell, safetyWindows);
+      
+      // Draw each window that contains the hovered cell
+      matchingWindows.forEach(window => {
+        drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, window);
+      });
+      
+      // Draw hover highlight on top
+      drawHoverHighlight(
+        ctx, 
+        hoveredCell, 
+        x, 
+        y, 
+        marginTop, 
+        marginLeft, 
+        representative, 
+        member,
+        alignments
+      );
     }
 
     ctx.restore();
@@ -100,14 +127,20 @@ function PointGridPlot({
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
+    // Only consider the mouse within the plot area
+    if (mouseX < marginLeft || mouseX > width - marginRight || 
+        mouseY < marginTop || mouseY > height - marginBottom) {
+      setHoveredCell(null);
+      return;
+    }
+
     const gridX = Math.floor(x.invert(mouseX));
     const gridY = Math.floor(y.invert(mouseY));
 
-    if (mouseX >= marginLeft && mouseX <= width - marginRight &&
-        mouseY >= marginTop && mouseY <= height - marginBottom &&
-        gridX >= 0 && gridX < representative.length &&
+    // Make sure we're within the domain bounds
+    if (gridX >= 0 && gridX < representative.length && 
         gridY >= 0 && gridY < member.length) {
-      setHoveredCell({ x: gridX, y: gridY });
+      setHoveredCell({x: gridX, y: gridY});
     } else {
       setHoveredCell(null);
     }
@@ -132,6 +165,12 @@ function PointGridPlot({
 
     return () => selection.on('.zoom', null);
   }, []);
+
+  // Add methods to manually highlight a safety window
+  const highlightSafetyWindow = (window: Alignment | null) => {
+    setHighlightedWindow(window);
+    drawCanvas(); // Redraw to show highlight
+  };
 
   return (
     <canvas
