@@ -1,10 +1,12 @@
 import type { Alignment } from '../types/PointGrid';
 
+import type { ScaleLinear } from 'd3-scale';
+
 export function drawSafetyWindows1(
   ctx: CanvasRenderingContext2D,
   safetyWindows: Alignment[],
-  x: (value: number) => number, // d3 range function to convert x value to canvas coordinate
-  y: (value: number) => number, // d3 range function to convert y value to canvas coordinate
+  x: ScaleLinear<number, number>, // d3 range function to convert x value to canvas coordinate
+  y: ScaleLinear<number, number>, // d3 range function to convert y value to canvas coordinate
   fontSize: number,
   marginTop: number,
   marginLeft: number
@@ -59,8 +61,8 @@ export function drawSafetyWindows1(
 
 export function drawAxes(
   ctx: CanvasRenderingContext2D,
-  x: (value: number) => number,
-  y: (value: number) => number,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
   marginTop: number,
   marginLeft: number
 ) {
@@ -84,8 +86,8 @@ export function drawAxisLabels(
   ctx: CanvasRenderingContext2D,
   xTicks: Array<{value: number; label: string}>,
   yTicks: Array<{value: number; label: string}>,
-  x: (value: number) => number,
-  y: (value: number) => number,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
   fontSize: number,
   marginTop: number,
   marginLeft: number,
@@ -127,8 +129,8 @@ export function drawGridLines(
   ctx: CanvasRenderingContext2D,
   xTicks: Array<{xOffset: number}>,
   yTicks: Array<{yOffset: number}>,
-  x: (value: number) => number,
-  y: (value: number) => number
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
 ) {
   ctx.strokeStyle = '#999';
   ctx.lineWidth = 0.5;
@@ -156,8 +158,8 @@ export function drawGridLines(
 export function drawAlignmentEdges(
   ctx: CanvasRenderingContext2D,
   alignments: Alignment[],
-  x: (value: number) => number,
-  y: (value: number) => number
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>
 ) {
   alignments.forEach(alignment => {
     alignment.edges.forEach(edge => {
@@ -184,8 +186,8 @@ export function drawAlignmentEdges(
 export function drawAlignmentDots(
   ctx: CanvasRenderingContext2D,
   alignments: Alignment[],
-  x: (value: number) => number,
-  y: (value: number) => number
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>
 ) {
   alignments.forEach(alignment => {
     ctx.fillStyle = alignment.color || "orange";
@@ -207,8 +209,8 @@ export function drawAlignmentDots(
 export function drawHoverHighlight(
   ctx: CanvasRenderingContext2D,
   hoveredCell: {x: number; y: number},
-  x: (value: number) => number,
-  y: (value: number) => number,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
   marginTop: number,
   marginLeft: number,
   representative: string,
@@ -310,8 +312,8 @@ export function drawHoverHighlight(
 export function drawSafetyWindows(
   ctx: CanvasRenderingContext2D,
   safetyWindows: Alignment[],
-  x: (value: number) => number, 
-  y: (value: number) => number, 
+  x: ScaleLinear<number, number>, 
+  y: ScaleLinear<number, number>, 
   fontSize: number,
   marginTop: number,
   marginLeft: number,
@@ -458,8 +460,8 @@ export function findSafetyWindowsForCell(
  */
 export function drawSafetyWindowHighlight(
   ctx: CanvasRenderingContext2D,
-  x: (value: number) => number,
-  y: (value: number) => number,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
   marginTop: number,
   marginLeft: number,
   window: Alignment

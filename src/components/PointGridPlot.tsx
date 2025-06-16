@@ -3,8 +3,7 @@ import * as d3 from "d3";
 import { usePointGridScales } from '../hooks/usePointGridScales';
 import { usePointGridTicks } from '../hooks/usePointGridTicks';
 import { 
-  drawSafetyWindows,
-  drawSafetyWindows1, 
+  drawSafetyWindows, 
   drawAxes, 
   drawAxisLabels, 
   drawGridLines, 
@@ -16,6 +15,20 @@ import {
 } from '../utils/canvasDrawing';
 import type { PointGridPlotProps, Alignment } from '../types/PointGrid';
 
+interface PointGridProps {
+  width?: number;
+  height?: number;
+  marginTop?: number;
+  marginRight?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  representative: string;
+  member: string;
+  alignments: Alignment[];
+  xDomain: number[];
+  yDomain: number[];
+}
+
 function PointGridPlot({
   width = 800,
   height = 800,
@@ -23,24 +36,36 @@ function PointGridPlot({
   marginRight = 20,
   marginBottom = 30,
   marginLeft = 80,
-  representative = "MSFDLKSKFLG-",
-  member = "MSKLKDFLFKS-",
-  alignments = []
-}: PointGridPlotProps) {
+  representative = "MSFDLKSKFLG",
+  member = "MSKLKDFLFKS",
+  alignments = [],
+  xDomain,
+  yDomain
+}: PointGridProps) {
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [transform, setTransform] = useState(d3.zoomIdentity);
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
-  const [highlightedWindow, setHighlightedWindow] = useState<Alignment | null>(null);
+  const [highlightedWindow] = useState<Alignment | null>(null);
 
-  const { x, y, xDomain, yDomain, fontSize } = usePointGridScales({
+  const { x, y, fontSize } = usePointGridScales({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
     representative, member, transform
   });
 
-  const { xTicks, yTicks } = usePointGridTicks({
-    xDomain, yDomain, representative, member, x, y
-  });
+  // Now for usePointGridTicks, create proper tuples:
+  const xDomainTuple: [number, number] = [xDomain[0], xDomain[1]];
+  const yDomainTuple: [number, number] = [yDomain[0], yDomain[1]];
 
+  const { xTicks, yTicks } = usePointGridTicks({
+    xDomain: xDomainTuple,
+    yDomain: yDomainTuple,
+    representative, 
+    member, 
+    x, // Now properly typed as d3.ScaleLinear
+    y  // Now properly typed as d3.ScaleLinear
+  });
+  
   // Extract safety windows and helper function
   const safetyWindows = alignments.filter(alignment => 
     alignment.startDot && alignment.endDot
@@ -67,12 +92,12 @@ function PointGridPlot({
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw safety windows
+    // Draw safety windowsxDomain
     drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft);
     
     // Draw safety window highlight if applicable
     if (highlightedWindow) {
-      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, safetyWindows, highlightedWindow);
+      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, highlightedWindow);
     }
     
     // Draw axes
@@ -160,17 +185,15 @@ function PointGridPlot({
       .scaleExtent([0.1, 100])
       .on("zoom", (event) => setTransform(event.transform));
 
-    const selection = d3.select(canvas);
-    selection.call(zoom);
+    // Use type assertion to fix the incompatible call
+    const selection = d3.select(canvasRef.current);
+    (selection as any).call(zoom);
 
-    return () => selection.on('.zoom', null);
+    return () => {
+      selection.on('.zoom', null);
+    };
   }, []);
 
-  // Add methods to manually highlight a safety window
-  const highlightSafetyWindow = (window: Alignment | null) => {
-    setHighlightedWindow(window);
-    drawCanvas(); // Redraw to show highlight
-  };
 
   return (
     <canvas

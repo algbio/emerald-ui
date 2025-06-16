@@ -1,4 +1,14 @@
+import * as d3 from 'd3';
 import { useMemo } from 'react';
+
+interface UsePointGridTicksProps {
+  xDomain: [number, number]; // Keep as tuple
+  yDomain: [number, number]; // Keep as tuple
+  representative: string;
+  member: string;
+  x: d3.ScaleLinear<number, number>; // Proper D3 scale type
+  y: d3.ScaleLinear<number, number>; // Proper D3 scale type
+}
 
 export function usePointGridTicks({
   xDomain,
@@ -7,14 +17,7 @@ export function usePointGridTicks({
   member,
   x,
   y
-}: {
-  xDomain: [number, number];
-  yDomain: [number, number];
-  representative: string;
-  member: string;
-  x: (value: number) => number;
-  y: (value: number) => number;
-}) {
+}: UsePointGridTicksProps) {
   return useMemo(() => {
     const newXTicks = [];
     for (let i = Math.ceil(xDomain[0]); i <= Math.floor(xDomain[1]); i++) {

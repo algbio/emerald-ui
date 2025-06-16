@@ -29,11 +29,14 @@ function App() {
       
       {hasData && (
         <PointGridPlot 
+          key={JSON.stringify(alignments)}
           representative={representative}
           member={member}
           alignments={alignments}
           width={900}
           height={900}
+          xDomain={[0, member.length]} // Replace with appropriate domain values
+          yDomain={[0, representative.length]} // Replace with appropriate domain values
         />
       )}
       

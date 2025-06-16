@@ -14,14 +14,13 @@ interface FileUploaderProps {
 
 export const FileUploader = ({ 
   onAlignmentsGenerated,
-  showConsoleOutput = false 
 }: FileUploaderProps) => {
   const [loading, setLoading] = useState(false)
   const [outputUrl, setOutputUrl] = useState<string | null>(null)
   const [alpha, setAlpha] = useState<string>("0.75")
   const [delta, setDelta] = useState<string>("8")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const { loadEmeraldModule } = useEmeraldWasm({ showConsoleOutput })
+  const { loadEmeraldModule } = useEmeraldWasm()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -41,14 +40,40 @@ export const FileUploader = ({
     setLoading(true)
     setOutputUrl(null)
 
+    const mod = await loadEmeraldModule()
+    const FS = (window as any).FS
+
+    try {
+      
+
+      const fsFiles = await FS.readdir('/');
+      const outputFilePatterns = ['.out', '.json',]; // Adjust patterns based on your output files
+      
+      for (const file of fsFiles) {
+        // Skip directories and system files
+        if (file === '.' || file === '..' || file === 'tmp' || file === 'dev') continue;
+        
+        // Check if file matches output file patterns
+        if (outputFilePatterns.some(pattern => file.includes(pattern))) {
+          console.log(`Removing previous output file: ${file}`);
+          try {
+            FS.unlink('/' + file);
+          } catch (e) {
+            console.warn(`Failed to remove file ${file}:`, e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error cleaning up previous output files:', e);
+    }
+
     try {
       const inputName = 'input.fasta'
       const outputName = 'result.json'
       const inputBuffer = await selectedFile.arrayBuffer()
 
       // Load emerald WASM module
-      const mod = await loadEmeraldModule()
-      const FS = (window as any).FS
+      
 
       if (!FS) {
         throw new Error('FS API not found!')
@@ -56,14 +81,15 @@ export const FileUploader = ({
 
       // Write input file and run processing
       FS.writeFile(inputName, new Uint8Array(inputBuffer))
+      console.log(alpha, delta)
       
       // Run the module with user-specified alpha and delta values
       mod.callMain([
         '-f', inputName, 
         '-o', 'output.out', 
         '-j', outputName, 
-        '-a', alpha, 
-        '-d', delta
+        '-a', alpha.toString(), 
+        '-d', delta.toString(),
       ])
 
       // Read and parse output
@@ -121,11 +147,11 @@ export const FileUploader = ({
       
       <div className="parameter-controls">
         <div className="parameter-group">
-          <label htmlFor="alpha-input">Alpha (divergence, 0-1):</label>
+          <label htmlFor="alpha-input">Alpha (divergence, 0.5-1):</label>
           <input
             id="alpha-input"
             type="number"
-            min="0"
+            min="0.5"
             max="1"
             step="0.01"
             value={alpha}
@@ -166,7 +192,7 @@ export const FileUploader = ({
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .card {
           padding: 1rem;
           border-radius: 8px;
