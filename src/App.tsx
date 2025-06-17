@@ -23,7 +23,8 @@ function App() {
 
   return (
     <>
-      <h1>Emerald Alignment Viewer</h1>
+      <h1>Emerald Web</h1>
+      <p>Protein Sequence Alignment Visualization</p>
       
       <FileUploader onAlignmentsGenerated={handleAlignmentsGenerated} />
       

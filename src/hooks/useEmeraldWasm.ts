@@ -8,7 +8,7 @@ export const useEmeraldWasm = () => {
 
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement('script')
-      script.src = '/emerald-wasm/emerald.js'
+      script.src = './emerald-wasm/emerald.js'
       script.onload = () => resolve()
       script.onerror = () => reject(new Error('Failed to load emerald.js'))
       document.body.appendChild(script)
