@@ -12,7 +12,7 @@ import {
   drawHoverHighlight,
   drawSafetyWindowHighlight,
   findSafetyWindowsForCell,
-} from '../utils/canvasDrawing';
+} from '../utils/canvas';
 import type { PointGridPlotProps, Alignment } from '../types/PointGrid';
 
 interface PointGridProps {
