@@ -93,6 +93,9 @@ export function drawAxisLabels(
   marginLeft: number,
   isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
 ) {
+  // Get canvas dimensions for bounds checking
+  const canvasWidth = ctx.canvas.width;
+  
   // X axis labels
   ctx.font = `${fontSize}px monospace`;
   ctx.textAlign = 'center';
@@ -101,11 +104,17 @@ export function drawAxisLabels(
   xTicks.forEach(tick => {
     if (tick.label) {
       const xPos = x(tick.value + 0.5);
-      const isInSafety = isInSafetyWindow(tick.value, 'x');
+      const labelWidth = ctx.measureText(tick.label).width;
       
-      ctx.fillStyle = isInSafety ? 'green' : 'black';
-      ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
-      ctx.fillText(tick.label, xPos, marginTop - 10);
+      // Only render if the label is within the canvas bounds
+      if (xPos >= marginLeft && xPos <= canvasWidth && 
+          xPos - labelWidth/2 >= marginLeft && xPos + labelWidth/2 <= canvasWidth) {
+        const isInSafety = isInSafetyWindow(tick.value, 'x');
+        
+        ctx.fillStyle = isInSafety ? 'green' : 'black';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
+        ctx.fillText(tick.label, xPos, marginTop - 10);
+      }
     }
   });
 
@@ -116,11 +125,19 @@ export function drawAxisLabels(
   yTicks.forEach(tick => {
     if (tick.label) {
       const yPos = y(tick.value + 0.5);
-      const isInSafety = isInSafetyWindow(tick.value, 'y');
+      const labelWidth = ctx.measureText(tick.label).width;
+      const labelHeight = fontSize;
       
-      ctx.fillStyle = isInSafety ? 'green' : 'black';
-      ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
-      ctx.fillText(tick.label, marginLeft - 12, yPos);
+      // Only render if the label is within the canvas bounds
+      // For y-axis, we need to ensure it doesn't go above or below the visible area
+      if (yPos >= marginTop && yPos <= y.range()[1] &&
+          marginLeft - labelWidth >= 0) {
+        const isInSafety = isInSafetyWindow(tick.value, 'y');
+        
+        ctx.fillStyle = isInSafety ? 'green' : 'black';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
+        ctx.fillText(tick.label, marginLeft - 12, yPos);
+      }
     }
   });
 }

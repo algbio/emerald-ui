@@ -36,8 +36,8 @@ function App() {
           alignments={alignments}
           width={900}
           height={900}
-          xDomain={[0, member.length]} // Replace with appropriate domain values
-          yDomain={[0, representative.length]} // Replace with appropriate domain values
+          xDomain={[0, representative.length]} // Replace with appropriate domain values
+          yDomain={[0, member.length]} // Replace with appropriate domain values
         />
       )}
       
