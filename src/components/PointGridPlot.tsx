@@ -30,12 +30,12 @@ interface PointGridProps {
 }
 
 function PointGridPlot({
-  width = 800,
-  height = 800,
-  marginTop = 80,
+  width = 900,
+  height = 900,
+  marginTop = 180,
   marginRight = 20,
   marginBottom = 30,
-  marginLeft = 80,
+  marginLeft = 180,
   representative = "MSFDLKSKFLG",
   member = "MSKLKDFLFKS",
   alignments = [],
