@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { useEmeraldWasm } from '../hooks/useEmeraldWasm'
-import { parseJsonToAlignments } from '../utils/alignmentParser'
-import { type Alignment } from './PointGridPlot'
+import React, { useState } from 'react';
+import type { Alignment, Edge } from '../types/PointGrid';
+import { emeraldService } from './EmeraldService';
 
 interface FileUploaderProps {
   onAlignmentsGenerated: (data: {
@@ -15,101 +14,171 @@ interface FileUploaderProps {
 export const FileUploader = ({ 
   onAlignmentsGenerated,
 }: FileUploaderProps) => {
-  const [loading, setLoading] = useState(false)
-  const [outputUrl, setOutputUrl] = useState<string | null>(null)
-  const [alpha, setAlpha] = useState<string>("0.75")
-  const [delta, setDelta] = useState<string>("8")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const { loadEmeraldModule } = useEmeraldWasm()
+  const [loading, setLoading] = useState(false);
+  const [outputUrl, setOutputUrl] = useState<string | null>(null);
+  const [alpha, setAlpha] = useState<string>("0.75");
+  const [delta, setDelta] = useState<string>("8");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [paramsChanged, setParamsChanged] = useState(false);
+  const [sequences, setSequences] = useState<{
+    reference: { seq: string, desc: string },
+    member: { seq: string, desc: string }
+  } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file)
-      // Clear previous results when a new file is selected
-      setOutputUrl(null)
+      setSelectedFile(file);
+      setOutputUrl(null);
+      setSequences(null);
+      setParamsChanged(false);
     }
-  }
+  };
+
+  const parseFastaFile = async (file: File): Promise<{ 
+    reference: { seq: string, desc: string }, 
+    member: { seq: string, desc: string } 
+  }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const sequences = content.split('>').filter(Boolean);
+          
+          if (sequences.length < 2) {
+            reject(new Error("FASTA file must contain at least two sequences"));
+            return;
+          }
+          
+          // Parse first sequence (reference)
+          const refLines = sequences[0].trim().split('\n');
+          const refDesc = refLines[0].trim();
+          const refSeq = refLines.slice(1).join('').replace(/\s/g, '');
+          
+          // Parse second sequence (member)
+          const memLines = sequences[1].trim().split('\n');
+          const memDesc = memLines[0].trim();
+          const memSeq = memLines.slice(1).join('').replace(/\s/g, '');
+          
+          resolve({
+            reference: { seq: refSeq, desc: refDesc },
+            member: { seq: memSeq, desc: memDesc }
+          });
+        } catch (err) {
+          reject(new Error(`Failed to parse FASTA file: ${err}`));
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsText(file);
+    });
+  };
+
+  // Convert from EmeraldService format to PointGridPlot format
+  const processAlignmentResult = (result: any): {
+    representative: string;
+    member: string;
+    alignments: Alignment[];
+  } => {
+    const alignments: Alignment[] = [];
+
+    // Process alignment_graph data
+    if (result.alignment_graph && Array.isArray(result.alignment_graph)) {
+      for (const node of result.alignment_graph) {
+        if (node && Array.isArray(node.edges)) {
+          const edges: Edge[] = [];
+          
+          for (const edge of node.edges) {
+            edges.push({
+              from: [node.from[0], node.from[1]],
+              to: [edge[0], edge[1]],
+              probability: edge[2]
+            });
+          }
+          
+          alignments.push({
+            color: "black",
+            edges: edges,
+          });
+        }
+      }
+    }
+    
+    // Process window data
+    if (result.windows_representative && Array.isArray(result.windows_representative)) {
+      for (let i = 0; i < result.windows_representative.length; i++) {
+        const windowRep = result.windows_representative[i];
+        const windowMem = result.windows_member ? result.windows_member[i] : null;
+        
+        if (windowRep && windowMem) {
+          alignments.push({
+            color: "green",
+            edges: [],
+            startDot: { x: windowRep[0], y: windowMem[0] },
+            endDot: { x: windowRep[1], y: windowMem[1] }
+          });
+        }
+      }
+    }
+
+    return {
+      representative: result.representative_string,
+      member: result.member_string,
+      alignments
+    };
+  };
 
   const handleRunAnalysis = async () => {
     if (!selectedFile) {
-      alert('Please select a file first')
-      return
+      alert('Please select a file first');
+      return;
     }
 
-    setLoading(true)
-    setOutputUrl(null)
-
-    const mod = await loadEmeraldModule()
-    const FS = (window as any).FS
+    setLoading(true);
 
     try {
-      
-
-      const fsFiles = await FS.readdir('/');
-      const outputFilePatterns = ['.out', '.json',]; // Adjust patterns based on your output files
-      
-      for (const file of fsFiles) {
-        // Skip directories and system files
-        if (file === '.' || file === '..' || file === 'tmp' || file === 'dev') continue;
-        
-        // Check if file matches output file patterns
-        if (outputFilePatterns.some(pattern => file.includes(pattern))) {
-          console.log(`Removing previous output file: ${file}`);
-          try {
-            FS.unlink('/' + file);
-          } catch (e) {
-            console.warn(`Failed to remove file ${file}:`, e);
-          }
-        }
+      // Parse the FASTA file if needed
+      let seqs = sequences;
+      if (!seqs) {
+        seqs = await parseFastaFile(selectedFile);
+        setSequences(seqs);
       }
-    } catch (e) {
-      console.error('Error cleaning up previous output files:', e);
-    }
-
-    try {
-      const inputName = 'input.fasta'
-      const outputName = 'result.json'
-      const inputBuffer = await selectedFile.arrayBuffer()
-
-      // Load emerald WASM module
       
-
-      if (!FS) {
-        throw new Error('FS API not found!')
-      }
-
-      // Write input file and run processing
-      FS.writeFile(inputName, new Uint8Array(inputBuffer))
-      console.log(alpha, delta)
+      console.log(`Running alignment with alpha=${alpha}, delta=${delta}`);
       
-      // Run the module with user-specified alpha and delta values
-      mod.callMain([
-        '-f', inputName, 
-        '-o', 'output.out', 
-        '-j', outputName, 
-        '-a', alpha.toString(), 
-        '-d', delta.toString(),
-      ])
-
-      // Read and parse output
-      const outputData = FS.readFile("testresult.json")
-      const jsonText = new TextDecoder().decode(outputData)
+      // Use the EmeraldService to generate the alignment
+      const result = await emeraldService.generateAlignment(
+        seqs.reference.seq,
+        seqs.reference.desc,
+        seqs.member.seq,
+        seqs.member.desc,
+        parseFloat(alpha),
+        parseInt(delta),
+        -1,  // default gapCost
+        -11  // default startGap
+      );
       
-      const parsed = parseJsonToAlignments(jsonText)
-      if (parsed) {
-        onAlignmentsGenerated(parsed)
-      }
-
-      // Create download link
-      const blob = new Blob([outputData])
-      setOutputUrl(URL.createObjectURL(blob))
+      console.log("Alignment generated successfully");
+      
+      // Process the result to match the expected format for visualization
+      const processedData = processAlignmentResult(result);
+      
+      // Pass the processed data to the parent component
+      onAlignmentsGenerated(processedData);
+      
+      // Create a download link for the JSON result
+      const jsonString = JSON.stringify(result, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      setOutputUrl(URL.createObjectURL(blob));
+      setParamsChanged(false);
+      
     } catch (err) {
-      alert('Error processing file: ' + err)
+      console.error('Error processing file:', err);
+      alert('Error processing file: ' + err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Validate input to ensure it's a valid number
   const handleAlphaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,6 +186,7 @@ export const FileUploader = ({
     // Allow empty string for user convenience while typing
     if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0 && parseFloat(value) <= 1)) {
       setAlpha(value);
+      if (outputUrl !== null) setParamsChanged(true);
     }
   };
 
@@ -126,165 +196,72 @@ export const FileUploader = ({
     // Allow empty string for user convenience while typing
     if (value === '' || (!isNaN(parseInt(value)) && parseInt(value) > 0)) {
       setDelta(value);
+      if (outputUrl !== null) setParamsChanged(true);
     }
   };
 
   return (
     <div className="card">
-      <div className="file-input-container">
-        <input
-          type="file"
-          accept=".fasta,.fast"
-          onChange={handleFileChange}
-          disabled={loading}
-        />
-        <div className="file-status">
-          {selectedFile && (
-            <span className="selected-file">Selected: {selectedFile.name}</span>
-          )}
-        </div>
-      </div>
-      
-      <div className="parameter-controls">
-        <div className="parameter-group">
-          <label htmlFor="alpha-input">Alpha (divergence, 0.5-1):</label>
+      <div className="upload-container">
+        <div className="file-input-container">
+          <label htmlFor="file-upload" className="file-label">
+            {selectedFile ? selectedFile.name : 'Choose FASTA file'}
+          </label>
           <input
-            id="alpha-input"
-            type="number"
-            min="0.5"
-            max="1"
-            step="0.01"
-            value={alpha}
-            onChange={handleAlphaChange}
-            disabled={loading}
+            id="file-upload"
+            type="file"
+            accept=".fasta,.fa,.txt"
+            onChange={handleFileChange}
+            className="file-input"
           />
-          <span className="parameter-hint">Controls divergence tolerance (default: 0.75)</span>
         </div>
         
-        <div className="parameter-group">
-          <label htmlFor="delta-input">Delta (window size):</label>
-          <input
-            id="delta-input"
-            type="number"
-            min="1"
-            step="1"
-            value={delta}
-            onChange={handleDeltaChange}
-            disabled={loading}
-          />
-          <span className="parameter-hint">Sets the window size (default: 8)</span>
+        <div className="parameters">
+          <div className="param-group">
+            <label htmlFor="alpha">Alpha:</label>
+            <input
+              id="alpha"
+              type="number"
+              value={alpha}
+              onChange={handleAlphaChange}
+              min="0"
+              max="1"
+              step="0.01"
+              className="param-input"
+            />
+          </div>
+          
+          <div className="param-group">
+            <label htmlFor="delta">Delta:</label>
+            <input
+              id="delta"
+              type="number"
+              value={delta}
+              onChange={handleDeltaChange}
+              min="1"
+              className="param-input"
+            />
+          </div>
         </div>
-      </div>
-
-      <div className="actions">
+        
         <button 
           className="run-button" 
           onClick={handleRunAnalysis} 
           disabled={loading || !selectedFile}
         >
-          {loading ? 'Processing...' : 'Run Analysis'}
+          {loading ? 'Processing...' : paramsChanged ? 'Update Results' : 'Run Analysis'}
         </button>
         
         {outputUrl && (
-          <a href={outputUrl} download="result.json" className="download-link">
-            Download JSON Result
+          <a 
+            href={outputUrl}
+            download="alignment_results.json"
+            className="download-button"
+          >
+            Download Results
           </a>
         )}
       </div>
-
-      <style>{`
-        .card {
-          padding: 1rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .file-input-container {
-          margin-bottom: 1rem;
-        }
-        
-        .file-status {
-          margin-top: 0.5rem;
-          min-height: 1.5rem;
-        }
-        
-        .selected-file {
-          font-size: 0.9rem;
-          color: #495057;
-          font-style: italic;
-        }
-        
-        .parameter-controls {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
-        
-        .parameter-group {
-          display: flex;
-          flex-direction: column;
-          min-width: 150px;
-        }
-        
-        label {
-          font-weight: 500;
-          margin-bottom: 0.25rem;
-        }
-        
-        input[type="number"] {
-          padding: 0.5rem;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          margin-bottom: 0.25rem;
-        }
-        
-        .parameter-hint {
-          font-size: 0.8rem;
-          color: #6c757d;
-        }
-        
-        .actions {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        
-        .run-button {
-          padding: 0.5rem 1rem;
-          background-color: #007bff;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-weight: 500;
-          min-width: 120px;
-        }
-        
-        .run-button:hover:not(:disabled) {
-          background-color: #0069d9;
-        }
-        
-        .run-button:disabled {
-          background-color: #6c757d;
-          cursor: not-allowed;
-        }
-        
-        .download-link {
-          display: inline-block;
-          padding: 0.5rem 1rem;
-          background-color: #28a745;
-          color: white;
-          text-decoration: none;
-          border-radius: 4px;
-          font-weight: 500;
-        }
-        
-        .download-link:hover {
-          background-color: #218838;
-        }
-      `}</style>
     </div>
-  )
+  );
 }
