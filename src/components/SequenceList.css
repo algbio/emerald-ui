@@ -1,0 +1,17 @@
+/* Add to your CSS file */
+.sequence-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+}
+
+.sequence-table th,
+.sequence-table td {
+  border: 1px solid #ccc; /* This adds grid lines */
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.sequence-table th {
+  background: #616161;
+}

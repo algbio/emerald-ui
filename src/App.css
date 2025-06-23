@@ -40,3 +40,17 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Add to your CSS file */
+.sequence-input-panel {
+  display: flex;
+  gap: 2rem; /* space between the two panels */
+  align-items: flex-start;
+}
+
+.fasta-uploader,
+.uniprot-search {
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 600px;
+}

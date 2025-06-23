@@ -1,28 +1,51 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import PointGridPlot, { type Alignment } from './components/PointGridPlot'
-import { FileUploader } from './components/FileUploader'
-function App() {
-  const [alignments, setAlignments] = useState<Alignment[]>([])
-  const [representative, setRepresentative] = useState("")
-  const [member, setMember] = useState("")
+import EmeraldInput from './components/EmeraldInput'
+import { SequenceProvider, useSequence } from './context/SequenceContext'
+import SequenceInputPanel from './components/SequenceInputPanel'
+
+// Create a separate component for the app content to use the context hook
+function AppContent() {
+  const { state } = useSequence();
+  const { sequences, alignments } = state;
+  
+  const [representative, setRepresentative] = useState("");
+  const [member, setMember] = useState("");
+  const [representativeDescriptor, setRepresentativeDescriptor] = useState("");
+  const [memberDescriptor, setMemberDescriptor] = useState("");
+  const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
+
+  // Update local state when context state changes
+  useEffect(() => {
+    if (state.alignmentStatus === 'success') {
+      setRepresentative(sequences.sequenceA);
+      setMember(sequences.sequenceB);
+      setRepresentativeDescriptor(sequences.descriptorA);
+      setMemberDescriptor(sequences.descriptorB);
+      setLocalAlignments(alignments);
+    }
+  }, [state.alignmentStatus, sequences, alignments]);
 
   const handleAlignmentsGenerated = (data: {
-    representative: string;
-    member: string;
-    alignments: Alignment[];
+    sequenceA: string;
+    sequenceB: string;
+    descriptorA: string;
+    descriptorB: string;
   }) => {
-    console.log("Alignments generated:", data)
-    setRepresentative(data.representative)
-    setMember(data.member)
-    setAlignments(data.alignments)
+    // This function now exists for backward compatibility
+    // The actual alignment is handled by the context
+    setRepresentative(data.sequenceA);
+    setMember(data.sequenceB);
+    setRepresentativeDescriptor(data.descriptorA);
+    setMemberDescriptor(data.descriptorB);
   }
 
   // Check if we have data to display
-  const hasData = representative && member && alignments.length > 0
+  const hasData = representative && member && localAlignments.length > 0;
 
   return (
-    <>
+    <div className="app-container">
       <h1>Emerald Web</h1>
       <p>Protein Sequence Alignment Visualization</p>
 
@@ -39,48 +62,57 @@ function App() {
         <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">
           https://doi.org/10.1186/s13059-023-03008-6
         </a>
-        <br />
-        An author erratum is available&nbsp;
-        <a href="https://github.com/algbio/emerald-analysis/blob/main/emerald_erratum.pdf" target="_blank" rel="noopener noreferrer">
-          here
-        </a>.
-        <p style={{ marginBottom: 0 }}>
-          Experimental data was clustered using DIAMOND DeepClust:
-        </p>
-        Buchfink B, Ashkenazy H, Reuter K, Kennedy JA, Drost HG, 
-        <br />
-        "Sensitive clustering of protein sequences at tree-of-life scale using DIAMOND DeepClust", 
-        <br />
-        <i>bioRxiv</i> 2023.01.24.525373;
-        <br />
-        <a href="https://doi.org/10.1101/2023.01.24.525373" target="_blank" rel="noopener noreferrer">
-          https://doi.org/10.1101/2023.01.24.525373
-        </a>
       </div>
       
-      <FileUploader onAlignmentsGenerated={handleAlignmentsGenerated} />
+      <div className="input-methods">
+        <div className="input-method-tabs">
+          <h1>Input Options</h1>
+          <div className="tabs-container">
+                  <SequenceInputPanel />
+
+          </div>
+        </div>
+        
+        <EmeraldInput onSubmit={handleAlignmentsGenerated} />
+      </div>
+      
       
       {hasData && (
-        <PointGridPlot 
-          key={JSON.stringify(alignments)}
-          representative={representative}
-          member={member}
-          alignments={alignments}
-          width={900}
-          height={900}
-          xDomain={[0, representative.length]} // Replace with appropriate domain values
-          yDomain={[0, member.length]} // Replace with appropriate domain values
-        />
+        <div className="results-section">
+          <h2>Alignment Results</h2>
+          <div className="sequence-info">
+            <p><strong>Representative (y-axis): </strong> {representativeDescriptor}</p>
+            <p><strong>Member (x-axis):</strong> {memberDescriptor}</p>
+          </div>
+          <PointGridPlot 
+            key={JSON.stringify(localAlignments)}
+            representative={representative}
+            member={member}
+            alignments={localAlignments}
+            width={900}
+            height={900}
+            xDomain={[0, representative.length]}
+            yDomain={[0, member.length]}
+          />
+        </div>
       )}
       
       {!hasData && (
         <p style={{ textAlign: 'center', color: '#666', marginTop: '2rem' }}>
-          Upload a FASTA file to view alignment visualization
+          Upload a FASTA file or enter sequences to view alignment visualization
         </p>
       )}
-    </>
-
-  )
+    </div>
+  );
 }
 
-export default App
+// Main App component that provides the context
+function App() {
+  return (
+    <SequenceProvider>
+      <AppContent />
+    </SequenceProvider>
+  );
+}
+
+export default App;

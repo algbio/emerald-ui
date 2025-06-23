@@ -51,7 +51,7 @@ export class EmeraldService {
    * @param memSeq Member sequence
    * @param memDesc Member description
    * @param alpha Alpha parameter (0.5 to 1.0, default 0.75)
-   * @param delta Delta parameter (default 0)
+   * @param delta Delta parameter (default 8)
    * @param gapCost Gap cost (default -1)
    * @param startGap Start gap cost (default -11)
    * @returns Parsed alignment result
@@ -62,7 +62,7 @@ export class EmeraldService {
     memSeq: string,
     memDesc: string,
     alpha = 0.75,
-    delta = 0,
+    delta = 8,
     gapCost = -1,
     startGap = -11
   ): Promise<AlignmentResult> {
