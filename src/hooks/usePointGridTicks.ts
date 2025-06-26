@@ -8,6 +8,7 @@ interface UsePointGridTicksProps {
   member: string;
   x: d3.ScaleLinear<number, number>; // Proper D3 scale type
   y: d3.ScaleLinear<number, number>; // Proper D3 scale type
+  transform?: d3.ZoomTransform;  // Keep this to avoid breaking the existing code
 }
 
 export function usePointGridTicks({
@@ -16,7 +17,8 @@ export function usePointGridTicks({
   representative,
   member,
   x,
-  y
+  y,
+  transform // Keep this parameter but we won't use it
 }: UsePointGridTicksProps) {
   return useMemo(() => {
     const newXTicks = [];

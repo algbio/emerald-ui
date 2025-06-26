@@ -179,10 +179,200 @@ export function drawAxisLabels(
   const yStringLength = getStringLength(yTicks);
   
   // Draw index markers
-  drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
-  drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
+  drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
+  drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
   
   // Draw character labels
   drawXLabels(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
   drawYLabels(ctx, yTicks, y, marginTop, marginLeft, fontSize, isInSafetyWindow);
+}
+
+// Draw minimal index markers for X axis showing just first, middle and last visible
+export function drawMinimalXIndexMarkers(
+  ctx: CanvasRenderingContext2D,
+  x: ScaleLinear<number, number>,
+  marginLeft: number,
+  fontSize: number,
+  stringLength: number,
+) {
+  const canvasWidth = ctx.canvas.width;
+  
+  ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
+  ctx.fillStyle = '#555';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  
+  // Calculate the visible range in domain units
+  const xStart = Math.max(0, Math.floor(x.invert(marginLeft)));
+  const xEnd = Math.min(stringLength, Math.ceil(x.invert(canvasWidth)));
+  
+  // Only proceed if we have a valid range
+  if (xStart >= xEnd) return;
+  
+  // Calculate the middle index
+  const xMiddle = Math.floor((xStart + xEnd) / 2);
+  
+  // Draw first index marker - always at the start of visible area
+  ctx.fillText(xStart.toString(), marginLeft, 5);
+  
+  // Draw middle index marker (only if it's different from start and end)
+  if (xMiddle !== xStart && xMiddle !== xEnd && xMiddle < stringLength) {
+    const xMiddlePos = x(xMiddle);
+    if (xMiddlePos >= marginLeft && xMiddlePos <= canvasWidth) {
+      ctx.fillText(xMiddle.toString(), xMiddlePos, 5);
+    }
+  }
+  
+  // Draw last index marker
+  if (xEnd > xStart && xEnd < stringLength) {
+    const xEndPos = x(xEnd - 1);
+    if (xEndPos >= marginLeft && xEndPos <= canvasWidth) {
+      ctx.fillText((xEnd - 1).toString(), xEndPos, 5);
+    }
+  }
+}
+
+// Draw minimal index markers for Y axis showing just first, middle and last visible
+export function drawMinimalYIndexMarkers(
+  ctx: CanvasRenderingContext2D,
+  y: ScaleLinear<number, number>,
+  marginTop: number,
+  marginLeft: number,
+  fontSize: number,
+  stringLength: number,
+) {
+  ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
+  ctx.fillStyle = '#555';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  
+  // Calculate the visible range for Y axis
+  const yStart = Math.max(0, Math.floor(y.invert(marginTop)));
+  const yEnd = Math.min(stringLength, Math.ceil(y.invert(y.range()[1])));
+  
+  // Only proceed if we have a valid range
+  if (yStart >= yEnd) return;
+  
+  // Calculate the middle index
+  const yMiddle = Math.floor((yStart + yEnd) / 2);
+  
+  // Draw first index marker - always at the start of visible area
+  ctx.fillText(yStart.toString(), marginLeft - 35, marginTop);
+  
+  // Draw middle index marker (only if it's different from start and end)
+  if (yMiddle !== yStart && yMiddle !== yEnd && yMiddle < stringLength) {
+    const yMiddlePos = y(yMiddle);
+    if (yMiddlePos >= marginTop && yMiddlePos <= y.range()[1]) {
+      ctx.fillText(yMiddle.toString(), marginLeft - 35, yMiddlePos);
+    }
+  }
+  
+  // Draw last index marker
+  if (yEnd > yStart && yEnd < stringLength) {
+    const yEndPos = y(yEnd - 1);
+    if (yEndPos >= marginTop && yEndPos <= y.range()[1]) {
+      ctx.fillText((yEnd - 1).toString(), marginLeft - 35, yEndPos);
+    }
+  }
+}
+
+// Modified function to draw X labels with indices on top
+function drawXLabelsWithIndices(
+  ctx: CanvasRenderingContext2D,
+  xTicks: Array<{value: number; label: string}>,
+  x: ScaleLinear<number, number>,
+  marginTop: number,
+  marginLeft: number,
+  fontSize: number,
+  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
+) {
+  const canvasWidth = ctx.canvas.width;
+  
+  ctx.font = `${fontSize}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  
+  xTicks.forEach(tick => {
+    if (tick.label) {
+      const xPos = x(tick.value + 0.5);
+      const labelWidth = ctx.measureText(tick.label).width;
+      
+      // Only render if the label is within the canvas bounds
+      if (xPos >= marginLeft && xPos <= canvasWidth && 
+          xPos - labelWidth/2 >= marginLeft && xPos + labelWidth/2 <= canvasWidth) {
+        const isInSafety = isInSafetyWindow(tick.value, 'x');
+        
+        // Draw position index above the character
+        ctx.fillStyle = '#555';
+        ctx.font = `${Math.max(10, fontSize * 0.6)}px monospace`;
+        ctx.fillText(tick.value.toString(), xPos, marginTop - 25);
+        
+        // Draw character label
+        ctx.fillStyle = isInSafety ? 'green' : 'black';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
+        ctx.fillText(tick.label, xPos, marginTop - 10);
+      }
+    }
+  });
+}
+
+// Modified function to draw Y labels with indices
+function drawYLabelsWithIndices(
+  ctx: CanvasRenderingContext2D,
+  yTicks: Array<{value: number; label: string}>,
+  y: ScaleLinear<number, number>,
+  marginTop: number,
+  marginLeft: number,
+  fontSize: number,
+  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
+) {
+  ctx.textBaseline = 'middle';
+  
+  yTicks.forEach(tick => {
+    if (tick.label) {
+      const yPos = y(tick.value + 0.5);
+      
+      // Only render if the label is within the bounds
+      if (yPos >= marginTop && yPos <= y.range()[1]) {
+        const isInSafety = isInSafetyWindow(tick.value, 'y');
+        
+        // Draw position index to the left of the character
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#555';
+        ctx.font = `${Math.max(10, fontSize * 0.6)}px monospace`;
+        ctx.fillText(tick.value.toString(), marginLeft - 25, yPos);
+        
+        // Draw character label
+        ctx.textAlign = 'end';
+        ctx.fillStyle = isInSafety ? 'green' : 'black';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
+        ctx.fillText(tick.label, marginLeft - 12, yPos);
+      }
+    }
+  });
+}
+
+// Alternative axis labels function that shows indices above characters
+export function drawIndexedAxisLabels(
+  ctx: CanvasRenderingContext2D,
+  xTicks: Array<{value: number; label: string}>,
+  yTicks: Array<{value: number; label: string}>,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
+  fontSize: number,
+  marginTop: number,
+  marginLeft: number,
+  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
+) {
+  // Calculate string lengths
+  const xStringLength = getStringLength(xTicks);
+  const yStringLength = getStringLength(yTicks);
+  
+  // Draw minimal index markers along the axes
+  drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
+  drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
+  
+  // Draw character labels with their indices
+  drawXLabelsWithIndices(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
+  drawYLabelsWithIndices(ctx, yTicks, y, marginTop, marginLeft, fontSize, isInSafetyWindow);
 }

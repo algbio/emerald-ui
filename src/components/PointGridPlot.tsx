@@ -12,6 +12,9 @@ import {
   drawHoverHighlight,
   drawSafetyWindowHighlight,
   findSafetyWindowsForCell,
+  drawMinimap,
+  handleMinimapInteraction as handleMinimapInteractionUtil,
+  isMouseInMinimap
 } from '../utils/canvas';
 import type { PointGridPlotProps, Alignment } from '../types/PointGrid';
 
@@ -27,6 +30,9 @@ interface PointGridProps {
   alignments: Alignment[];
   xDomain: number[];
   yDomain: number[];
+  showMinimap?: boolean;  // Add this new prop
+  minimapSize?: number;    // Add this new prop
+  minimapPadding?: number; // Add this new prop
 }
 
 function PointGridPlot({
@@ -40,13 +46,17 @@ function PointGridPlot({
   member = "MSKLKDFLFKS",
   alignments = [],
   xDomain,
-  yDomain
+  yDomain,
+  showMinimap = true,       // Default to showing minimap
+  minimapSize = 250,         // Default size of minimap
+  minimapPadding = 100        // Padding around minimap
 }: PointGridProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [transform, setTransform] = useState(d3.zoomIdentity);
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
   const [highlightedWindow] = useState<Alignment | null>(null);
+  const [isMinimapDragging, setIsMinimapDragging] = useState(false);
 
   const { x, y, fontSize } = usePointGridScales({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
@@ -63,7 +73,8 @@ function PointGridPlot({
     representative, 
     member, 
     x, // Now properly typed as d3.ScaleLinear
-    y  // Now properly typed as d3.ScaleLinear
+    y, // Now properly typed as d3.ScaleLinear
+    transform // Pass the current transform to control tick density
   });
   
   // Extract safety windows and helper function
@@ -80,6 +91,15 @@ function PointGridPlot({
     });
   };
 
+  // Draw minimap using the utility function
+  const drawMinimapFn = (ctx: CanvasRenderingContext2D) => {
+    return drawMinimap(ctx, {
+      width, height, marginTop, marginRight, marginBottom, marginLeft,
+      x, y, representative, member, alignments, safetyWindows,
+      minimapSize, minimapPadding, showMinimap
+    });
+  };
+
   // Main drawing function
   const drawCanvas = () => {
     const canvas = canvasRef.current;
@@ -92,7 +112,7 @@ function PointGridPlot({
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw safety windowsxDomain
+    // Draw safety windows
     drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft);
     
     // Draw safety window highlight if applicable
@@ -141,10 +161,45 @@ function PointGridPlot({
     }
 
     ctx.restore();
+    
+    // Draw minimap on top of everything
+    drawMinimapFn(ctx);
+  };
+
+  // Handle minimap interactions using utility function
+  const handleMinimapInteraction = (event: React.MouseEvent, isDragging: boolean = false) => {
+    return handleMinimapInteractionUtil(
+      event,
+      {
+        canvas: canvasRef.current,
+        isDragging,
+        isMinimapDragging,
+        width,
+        height,
+        marginTop,
+        marginRight,
+        marginBottom,
+        marginLeft,
+        minimapSize,
+        minimapPadding,
+        showMinimap,
+        transform,
+        x,
+        y,
+        representative,
+        member
+      },
+      setTransform
+    );
   };
 
   // Mouse interaction
   const handleMouseMove = (event: React.MouseEvent) => {
+    // First check if we're interacting with the minimap
+    if (handleMinimapInteraction(event, isMinimapDragging)) {
+      return;
+    }
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -170,12 +225,31 @@ function PointGridPlot({
       setHoveredCell(null);
     }
   };
+  
+  const handleMouseDown = (event: React.MouseEvent) => {
+    // Check if click is in minimap using utility
+    const isInMinimap = isMouseInMinimap(event, {
+      canvas: canvasRef.current,
+      width,
+      minimapSize,
+      minimapPadding
+    });
+                       
+    if (isInMinimap) {
+      setIsMinimapDragging(true);
+      handleMinimapInteraction(event, true);
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsMinimapDragging(false);
+  };
 
   // Effects
   useEffect(() => {
     const timeoutId = setTimeout(drawCanvas, 16);
     return () => clearTimeout(timeoutId);
-  }, [transform, alignments, hoveredCell, fontSize]);
+  }, [transform, alignments, hoveredCell, fontSize, showMinimap]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -194,15 +268,16 @@ function PointGridPlot({
     };
   }, []);
 
-
   return (
     <canvas
       ref={canvasRef}
       width={width}
       height={height}
-      style={{ cursor: 'grab' }}
+      style={{ cursor: isMinimapDragging ? 'move' : 'grab' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHoveredCell(null)}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     />
   );
 }
