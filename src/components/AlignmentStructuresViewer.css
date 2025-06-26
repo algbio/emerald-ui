@@ -1,0 +1,140 @@
+.alignment-structures-viewer {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.structures-title {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  text-align: center;
+}
+
+.structures-subtitle {
+  color: #6c757d;
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.structures-container {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+}
+
+/* Two-column layout for larger screens when both structures are present */
+.structures-container:has(.structure-panel:nth-child(2)) {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 1200px) {
+  .structures-container {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.structure-panel {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.structure-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.structure-header h3 {
+  color: #343a40;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.structure-info {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.uniprot-id, .pdb-id {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.uniprot-id {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+}
+
+.pdb-id {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
+}
+
+.no-structures-message {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.no-structures-message p {
+  margin: 0.5rem 0;
+}
+
+.no-structures-message p:first-child {
+  font-weight: 500;
+  color: #495057;
+}
+
+.examples {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  margin: 0.75rem 0;
+  font-family: 'Courier New', monospace;
+}
+
+.examples code {
+  background: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+/* Loading and error states */
+.structure-panel .error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+  margin-top: 0.5rem;
+}
+
+.structure-panel .loading-message {
+  background: #d1ecf1;
+  color: #0c5460;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #bee5eb;
+  text-align: center;
+}

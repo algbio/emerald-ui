@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Alignment } from '../components/PointGridPlot';
 
@@ -25,6 +25,14 @@ interface SequenceState {
   alignments: Alignment[];
   alignmentStatus: 'idle' | 'loading' | 'success' | 'error';
   alignmentError: string | null;
+  structureA: {
+    uniprotId: string | null;
+    pdbId: string | null;
+  } | null;
+  structureB: {
+    uniprotId: string | null;
+    pdbId: string | null;
+  } | null;
 }
 
 // Initial state
@@ -43,7 +51,9 @@ const initialState: SequenceState = {
   },
   alignments: [],
   alignmentStatus: 'idle',
-  alignmentError: null
+  alignmentError: null,
+  structureA: null,
+  structureB: null,
 };
 
 // Define the possible actions
@@ -57,7 +67,11 @@ type SequenceAction =
   | { type: 'RESET_SEQUENCES' }
   | { type: 'ALIGNMENT_START' }
   | { type: 'ALIGNMENT_SUCCESS'; payload: Alignment[] }
-  | { type: 'ALIGNMENT_ERROR'; payload: string };
+  | { type: 'ALIGNMENT_ERROR'; payload: string }
+  | { type: 'SET_STRUCTURE_A', payload: { uniprotId: string | null; pdbId?: string | null } }
+  | { type: 'SET_STRUCTURE_B', payload: { uniprotId: string | null; pdbId?: string | null } }
+  | { type: 'CLEAR_STRUCTURE_A' }
+  | { type: 'CLEAR_STRUCTURE_B' };
 
 // Create the reducer
 const sequenceReducer = (state: SequenceState, action: SequenceAction): SequenceState => {
@@ -115,6 +129,26 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         alignmentStatus: 'error',
         alignmentError: action.payload
       };
+    case 'SET_STRUCTURE_A':
+      return {
+        ...state,
+        structureA: {
+          uniprotId: action.payload.uniprotId,
+          pdbId: action.payload.pdbId || null
+        }
+      };
+    case 'SET_STRUCTURE_B':
+      return {
+        ...state,
+        structureB: {
+          uniprotId: action.payload.uniprotId,
+          pdbId: action.payload.pdbId || null
+        }
+      };
+    case 'CLEAR_STRUCTURE_A':
+      return { ...state, structureA: null };
+    case 'CLEAR_STRUCTURE_B':
+      return { ...state, structureB: null };
     default:
       return state;
   }
@@ -135,9 +169,49 @@ interface SequenceProviderProps {
 }
 
 import { emeraldService } from '../utils/EmeraldService';
+import { extractUniProtId } from '../utils/uniprotUtils';
 
 export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(sequenceReducer, initialState);
+
+  // Auto-detect UniProt IDs from descriptors
+  useEffect(() => {
+    console.log('Checking descriptors:', { 
+      descriptorA: state.sequences.descriptorA, 
+      descriptorB: state.sequences.descriptorB 
+    });
+    
+    const uniprotIdA = extractUniProtId(state.sequences.descriptorA);
+    const uniprotIdB = extractUniProtId(state.sequences.descriptorB);
+
+    console.log('Extracted UniProt IDs:', { uniprotIdA, uniprotIdB });
+
+    // Update structure A if UniProt ID found and different from current
+    if (uniprotIdA && state.structureA?.uniprotId !== uniprotIdA) {
+      console.log('Setting structure A:', uniprotIdA);
+      dispatch({
+        type: 'SET_STRUCTURE_A',
+        payload: { uniprotId: uniprotIdA }
+      });
+    } else if (!uniprotIdA && state.structureA?.uniprotId) {
+      // Clear structure A if no UniProt ID found
+      console.log('Clearing structure A');
+      dispatch({ type: 'CLEAR_STRUCTURE_A' });
+    }
+
+    // Update structure B if UniProt ID found and different from current
+    if (uniprotIdB && state.structureB?.uniprotId !== uniprotIdB) {
+      console.log('Setting structure B:', uniprotIdB);
+      dispatch({
+        type: 'SET_STRUCTURE_B',
+        payload: { uniprotId: uniprotIdB }
+      });
+    } else if (!uniprotIdB && state.structureB?.uniprotId) {
+      // Clear structure B if no UniProt ID found
+      console.log('Clearing structure B');
+      dispatch({ type: 'CLEAR_STRUCTURE_B' });
+    }
+  }, [state.sequences.descriptorA, state.sequences.descriptorB, state.structureA?.uniprotId, state.structureB?.uniprotId]);
 
   // Process alignment result function from FileUploader.tsx
   const processAlignmentResult = (result: any): Alignment[] => {

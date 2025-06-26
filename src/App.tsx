@@ -4,6 +4,7 @@ import PointGridPlot, { type Alignment } from './components/PointGridPlot'
 import EmeraldInput from './components/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
 import SequenceInputPanel from './components/SequenceInputPanel'
+import AlignmentStructuresViewer from './components/AlignmentStructuresViewer'
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {
@@ -102,6 +103,9 @@ function AppContent() {
           Upload a FASTA file or enter sequences to view alignment visualization
         </p>
       )}
+
+      {/* Add the AlignmentStructuresViewer component */}
+      <AlignmentStructuresViewer />
     </div>
   );
 }

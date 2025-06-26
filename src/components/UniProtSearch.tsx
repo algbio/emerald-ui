@@ -8,6 +8,7 @@ interface UniProtResult {
   proteinName: string;
   organismName: string;
   sequence: string;
+  pdbIds: string[];
 }
 
 const UniProtSearch: React.FC = () => {
@@ -27,8 +28,9 @@ const UniProtSearch: React.FC = () => {
     setError(null);
     
     try {
+      // Update the fetch URL to include cross-references
       const response = await fetch(
-        `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchTerm)}&fields=accession,id,protein_name,organism_name,sequence&format=json&size=5`
+        `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchTerm)}&fields=accession,id,protein_name,organism_name,sequence,xref_pdb&format=json&size=5`
       );
       
       if (!response.ok) {
@@ -37,12 +39,16 @@ const UniProtSearch: React.FC = () => {
       
       const data = await response.json();
       
+      // Update the mapping to include PDB IDs
       const mappedResults = data.results.map((item: any) => ({
         accession: item.primaryAccession,
         id: item.uniProtkbId,
         proteinName: item.proteinDescription?.recommendedName?.fullName?.value || 'Unknown protein',
         organismName: item.organism?.scientificName || 'Unknown organism',
-        sequence: item.sequence?.value || ''
+        sequence: item.sequence?.value || '',
+        pdbIds: item.uniProtKBCrossReferences
+          ?.filter((xref: any) => xref.database === 'PDB')
+          ?.map((xref: any) => xref.id) || []
       }));
       
       setResults(mappedResults);
@@ -59,12 +65,32 @@ const UniProtSearch: React.FC = () => {
     const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
     dispatch({ type: 'UPDATE_SEQUENCE_A', payload: result.sequence });
     dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: descriptor });
+
+    //console.log('Loading to Sequence A:', result.accession);
+    
+    // Add this to set the structure information
+    dispatch({ 
+      type: 'SET_STRUCTURE_A', 
+      payload: { 
+        uniprotId: result.accession,
+      } 
+    });
+  
   };
   
   const loadToSequenceB = (result: UniProtResult) => {
     const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
     dispatch({ type: 'UPDATE_SEQUENCE_B', payload: result.sequence });
     dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: descriptor });
+    
+    // Add this to set the structure information
+     dispatch({ 
+      type: 'SET_STRUCTURE_B', 
+      payload: { 
+        uniprotId: result.accession,
+      } 
+    });
+  
   };
   
   return (
