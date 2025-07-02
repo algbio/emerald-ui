@@ -144,7 +144,7 @@ export const FileUploader = ({
         setSequences(seqs);
       }
       
-      console.log(`Running alignment with alpha=${alpha}, delta=${delta}`);
+      // console.log(`Running alignment with alpha=${alpha}, delta=${delta}`);
       
       // Use the EmeraldService to generate the alignment
       const result = await emeraldService.generateAlignment(
@@ -158,7 +158,7 @@ export const FileUploader = ({
         -11  // default startGap
       );
       
-      console.log("Alignment generated successfully");
+      // console.log("Alignment generated successfully");
       
       // Process the result to match the expected format for visualization
       const processedData = processAlignmentResult(result);

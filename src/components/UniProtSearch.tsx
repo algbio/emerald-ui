@@ -63,10 +63,16 @@ const UniProtSearch: React.FC = () => {
   
   const loadToSequenceA = (result: UniProtResult) => {
     const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
+    
+    console.log('Loading to Sequence A:', {
+      accession: result.accession,
+      id: result.id,
+      descriptor,
+      sequenceLength: result.sequence.length
+    });
+    
     dispatch({ type: 'UPDATE_SEQUENCE_A', payload: result.sequence });
     dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: descriptor });
-
-    //console.log('Loading to Sequence A:', result.accession);
     
     // Add this to set the structure information
     dispatch({ 
@@ -75,22 +81,32 @@ const UniProtSearch: React.FC = () => {
         uniprotId: result.accession,
       } 
     });
-  
+    
+    console.log('Dispatched structure A with UniProt ID:', result.accession);
   };
   
   const loadToSequenceB = (result: UniProtResult) => {
     const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
+    
+    console.log('Loading to Sequence B:', {
+      accession: result.accession,
+      id: result.id,
+      descriptor,
+      sequenceLength: result.sequence.length
+    });
+    
     dispatch({ type: 'UPDATE_SEQUENCE_B', payload: result.sequence });
     dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: descriptor });
     
     // Add this to set the structure information
-     dispatch({ 
+    dispatch({ 
       type: 'SET_STRUCTURE_B', 
       payload: { 
         uniprotId: result.accession,
       } 
     });
-  
+    
+    console.log('Dispatched structure B with UniProt ID:', result.accession);
   };
   
   return (
@@ -163,21 +179,33 @@ const UniProtSearch: React.FC = () => {
           id: seq.id,
           proteinName: seq.proteinName || '',
           organismName: seq.organismName || '',
-          sequence: seq.sequence
+          sequence: seq.sequence,
+          pdbIds: []
         })}
         onSelectB={seq => loadToSequenceB({
           accession: seq.accession || '',
           id: seq.id,
           proteinName: seq.proteinName || '',
           organismName: seq.organismName || '',
-          sequence: seq.sequence
+          sequence: seq.sequence,
+          pdbIds: []
         })}
         onLoadBoth={(a, b) => {
           loadToSequenceA({
-            accession: a.accession || '', id: a.id, proteinName: a.proteinName || '', organismName: a.organismName || '', sequence: a.sequence
+            accession: a.accession || '', 
+            id: a.id, 
+            proteinName: a.proteinName || '', 
+            organismName: a.organismName || '', 
+            sequence: a.sequence,
+            pdbIds: []
           });
           loadToSequenceB({
-            accession: b.accession || '', id: b.id, proteinName: b.proteinName || '', organismName: b.organismName || '', sequence: b.sequence
+            accession: b.accession || '', 
+            id: b.id, 
+            proteinName: b.proteinName || '', 
+            organismName: b.organismName || '', 
+            sequence: b.sequence,
+            pdbIds: []
           });
         }}
       />

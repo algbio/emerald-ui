@@ -179,8 +179,8 @@ export function drawAxisLabels(
   const yStringLength = getStringLength(yTicks);
   
   // Draw index markers
-  drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
-  drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
+  drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
+  drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
   
   // Draw character labels
   drawXLabels(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);

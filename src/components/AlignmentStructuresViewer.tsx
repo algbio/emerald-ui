@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSequence } from '../context/SequenceContext';
 import { StructureViewer } from './StructureViewer';
+import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../utils/safetyWindowUtils';
 import './AlignmentStructuresViewer.css';
 
 export const AlignmentStructuresViewer: React.FC = () => {
@@ -12,6 +13,31 @@ export const AlignmentStructuresViewer: React.FC = () => {
   const hasStructureA = structureA?.uniprotId;
   const hasStructureB = structureB?.uniprotId;
   const shouldShowStructures = hasAlignments && (hasStructureA || hasStructureB);
+
+  // Extract safety windows from alignments
+  console.log('Extracting safety windows from alignments:', alignments);
+  const safetyWindowMapping = hasAlignments ? extractSafetyWindowsFromAlignments(alignments) : { sequenceA: [], sequenceB: [] };
+  console.log('Safety windows mapping:', safetyWindowMapping);
+  const safetyWindowsA = mergeSafetyWindows(safetyWindowMapping.sequenceA);
+  const safetyWindowsB = mergeSafetyWindows(safetyWindowMapping.sequenceB);
+
+  // Debug logging
+  console.log('AlignmentStructuresViewer debug:', {
+    hasAlignments,
+    alignmentsCount: alignments.length,
+    hasStructureA,
+    structureAUniprotId: structureA?.uniprotId,
+    hasStructureB,
+    structureBUniprotId: structureB?.uniprotId,
+    shouldShowStructures,
+    sequenceA: sequences.sequenceA ? `${sequences.sequenceA.length} chars` : 'empty',
+    sequenceB: sequences.sequenceB ? `${sequences.sequenceB.length} chars` : 'empty',
+    descriptorA: sequences.descriptorA,
+    descriptorB: sequences.descriptorB,
+    safetyWindowsA: safetyWindowsA.length,
+    safetyWindowsB: safetyWindowsB.length
+  });
+
 
   if (!shouldShowStructures) {
     return null;
@@ -35,6 +61,11 @@ export const AlignmentStructuresViewer: React.FC = () => {
                 {structureA.pdbId && (
                   <span className="pdb-id">PDB: {structureA.pdbId}</span>
                 )}
+                {safetyWindowsA.length > 0 && (
+                  <span className="safety-windows-info" style={{ color: '#28a745', fontSize: '12px' }}>
+                    🔒 {safetyWindowsA.length} safety window{safetyWindowsA.length > 1 ? 's' : ''} highlighted
+                  </span>
+                )}
               </div>
             </div>
             <StructureViewer
@@ -46,6 +77,8 @@ export const AlignmentStructuresViewer: React.FC = () => {
               height={500}
               showLoading={true}
               showSequence={true}
+              safetyWindows={safetyWindowsA}
+              enableSafetyWindowHighlighting={safetyWindowsA.length > 0}
               onStructureLoaded={() => console.log(`Structure A loaded for ${structureA.uniprotId}`)}
               onError={(error) => console.error(`Structure A error:`, error)}
               onPdbStructuresFound={(pdbIds) => console.log(`Found PDB structures for sequence A:`, pdbIds)}
@@ -63,6 +96,11 @@ export const AlignmentStructuresViewer: React.FC = () => {
                 {structureB.pdbId && (
                   <span className="pdb-id">PDB: {structureB.pdbId}</span>
                 )}
+                {safetyWindowsB.length > 0 && (
+                  <span className="safety-windows-info" style={{ color: '#28a745', fontSize: '12px' }}>
+                    🔒 {safetyWindowsB.length} safety window{safetyWindowsB.length > 1 ? 's' : ''} highlighted
+                  </span>
+                )}
               </div>
             </div>
             <StructureViewer
@@ -74,6 +112,8 @@ export const AlignmentStructuresViewer: React.FC = () => {
               height={500}
               showLoading={true}
               showSequence={true}
+              safetyWindows={safetyWindowsB}
+              enableSafetyWindowHighlighting={safetyWindowsB.length > 0}
               onStructureLoaded={() => console.log(`Structure B loaded for ${structureB.uniprotId}`)}
               onError={(error) => console.error(`Structure B error:`, error)}
               onPdbStructuresFound={(pdbIds) => console.log(`Found PDB structures for sequence B:`, pdbIds)}

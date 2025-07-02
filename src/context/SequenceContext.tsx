@@ -193,9 +193,10 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'SET_STRUCTURE_A',
         payload: { uniprotId: uniprotIdA }
       });
-    } else if (!uniprotIdA && state.structureA?.uniprotId) {
-      // Clear structure A if no UniProt ID found
-      console.log('Clearing structure A');
+    } else if (!uniprotIdA && state.structureA?.uniprotId && !state.sequences.sequenceA) {
+      // Only clear structure A if no UniProt ID found AND no sequence loaded
+      // This prevents clearing explicitly set structures from UniProt search
+      console.log('Clearing structure A (no sequence loaded)');
       dispatch({ type: 'CLEAR_STRUCTURE_A' });
     }
 
@@ -206,12 +207,13 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'SET_STRUCTURE_B',
         payload: { uniprotId: uniprotIdB }
       });
-    } else if (!uniprotIdB && state.structureB?.uniprotId) {
-      // Clear structure B if no UniProt ID found
-      console.log('Clearing structure B');
+    } else if (!uniprotIdB && state.structureB?.uniprotId && !state.sequences.sequenceB) {
+      // Only clear structure B if no UniProt ID found AND no sequence loaded
+      // This prevents clearing explicitly set structures from UniProt search
+      console.log('Clearing structure B (no sequence loaded)');
       dispatch({ type: 'CLEAR_STRUCTURE_B' });
     }
-  }, [state.sequences.descriptorA, state.sequences.descriptorB, state.structureA?.uniprotId, state.structureB?.uniprotId]);
+  }, [state.sequences.descriptorA, state.sequences.descriptorB, state.structureA?.uniprotId, state.structureB?.uniprotId, state.sequences.sequenceA, state.sequences.sequenceB]);
 
   // Process alignment result function from FileUploader.tsx
   const processAlignmentResult = (result: any): Alignment[] => {
@@ -259,6 +261,16 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
   const runAlignment = async () => {
     const { sequences, params } = state;
     
+    console.log('Starting alignment with state:', {
+      sequenceA: sequences.sequenceA ? `${sequences.sequenceA.length} chars` : 'empty',
+      sequenceB: sequences.sequenceB ? `${sequences.sequenceB.length} chars` : 'empty',
+      descriptorA: sequences.descriptorA,
+      descriptorB: sequences.descriptorB,
+      structureA: state.structureA,
+      structureB: state.structureB,
+      params: params
+    });
+    
     // Validation
     if (!sequences.sequenceA || !sequences.sequenceB) {
       dispatch({ 
@@ -285,6 +297,16 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       
       // Process the results using the function from FileUploader
       const processedAlignments = processAlignmentResult(result);
+      
+      console.log('Alignment generated successfully:', {
+        alignmentsCount: processedAlignments.length,
+        processedAlignments: processedAlignments.map(a => ({ 
+          color: a.color, 
+          edgesCount: a.edges.length,
+          hasStartDot: !!a.startDot,
+          hasEndDot: !!a.endDot
+        }))
+      });
       
       dispatch({ 
         type: 'ALIGNMENT_SUCCESS', 

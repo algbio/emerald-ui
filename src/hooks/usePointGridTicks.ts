@@ -18,7 +18,6 @@ export function usePointGridTicks({
   member,
   x,
   y,
-  transform // Keep this parameter but we won't use it
 }: UsePointGridTicksProps) {
   return useMemo(() => {
     const newXTicks = [];

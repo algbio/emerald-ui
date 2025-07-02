@@ -82,8 +82,8 @@ function AppContent() {
         <div className="results-section">
           <h2>Alignment Results</h2>
           <div className="sequence-info">
-            <p><strong>Representative (y-axis): </strong> {representativeDescriptor}</p>
-            <p><strong>Member (x-axis):</strong> {memberDescriptor}</p>
+            <p><strong>Representative (x-axis): </strong> {representativeDescriptor}</p>
+            <p><strong>Member (y-axis):</strong> {memberDescriptor}</p>
           </div>
           <PointGridPlot 
             key={JSON.stringify(localAlignments)}
