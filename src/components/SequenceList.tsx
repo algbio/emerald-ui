@@ -53,13 +53,13 @@ export const SequenceList: React.FC<SequenceListProps> = ({
         <thead>
           <tr>
             {showAccession && <th>Accession</th>}
-            <th>ID</th>
             {showProteinName && <th>Protein Name</th>}
             {showOrganismName && <th>Organism</th>}
             <th>Length</th>
             <th>Preview</th>
             {(onSelectA || onSelectB) && <th>Actions</th>}
             <th>3D Structure</th>
+            <th>UniProt Entry</th>
           </tr>
         </thead>
         <tbody>
@@ -68,7 +68,6 @@ export const SequenceList: React.FC<SequenceListProps> = ({
             return (
             <tr key={index}>
               {showAccession && <td>{effectiveUniprotId || '-'}</td>}
-              <td title={seq.description}>{seq.id}</td>
               {showProteinName && <td>{seq.proteinName || '-'}</td>}
               {showOrganismName && <td>{seq.organismName || '-'}</td>}
               <td>{seq.sequence.length}</td>
@@ -119,6 +118,28 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                   {effectiveUniprotId ? '🧬 View Structure' : 
                    (seq.pdbIds && seq.pdbIds.length > 0) ? '🧬 View PDB' : 
                    '🚫'}
+                </button>
+              </td>
+              <td>
+                <button
+                  onClick={() => {
+                    if (effectiveUniprotId) {
+                      window.open(`https://www.uniprot.org/uniprotkb/${effectiveUniprotId}`, '_blank');
+                    }
+                  }}
+                  disabled={!effectiveUniprotId}
+                  style={{
+                    padding: '4px 8px',
+                    border: '1px solid #28a745',
+                    borderRadius: '4px',
+                    background: effectiveUniprotId ? 'white' : '#f8f9fa',
+                    color: effectiveUniprotId ? '#28a745' : '#6c757d',
+                    cursor: effectiveUniprotId ? 'pointer' : 'not-allowed',
+                    fontSize: '12px'
+                  }}
+                  title={effectiveUniprotId ? `Open UniProt page for ${effectiveUniprotId}` : 'No UniProt ID available'}
+                >
+                  🔗 UniProt
                 </button>
               </td>
             </tr>

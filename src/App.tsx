@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import PointGridPlot, { type Alignment } from './components/PointGridPlot'
 import EmeraldInput from './components/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
 import SequenceInputPanel from './components/SequenceInputPanel'
 import AlignmentStructuresViewer from './components/AlignmentStructuresViewer'
+import AlignmentGraphWithInfoPanel from './components/AlignmentGraphWithInfoPanel'
+import type { Alignment } from './components/PointGridPlot'
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {
@@ -85,15 +86,15 @@ function AppContent() {
             <p><strong>Representative (x-axis): </strong> {representativeDescriptor}</p>
             <p><strong>Member (y-axis):</strong> {memberDescriptor}</p>
           </div>
-          <PointGridPlot 
+          <AlignmentGraphWithInfoPanel
             key={JSON.stringify(localAlignments)}
             representative={representative}
             member={member}
+            representativeDescriptor={representativeDescriptor}
+            memberDescriptor={memberDescriptor}
             alignments={localAlignments}
             width={900}
             height={900}
-            xDomain={[0, representative.length]}
-            yDomain={[0, member.length]}
           />
         </div>
       )}

@@ -33,6 +33,11 @@ interface PointGridProps {
   showMinimap?: boolean;  // Add this new prop
   minimapSize?: number;    // Add this new prop
   minimapPadding?: number; // Add this new prop
+  // Safety window interaction props
+  selectedSafetyWindowId?: string | null;
+  hoveredSafetyWindowId?: string | null;
+  onSafetyWindowHover?: (windowId: string | null, alignment?: Alignment | null) => void;
+  onSafetyWindowSelect?: (windowId: string | null, alignment?: Alignment | null) => void;
 }
 
 function PointGridPlot({
@@ -49,7 +54,11 @@ function PointGridPlot({
   yDomain,
   showMinimap = true,       // Default to showing minimap
   minimapSize = 250,         // Default size of minimap
-  minimapPadding = 100        // Padding around minimap
+  minimapPadding = 100,      // Padding around minimap
+  selectedSafetyWindowId,
+  hoveredSafetyWindowId,
+  onSafetyWindowHover,
+  onSafetyWindowSelect
 }: PointGridProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,6 +91,23 @@ function PointGridPlot({
     alignment.startDot && alignment.endDot
   );
 
+  // Get the currently selected or hovered safety window
+  const getSelectedWindow = () => {
+    if (selectedSafetyWindowId) {
+      const index = parseInt(selectedSafetyWindowId.split('-')[2]);
+      return safetyWindows[index] || null;
+    }
+    return null;
+  };
+
+  const getHoveredWindow = () => {
+    if (hoveredSafetyWindowId) {
+      const index = parseInt(hoveredSafetyWindowId.split('-')[2]);
+      return safetyWindows[index] || null;
+    }
+    return null;
+  };
+
   const isInSafetyWindow = (position: number, axis: 'x' | 'y') => {
     return safetyWindows.some(window => {
       if (!window.startDot || !window.endDot) return false;
@@ -89,6 +115,36 @@ function PointGridPlot({
       const end = axis === 'x' ? window.endDot.x : window.endDot.y;
       return position >= start && position < end;
     });
+  };
+
+  // Handle safety window clicking
+  const handleSafetyWindowClick = (clickX: number, clickY: number) => {
+    // Convert click coordinates to grid coordinates
+    const gridX = Math.floor(x.invert(clickX));
+    const gridY = Math.floor(y.invert(clickY));
+    
+    // Find which safety window contains this point
+    const clickedWindow = safetyWindows.find((window, index) => {
+      if (!window.startDot || !window.endDot) return false;
+      
+      const xInWindow = gridX >= window.startDot.x && gridX < window.endDot.x;
+      const yInWindow = gridY >= window.startDot.y && gridY < window.endDot.y;
+      
+      if (xInWindow && yInWindow) {
+        // Store the index for ID generation
+        (window as any)._index = index;
+        return true;
+      }
+      return false;
+    });
+
+    if (clickedWindow) {
+      const windowId = `safety-window-${(clickedWindow as any)._index}`;
+      const isCurrentlySelected = selectedSafetyWindowId === windowId;
+      onSafetyWindowSelect?.(isCurrentlySelected ? null : windowId, isCurrentlySelected ? null : clickedWindow);
+    } else {
+      onSafetyWindowSelect?.(null, null);
+    }
   };
 
   // Draw minimap using the utility function
@@ -118,6 +174,22 @@ function PointGridPlot({
     // Draw safety window highlight if applicable
     if (highlightedWindow) {
       drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, highlightedWindow);
+    }
+
+    // Draw external selection highlights
+    const selectedWindow = getSelectedWindow();
+    const hoveredWindow = getHoveredWindow();
+    
+    if (selectedWindow) {
+      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, selectedWindow);
+    }
+    
+    if (hoveredWindow && hoveredWindow !== selectedWindow) {
+      // Draw a lighter highlight for hovered windows
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, hoveredWindow);
+      ctx.restore();
     }
     
     // Draw axes
@@ -211,6 +283,7 @@ function PointGridPlot({
     if (mouseX < marginLeft || mouseX > width - marginRight || 
         mouseY < marginTop || mouseY > height - marginBottom) {
       setHoveredCell(null);
+      onSafetyWindowHover?.(null);
       return;
     }
 
@@ -221,8 +294,30 @@ function PointGridPlot({
     if (gridX >= 0 && gridX < representative.length && 
         gridY >= 0 && gridY < member.length) {
       setHoveredCell({x: gridX, y: gridY});
+      
+      // Check if mouse is over a safety window
+      const hoveredWindow = safetyWindows.find((window, index) => {
+        if (!window.startDot || !window.endDot) return false;
+        
+        const xInWindow = gridX >= window.startDot.x && gridX < window.endDot.x;
+        const yInWindow = gridY >= window.startDot.y && gridY < window.endDot.y;
+        
+        if (xInWindow && yInWindow) {
+          (window as any)._index = index;
+          return true;
+        }
+        return false;
+      });
+
+      if (hoveredWindow) {
+        const windowId = `safety-window-${(hoveredWindow as any)._index}`;
+        onSafetyWindowHover?.(windowId);
+      } else {
+        onSafetyWindowHover?.(null);
+      }
     } else {
       setHoveredCell(null);
+      onSafetyWindowHover?.(null);
     }
   };
   
@@ -238,6 +333,20 @@ function PointGridPlot({
     if (isInMinimap) {
       setIsMinimapDragging(true);
       handleMinimapInteraction(event, true);
+    } else {
+      // Handle safety window clicking in the main plot area
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      // Only handle clicks within the plot area
+      if (mouseX >= marginLeft && mouseX <= width - marginRight && 
+          mouseY >= marginTop && mouseY <= height - marginBottom) {
+        handleSafetyWindowClick(mouseX, mouseY);
+      }
     }
   };
   
@@ -249,7 +358,7 @@ function PointGridPlot({
   useEffect(() => {
     const timeoutId = setTimeout(drawCanvas, 16);
     return () => clearTimeout(timeoutId);
-  }, [transform, alignments, hoveredCell, fontSize, showMinimap]);
+  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -275,7 +384,10 @@ function PointGridPlot({
       height={height}
       style={{ cursor: isMinimapDragging ? 'move' : 'grab' }}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => setHoveredCell(null)}
+      onMouseLeave={() => {
+        setHoveredCell(null);
+        onSafetyWindowHover?.(null);
+      }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     />

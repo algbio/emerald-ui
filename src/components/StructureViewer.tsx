@@ -547,7 +547,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     <div className="structure-viewer" style={{ width, height, position: 'relative', display: 'flex', flexDirection: 'column' }}>
       {/* Main viewer container */}
       <div style={{ flex: 1, position: 'relative' }}>
-        {/* Control buttons and PDB selector */}
        
         {/* Structure info */}
         {(uniprotId || pdbId || selectedPdbId) && (
@@ -658,6 +657,123 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           }}
         />
       </div>
+      
+      {/* External Database Links Footer */}
+      {(uniprotId || pdbId || selectedPdbId) && (
+        <div style={{
+          background: '#f8f9fa',
+          borderTop: '1px solid #e9ecef',
+          padding: '12px 16px',
+          borderRadius: '0 0 8px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ 
+            fontSize: '13px', 
+            fontWeight: 'bold', 
+            color: '#495057',
+            marginRight: '8px'
+          }}>
+            External Databases:
+          </div>
+          
+          {uniprotId && (
+            <button
+              onClick={() => window.open(`https://www.uniprot.org/uniprotkb/${uniprotId}`, '_blank')}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #28a745',
+                borderRadius: '4px',
+                background: 'white',
+                color: '#28a745',
+                cursor: 'pointer',
+                fontSize: '12px',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: '500'
+              }}
+              title={`View ${uniprotId} in UniProt`}
+            >
+              🔗 UniProt
+            </button>
+          )}
+          
+          {uniprotId && (
+            <button
+              onClick={() => window.open(`https://alphafold.ebi.ac.uk/entry/${uniprotId}`, '_blank')}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #0074D9',
+                borderRadius: '4px',
+                background: 'white',
+                color: '#0074D9',
+                cursor: 'pointer',
+                fontSize: '12px',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: '500'
+              }}
+              title={`View ${uniprotId} in AlphaFold Database`}
+            >
+              🧬 AlphaFold
+            </button>
+          )}
+          
+          {uniprotId && (
+            <button
+              onClick={() => window.open(`https://swissmodel.expasy.org/repository/uniprot/${uniprotId}`, '_blank')}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #FF851B',
+                borderRadius: '4px',
+                background: 'white',
+                color: '#FF851B',
+                cursor: 'pointer',
+                fontSize: '12px',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: '500'
+              }}
+              title={`View ${uniprotId} models in SWISS-MODEL Repository`}
+            >
+              📐 SWISS-MODEL
+            </button>
+          )}
+          
+          {(uniprotId) && (
+            <button
+              onClick={() => {
+                window.open(`https://cluster.foldseek.com/cluster/${uniprotId}`, '_blank');
+              }}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #B10DC9',
+                borderRadius: '4px',
+                background: 'white',
+                color: '#B10DC9',
+                cursor: 'pointer',
+                fontSize: '12px',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: '500'
+              }}
+              title={`Search ${selectedPdbId || pdbId} in Foldseek cluster database`}
+            >
+              🔍 Foldseek
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
