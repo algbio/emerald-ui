@@ -247,20 +247,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         }
       );
 
-      // Add ball-and-stick representation for hetero atoms (ligands, ions, etc.)
-      const heteroSelection = false //await pluginRef.current.builders.structure.tryCreateComponentFromSelection( structure, 'hetero');
-
-      if (heteroSelection) {
-        await pluginRef.current.builders.structure.representation.addRepresentation(
-          heteroSelection,
-          {
-            type: 'ball-and-stick',
-            color: 'element-symbol',
-            size: 'uniform',
-          }
-        );
-      }
-
       // Focus on the structure
       await PluginCommands.Camera.Reset(pluginRef.current, {});
 

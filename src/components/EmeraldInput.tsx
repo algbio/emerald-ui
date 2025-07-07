@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSequence } from '../context/SequenceContext';
+import StructureFileUploader from './StructureFileUploader';
+// import type { StructureData } from '../utils/pdbParser';
 import './EmeraldInput.css';
 
 interface EmeraldInputProps {
@@ -13,8 +15,8 @@ interface EmeraldInputProps {
 
 const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   // Get state and dispatch from context
-  const { state, dispatch, runAlignment } = useSequence();
-  const { sequences, params, alignmentStatus } = state;
+  const { state, dispatch, runAlignment, fetchSequenceA, fetchSequenceB, loadStructureFileA, loadStructureFileB } = useSequence();
+  const { sequences, params, alignmentStatus, fetchStatusA, fetchErrorA, fetchStatusB, fetchErrorB } = state;
   
   // Local validation state
   const [isValid, setIsValid] = useState(false);
@@ -40,6 +42,14 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         params
       );
     }
+  };
+
+  const handleFetchSequenceA = async () => {
+    await fetchSequenceA(sequences.accessionA);
+  };
+
+  const handleFetchSequenceB = async () => {
+    await fetchSequenceB(sequences.accessionB);
   };
 
   return (
@@ -79,6 +89,38 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
             />
             {!sequences.sequenceA.trim() && <div className="error-text">Sequence cannot be empty</div>}
           </div>
+          <div className="input-group">
+            <label htmlFor="accessionA">UniProt Accession</label>
+            <div className="accession-input-group">
+              <input
+                id="accessionA"
+                type="text"
+                value={sequences.accessionA}
+                onChange={(e) => dispatch({ 
+                  type: 'UPDATE_ACCESSION_A', 
+                  payload: e.target.value 
+                })}
+                placeholder="e.g., P04637"
+                className="emerald-input"
+              />
+              <button
+                type="button"
+                onClick={handleFetchSequenceA}
+                disabled={!sequences.accessionA.trim() || fetchStatusA === 'loading'}
+                className="fetch-button"
+              >
+                {fetchStatusA === 'loading' ? 'Fetching...' : 'Fetch'}
+              </button>
+            </div>
+            {fetchErrorA && <div className="error-text">{fetchErrorA}</div>}
+          </div>
+          <div className="input-group">
+            <StructureFileUploader
+              onStructureSelect={loadStructureFileA}
+              label="PDB/CIF File"
+              disabled={fetchStatusA === 'loading'}
+            />
+          </div>
         </div>
         
         {/* Sequence B */}
@@ -112,6 +154,38 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
               className={`emerald-textarea ${!sequences.sequenceB.trim() ? 'error' : ''}`}
             />
             {!sequences.sequenceB.trim() && <div className="error-text">Sequence cannot be empty</div>}
+          </div>
+          <div className="input-group">
+            <label htmlFor="accessionB">UniProt Accession</label>
+            <div className="accession-input-group">
+              <input
+                id="accessionB"
+                type="text"
+                value={sequences.accessionB}
+                onChange={(e) => dispatch({
+                  type: 'UPDATE_ACCESSION_B',
+                  payload: e.target.value
+                })}
+                placeholder="e.g., P02769"
+                className="emerald-input"
+              />
+              <button
+                type="button"
+                onClick={handleFetchSequenceB}
+                disabled={!sequences.accessionB.trim() || fetchStatusB === 'loading'}
+                className="fetch-button"
+              >
+                {fetchStatusB === 'loading' ? 'Fetching...' : 'Fetch'}
+              </button>
+            </div>
+            {fetchErrorB && <div className="error-text">{fetchErrorB}</div>}
+          </div>
+          <div className="input-group">
+            <StructureFileUploader
+              onStructureSelect={loadStructureFileB}
+              label="PDB/CIF File"
+              disabled={fetchStatusB === 'loading'}
+            />
           </div>
         </div>
         

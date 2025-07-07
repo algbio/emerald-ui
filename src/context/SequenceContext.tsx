@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Alignment } from '../components/PointGridPlot';
+import type { StructureData } from '../utils/pdbParser';
 
 // Define the types for sequence data
 export interface SequenceData {
@@ -8,6 +9,8 @@ export interface SequenceData {
   sequenceB: string;
   descriptorA: string;
   descriptorB: string;
+  accessionA: string;
+  accessionB: string;
 }
 
 // Parameters for Emerald algorithm
@@ -25,13 +28,23 @@ interface SequenceState {
   alignments: Alignment[];
   alignmentStatus: 'idle' | 'loading' | 'success' | 'error';
   alignmentError: string | null;
+  fetchStatusA: 'idle' | 'loading' | 'success' | 'error';
+  fetchErrorA: string | null;
+  fetchStatusB: 'idle' | 'loading' | 'success' | 'error';
+  fetchErrorB: string | null;
   structureA: {
     uniprotId: string | null;
     pdbId: string | null;
+    chainId?: string | null;
+    fileContent?: string | null;
+    fileType?: 'pdb' | 'cif' | null;
   } | null;
   structureB: {
     uniprotId: string | null;
     pdbId: string | null;
+    chainId?: string | null;
+    fileContent?: string | null;
+    fileType?: 'pdb' | 'cif' | null;
   } | null;
 }
 
@@ -41,7 +54,9 @@ const initialState: SequenceState = {
     sequenceA: '',
     sequenceB: '',
     descriptorA: '',
-    descriptorB: ''
+    descriptorB: '',
+    accessionA: '',
+    accessionB: ''
   },
   params: {
     alpha: 0.75,
@@ -52,6 +67,10 @@ const initialState: SequenceState = {
   alignments: [],
   alignmentStatus: 'idle',
   alignmentError: null,
+  fetchStatusA: 'idle',
+  fetchErrorA: null,
+  fetchStatusB: 'idle',
+  fetchErrorB: null,
   structureA: null,
   structureB: null,
 };
@@ -62,6 +81,18 @@ type SequenceAction =
   | { type: 'UPDATE_SEQUENCE_B'; payload: string }
   | { type: 'UPDATE_DESCRIPTOR_A'; payload: string }
   | { type: 'UPDATE_DESCRIPTOR_B'; payload: string }
+  | { type: 'UPDATE_ACCESSION_A'; payload: string }
+  | { type: 'UPDATE_ACCESSION_B'; payload: string }
+  | { type: 'CLEAR_FETCH_ERROR_A' }
+  | { type: 'CLEAR_FETCH_ERROR_B' }
+  | { type: 'LOAD_STRUCTURE_FILE_A'; payload: StructureData }
+  | { type: 'LOAD_STRUCTURE_FILE_B'; payload: StructureData }
+  | { type: 'FETCH_SEQUENCE_A_START' }
+  | { type: 'FETCH_SEQUENCE_A_SUCCESS'; payload: { sequence: string; descriptor: string } }
+  | { type: 'FETCH_SEQUENCE_A_ERROR'; payload: string }
+  | { type: 'FETCH_SEQUENCE_B_START' }
+  | { type: 'FETCH_SEQUENCE_B_SUCCESS'; payload: { sequence: string; descriptor: string } }
+  | { type: 'FETCH_SEQUENCE_B_ERROR'; payload: string }
   | { type: 'UPDATE_PARAMS'; payload: EmeraldParams }
   | { type: 'LOAD_SEQUENCES'; payload: Partial<SequenceData> }
   | { type: 'RESET_SEQUENCES' }
@@ -95,6 +126,108 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
       return {
         ...state,
         sequences: { ...state.sequences, descriptorB: action.payload }
+      };
+    case 'UPDATE_ACCESSION_A':
+      return {
+        ...state,
+        sequences: { ...state.sequences, accessionA: action.payload },
+        fetchErrorA: null, // Clear error when user types
+        fetchStatusA: 'idle'
+      };
+    case 'UPDATE_ACCESSION_B':
+      return {
+        ...state,
+        sequences: { ...state.sequences, accessionB: action.payload },
+        fetchErrorB: null, // Clear error when user types
+        fetchStatusB: 'idle'
+      };
+    case 'CLEAR_FETCH_ERROR_A':
+      return {
+        ...state,
+        fetchErrorA: null,
+        fetchStatusA: 'idle'
+      };
+    case 'CLEAR_FETCH_ERROR_B':
+      return {
+        ...state,
+        fetchErrorB: null,
+        fetchStatusB: 'idle'
+      };
+    case 'LOAD_STRUCTURE_FILE_A':
+      return {
+        ...state,
+        sequences: {
+          ...state.sequences,
+          sequenceA: action.payload.sequence,
+          descriptorA: action.payload.descriptor
+        },
+        structureA: {
+          uniprotId: null,
+          pdbId: action.payload.pdbId || null,
+          chainId: action.payload.chainId,
+          fileContent: action.payload.fileContent,
+          fileType: action.payload.fileType
+        }
+      };
+    case 'LOAD_STRUCTURE_FILE_B':
+      return {
+        ...state,
+        sequences: {
+          ...state.sequences,
+          sequenceB: action.payload.sequence,
+          descriptorB: action.payload.descriptor
+        },
+        structureB: {
+          uniprotId: null,
+          pdbId: action.payload.pdbId || null,
+          chainId: action.payload.chainId,
+          fileContent: action.payload.fileContent,
+          fileType: action.payload.fileType
+        }
+      };
+    case 'FETCH_SEQUENCE_A_START':
+      return {
+        ...state,
+        fetchStatusA: 'loading',
+        fetchErrorA: null
+      };
+    case 'FETCH_SEQUENCE_A_SUCCESS':
+      return {
+        ...state,
+        sequences: {
+          ...state.sequences,
+          sequenceA: action.payload.sequence,
+          descriptorA: action.payload.descriptor
+        },
+        fetchStatusA: 'success'
+      };
+    case 'FETCH_SEQUENCE_A_ERROR':
+      return {
+        ...state,
+        fetchStatusA: 'error',
+        fetchErrorA: action.payload
+      };
+    case 'FETCH_SEQUENCE_B_START':
+      return {
+        ...state,
+        fetchStatusB: 'loading',
+        fetchErrorB: null
+      };
+    case 'FETCH_SEQUENCE_B_SUCCESS':
+      return {
+        ...state,
+        sequences: {
+          ...state.sequences,
+          sequenceB: action.payload.sequence,
+          descriptorB: action.payload.descriptor
+        },
+        fetchStatusB: 'success'
+      };
+    case 'FETCH_SEQUENCE_B_ERROR':
+      return {
+        ...state,
+        fetchStatusB: 'error',
+        fetchErrorB: action.payload
       };
     case 'UPDATE_PARAMS':
       return {
@@ -159,6 +292,10 @@ interface SequenceContextType {
   state: SequenceState;
   dispatch: React.Dispatch<SequenceAction>;
   runAlignment: () => Promise<void>;
+  fetchSequenceA: (accession: string) => Promise<void>;
+  fetchSequenceB: (accession: string) => Promise<void>;
+  loadStructureFileA: (structureData: StructureData) => void;
+  loadStructureFileB: (structureData: StructureData) => void;
 }
 
 const SequenceContext = createContext<SequenceContextType | undefined>(undefined);
@@ -170,6 +307,7 @@ interface SequenceProviderProps {
 
 import { emeraldService } from '../utils/EmeraldService';
 import { extractUniProtId } from '../utils/uniprotUtils';
+import { fetchUniProtSequence } from '../utils/uniprotFetcher';
 
 export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(sequenceReducer, initialState);
@@ -322,8 +460,66 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
     }
   };
 
+  // Function to fetch sequence A from UniProt
+  const fetchSequenceA = async (accession: string) => {
+    try {
+      dispatch({ type: 'FETCH_SEQUENCE_A_START' });
+      const result = await fetchUniProtSequence(accession);
+      dispatch({ 
+        type: 'FETCH_SEQUENCE_A_SUCCESS', 
+        payload: result 
+      });
+    } catch (error) {
+      dispatch({ 
+        type: 'FETCH_SEQUENCE_A_ERROR', 
+        payload: error instanceof Error ? error.message : 'Failed to fetch sequence' 
+      });
+    }
+  };
+
+  // Function to fetch sequence B from UniProt
+  const fetchSequenceB = async (accession: string) => {
+    try {
+      dispatch({ type: 'FETCH_SEQUENCE_B_START' });
+      const result = await fetchUniProtSequence(accession);
+      dispatch({ 
+        type: 'FETCH_SEQUENCE_B_SUCCESS', 
+        payload: result 
+      });
+    } catch (error) {
+      dispatch({ 
+        type: 'FETCH_SEQUENCE_B_ERROR', 
+        payload: error instanceof Error ? error.message : 'Failed to fetch sequence' 
+      });
+    }
+  };
+
+  // Function to load structure file for sequence A
+  const loadStructureFileA = (structureData: StructureData) => {
+    dispatch({
+      type: 'LOAD_STRUCTURE_FILE_A',
+      payload: structureData
+    });
+  };
+
+  // Function to load structure file for sequence B
+  const loadStructureFileB = (structureData: StructureData) => {
+    dispatch({
+      type: 'LOAD_STRUCTURE_FILE_B',
+      payload: structureData
+    });
+  };
+
   return (
-    <SequenceContext.Provider value={{ state, dispatch, runAlignment }}>
+    <SequenceContext.Provider value={{ 
+      state, 
+      dispatch, 
+      runAlignment, 
+      fetchSequenceA, 
+      fetchSequenceB,
+      loadStructureFileA,
+      loadStructureFileB
+    }}>
       {children}
     </SequenceContext.Provider>
   );
