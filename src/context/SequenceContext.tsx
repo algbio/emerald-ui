@@ -2,6 +2,25 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Alignment } from '../components/PointGridPlot';
 import type { StructureData } from '../utils/pdbParser';
+import { emeraldService } from '../utils/EmeraldService';
+import { extractUniProtId } from '../utils/uniprotUtils';
+import { fetchUniProtSequence } from '../utils/uniprotFetcher';
+import { getShareableDataFromUrl } from '../utils/urlSharing';
+
+// Helper function to validate sequence for asterisks
+const validateSequenceAsterisks = (sequence: string) => {
+  const asteriskPositions = [];
+  for (let i = 0; i < sequence.length; i++) {
+    if (sequence[i] === '*') {
+      asteriskPositions.push(i);
+    }
+  }
+  
+  const hasEndAsterisk = asteriskPositions.length > 0 && asteriskPositions.includes(sequence.length - 1);
+  const hasMiddleAsterisk = asteriskPositions.some(pos => pos !== sequence.length - 1);
+  
+  return { hasMiddleAsterisk, hasEndAsterisk };
+};
 
 // Define the types for sequence data
 export interface SequenceData {
@@ -32,6 +51,16 @@ interface SequenceState {
   fetchErrorA: string | null;
   fetchStatusB: 'idle' | 'loading' | 'success' | 'error';
   fetchErrorB: string | null;
+  validation: {
+    sequenceA: {
+      hasMiddleAsterisk: boolean;
+      hasEndAsterisk: boolean;
+    };
+    sequenceB: {
+      hasMiddleAsterisk: boolean;
+      hasEndAsterisk: boolean;
+    };
+  };
   structureA: {
     uniprotId: string | null;
     pdbId: string | null;
@@ -71,6 +100,16 @@ const initialState: SequenceState = {
   fetchErrorA: null,
   fetchStatusB: 'idle',
   fetchErrorB: null,
+  validation: {
+    sequenceA: {
+      hasMiddleAsterisk: false,
+      hasEndAsterisk: false
+    },
+    sequenceB: {
+      hasMiddleAsterisk: false,
+      hasEndAsterisk: false
+    }
+  },
   structureA: null,
   structureB: null,
 };
@@ -79,6 +118,8 @@ const initialState: SequenceState = {
 type SequenceAction =
   | { type: 'UPDATE_SEQUENCE_A'; payload: string }
   | { type: 'UPDATE_SEQUENCE_B'; payload: string }
+  | { type: 'VALIDATE_SEQUENCE_A'; payload: { hasMiddleAsterisk: boolean; hasEndAsterisk: boolean } }
+  | { type: 'VALIDATE_SEQUENCE_B'; payload: { hasMiddleAsterisk: boolean; hasEndAsterisk: boolean } }
   | { type: 'UPDATE_DESCRIPTOR_A'; payload: string }
   | { type: 'UPDATE_DESCRIPTOR_B'; payload: string }
   | { type: 'UPDATE_ACCESSION_A'; payload: string }
@@ -93,7 +134,7 @@ type SequenceAction =
   | { type: 'FETCH_SEQUENCE_B_START' }
   | { type: 'FETCH_SEQUENCE_B_SUCCESS'; payload: { sequence: string; descriptor: string } }
   | { type: 'FETCH_SEQUENCE_B_ERROR'; payload: string }
-  | { type: 'UPDATE_PARAMS'; payload: EmeraldParams }
+  | { type: 'UPDATE_PARAMS'; payload: Partial<EmeraldParams> }
   | { type: 'LOAD_SEQUENCES'; payload: Partial<SequenceData> }
   | { type: 'RESET_SEQUENCES' }
   | { type: 'ALIGNMENT_START' }
@@ -102,20 +143,48 @@ type SequenceAction =
   | { type: 'SET_STRUCTURE_A', payload: { uniprotId: string | null; pdbId?: string | null } }
   | { type: 'SET_STRUCTURE_B', payload: { uniprotId: string | null; pdbId?: string | null } }
   | { type: 'CLEAR_STRUCTURE_A' }
-  | { type: 'CLEAR_STRUCTURE_B' };
+  | { type: 'CLEAR_STRUCTURE_B' }
+  | { type: 'UPDATE_URL_SHAREABLE_DATA', payload: { alpha: number, delta: number, gapCost: number, startGap: number } }
+  | { type: 'LOAD_URL_SHAREABLE_DATA', payload: EmeraldParams };
 
 // Create the reducer
 const sequenceReducer = (state: SequenceState, action: SequenceAction): SequenceState => {
   switch (action.type) {
     case 'UPDATE_SEQUENCE_A':
+      const validationA = validateSequenceAsterisks(action.payload);
       return {
         ...state,
-        sequences: { ...state.sequences, sequenceA: action.payload }
+        sequences: { ...state.sequences, sequenceA: action.payload },
+        validation: {
+          ...state.validation,
+          sequenceA: validationA
+        }
       };
     case 'UPDATE_SEQUENCE_B':
+      const validationB = validateSequenceAsterisks(action.payload);
       return {
         ...state,
-        sequences: { ...state.sequences, sequenceB: action.payload }
+        sequences: { ...state.sequences, sequenceB: action.payload },
+        validation: {
+          ...state.validation,
+          sequenceB: validationB
+        }
+      };
+    case 'VALIDATE_SEQUENCE_A':
+      return {
+        ...state,
+        validation: {
+          ...state.validation,
+          sequenceA: action.payload
+        }
+      };
+    case 'VALIDATE_SEQUENCE_B':
+      return {
+        ...state,
+        validation: {
+          ...state.validation,
+          sequenceB: action.payload
+        }
       };
     case 'UPDATE_DESCRIPTOR_A':
       return {
@@ -154,12 +223,17 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         fetchStatusB: 'idle'
       };
     case 'LOAD_STRUCTURE_FILE_A':
+      const structureValidationA = validateSequenceAsterisks(action.payload.sequence);
       return {
         ...state,
         sequences: {
           ...state.sequences,
           sequenceA: action.payload.sequence,
           descriptorA: action.payload.descriptor
+        },
+        validation: {
+          ...state.validation,
+          sequenceA: structureValidationA
         },
         structureA: {
           uniprotId: null,
@@ -170,12 +244,17 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         }
       };
     case 'LOAD_STRUCTURE_FILE_B':
+      const structureValidationB = validateSequenceAsterisks(action.payload.sequence);
       return {
         ...state,
         sequences: {
           ...state.sequences,
           sequenceB: action.payload.sequence,
           descriptorB: action.payload.descriptor
+        },
+        validation: {
+          ...state.validation,
+          sequenceB: structureValidationB
         },
         structureB: {
           uniprotId: null,
@@ -192,12 +271,17 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         fetchErrorA: null
       };
     case 'FETCH_SEQUENCE_A_SUCCESS':
+      const validationResultA = validateSequenceAsterisks(action.payload.sequence);
       return {
         ...state,
         sequences: {
           ...state.sequences,
           sequenceA: action.payload.sequence,
           descriptorA: action.payload.descriptor
+        },
+        validation: {
+          ...state.validation,
+          sequenceA: validationResultA
         },
         fetchStatusA: 'success'
       };
@@ -214,12 +298,17 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         fetchErrorB: null
       };
     case 'FETCH_SEQUENCE_B_SUCCESS':
+      const validationResultB = validateSequenceAsterisks(action.payload.sequence);
       return {
         ...state,
         sequences: {
           ...state.sequences,
           sequenceB: action.payload.sequence,
           descriptorB: action.payload.descriptor
+        },
+        validation: {
+          ...state.validation,
+          sequenceB: validationResultB
         },
         fetchStatusB: 'success'
       };
@@ -282,6 +371,27 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
       return { ...state, structureA: null };
     case 'CLEAR_STRUCTURE_B':
       return { ...state, structureB: null };
+    case 'UPDATE_URL_SHAREABLE_DATA':
+      return {
+        ...state,
+        params: {
+          ...state.params,
+          alpha: action.payload.alpha,
+          delta: action.payload.delta,
+          gapCost: action.payload.gapCost,
+          startGap: action.payload.startGap
+        }
+      };
+    case 'LOAD_URL_SHAREABLE_DATA':
+      return {
+        ...state,
+        params: {
+          alpha: action.payload.alpha !== undefined ? action.payload.alpha : state.params.alpha,
+          delta: action.payload.delta !== undefined ? action.payload.delta : state.params.delta,
+          gapCost: action.payload.gapCost !== undefined ? action.payload.gapCost : state.params.gapCost,
+          startGap: action.payload.startGap !== undefined ? action.payload.startGap : state.params.startGap
+        }
+      };
     default:
       return state;
   }
@@ -296,6 +406,8 @@ interface SequenceContextType {
   fetchSequenceB: (accession: string) => Promise<void>;
   loadStructureFileA: (structureData: StructureData) => void;
   loadStructureFileB: (structureData: StructureData) => void;
+  canRunAlignment: () => boolean;
+  getValidationWarnings: () => { sequenceA: string[]; sequenceB: string[] };
 }
 
 const SequenceContext = createContext<SequenceContextType | undefined>(undefined);
@@ -305,12 +417,73 @@ interface SequenceProviderProps {
   children: ReactNode;
 }
 
-import { emeraldService } from '../utils/EmeraldService';
-import { extractUniProtId } from '../utils/uniprotUtils';
-import { fetchUniProtSequence } from '../utils/uniprotFetcher';
-
 export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(sequenceReducer, initialState);
+
+  // Initialize from URL parameters on component mount
+  useEffect(() => {
+    try {
+      const shareableData = getShareableDataFromUrl();
+      
+      if (shareableData) {
+        console.log('Loading shared alignment data from URL:', shareableData);
+        
+        // Set accession codes first
+        if (shareableData.seqA) {
+          dispatch({ type: 'UPDATE_ACCESSION_A', payload: shareableData.seqA });
+        }
+        if (shareableData.seqB) {
+          dispatch({ type: 'UPDATE_ACCESSION_B', payload: shareableData.seqB });
+        }
+        
+        // Set parameters if provided
+        const paramUpdates: Partial<typeof state.params> = {};
+        if (shareableData.alpha !== undefined) {
+          paramUpdates.alpha = shareableData.alpha;
+        }
+        if (shareableData.delta !== undefined) {
+          paramUpdates.delta = shareableData.delta;
+        }
+        
+        if (Object.keys(paramUpdates).length > 0) {
+          dispatch({ 
+            type: 'UPDATE_PARAMS', 
+            payload: paramUpdates
+          });
+        }
+        
+        // Fetch sequences automatically with error handling
+        if (shareableData.seqA) {
+          fetchSequenceA(shareableData.seqA).catch(error => {
+            console.error('Failed to fetch sequence A from shared URL:', error);
+          });
+        }
+        if (shareableData.seqB) {
+          fetchSequenceB(shareableData.seqB).catch(error => {
+            console.error('Failed to fetch sequence B from shared URL:', error);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading shared URL data:', error);
+    }
+  }, []); // Only run on mount
+
+  // Auto-run alignment when both sequences are loaded from shared URL
+  useEffect(() => {
+    const shareableData = getShareableDataFromUrl();
+    
+    if (shareableData && 
+        state.sequences.sequenceA && 
+        state.sequences.sequenceB && 
+        state.fetchStatusA === 'success' && 
+        state.fetchStatusB === 'success' &&
+        state.alignmentStatus === 'idle') {
+      
+      console.log('Auto-running alignment for shared URL');
+      runAlignment();
+    }
+  }, [state.sequences.sequenceA, state.sequences.sequenceB, state.fetchStatusA, state.fetchStatusB, state.alignmentStatus]);
 
   // Auto-detect UniProt IDs from descriptors
   useEffect(() => {
@@ -418,14 +591,35 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       return;
     }
 
+    // Check for middle asterisks which should prevent alignment
+    if (state.validation.sequenceA.hasMiddleAsterisk || state.validation.sequenceB.hasMiddleAsterisk) {
+      dispatch({ 
+        type: 'ALIGNMENT_ERROR', 
+        payload: 'Sequences cannot contain asterisks (*) in the middle. Please remove them before generating alignment.' 
+      });
+      return;
+    }
+
     try {
       dispatch({ type: 'ALIGNMENT_START' });
       
+      // Remove trailing asterisks if present
+      const cleanSequenceA = sequences.sequenceA.replace(/\*+$/, '');
+      const cleanSequenceB = sequences.sequenceB.replace(/\*+$/, '');
+      
+      // Update sequences if asterisks were removed
+      if (cleanSequenceA !== sequences.sequenceA) {
+        dispatch({ type: 'UPDATE_SEQUENCE_A', payload: cleanSequenceA });
+      }
+      if (cleanSequenceB !== sequences.sequenceB) {
+        dispatch({ type: 'UPDATE_SEQUENCE_B', payload: cleanSequenceB });
+      }
+      
       // Call EmeraldService to generate alignment
       const result = await emeraldService.generateAlignment(
-        sequences.sequenceA,
+        cleanSequenceA,
         sequences.descriptorA || 'Sequence A',
-        sequences.sequenceB,
+        cleanSequenceB,
         sequences.descriptorB || 'Sequence B',
         params.alpha,
         params.delta,
@@ -510,6 +704,47 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
     });
   };
 
+  // Helper function to check if alignment can be run
+  const canRunAlignment = () => {
+    const { sequences, validation } = state;
+    
+    // Must have both sequences
+    if (!sequences.sequenceA || !sequences.sequenceB) {
+      return false;
+    }
+    
+    // Cannot have middle asterisks
+    if (validation.sequenceA.hasMiddleAsterisk || validation.sequenceB.hasMiddleAsterisk) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Helper function to get validation warnings
+  const getValidationWarnings = () => {
+    const warnings = {
+      sequenceA: [] as string[],
+      sequenceB: [] as string[]
+    };
+    
+    if (state.validation.sequenceA.hasMiddleAsterisk) {
+      warnings.sequenceA.push('Sequence contains asterisk (*) in the middle. This will prevent alignment generation.');
+    }
+    if (state.validation.sequenceA.hasEndAsterisk) {
+      warnings.sequenceA.push('Sequence ends with asterisk (*). It will be removed when generating alignment.');
+    }
+    
+    if (state.validation.sequenceB.hasMiddleAsterisk) {
+      warnings.sequenceB.push('Sequence contains asterisk (*) in the middle. This will prevent alignment generation.');
+    }
+    if (state.validation.sequenceB.hasEndAsterisk) {
+      warnings.sequenceB.push('Sequence ends with asterisk (*). It will be removed when generating alignment.');
+    }
+    
+    return warnings;
+  };
+
   return (
     <SequenceContext.Provider value={{ 
       state, 
@@ -518,7 +753,9 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       fetchSequenceA, 
       fetchSequenceB,
       loadStructureFileA,
-      loadStructureFileB
+      loadStructureFileB,
+      canRunAlignment,
+      getValidationWarnings
     }}>
       {children}
     </SequenceContext.Provider>

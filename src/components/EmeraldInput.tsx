@@ -15,21 +15,27 @@ interface EmeraldInputProps {
 
 const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   // Get state and dispatch from context
-  const { state, dispatch, runAlignment, fetchSequenceA, fetchSequenceB, loadStructureFileA, loadStructureFileB } = useSequence();
+  const { state, dispatch, runAlignment, fetchSequenceA, fetchSequenceB, loadStructureFileA, loadStructureFileB, canRunAlignment, getValidationWarnings } = useSequence();
   const { sequences, params, alignmentStatus, fetchStatusA, fetchErrorA, fetchStatusB, fetchErrorB } = state;
+  
+  // Get validation warnings
+  const validationWarnings = getValidationWarnings();
   
   // Local validation state
   const [isValid, setIsValid] = useState(false);
 
   // Validate inputs when they change
   useEffect(() => {
-    setIsValid(
-      sequences.sequenceA.trim().length > 0 && 
+    const basicValidation = sequences.sequenceA.trim().length > 0 && 
       sequences.sequenceB.trim().length > 0 &&
       params.alpha > 0.5 && params.alpha <= 1 &&
-      params.delta >= 0 && params.delta <= 32
-    );
-  }, [sequences, params]);
+      params.delta >= 0 && params.delta <= 32;
+    
+    // Use the context's canRunAlignment for asterisk validation
+    const alignmentValidation = canRunAlignment();
+    
+    setIsValid(basicValidation && alignmentValidation);
+  }, [sequences, params, canRunAlignment]);
 
   const handleSubmit = async () => {
     if (isValid) {
@@ -88,6 +94,11 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
               className={`emerald-textarea ${!sequences.sequenceA.trim() ? 'error' : ''}`}
             />
             {!sequences.sequenceA.trim() && <div className="error-text">Sequence cannot be empty</div>}
+            {validationWarnings.sequenceA.map((warning, index) => (
+              <div key={index} className={`warning-text ${state.validation.sequenceA.hasMiddleAsterisk ? 'error-text' : 'warning-text'}`}>
+                {warning}
+              </div>
+            ))}
           </div>
           <div className="input-group">
             <label htmlFor="accessionA">UniProt Accession</label>

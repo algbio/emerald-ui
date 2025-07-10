@@ -14,4 +14,129 @@
 
 .sequence-table th {
   background: #616161;
+  color: white;
+}
+
+/* Action buttons in table */
+.action-button {
+  margin-right: 4px;
+  padding: 4px 8px;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  background: white;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 24px;
+}
+
+.action-button:hover {
+  background: #e3f2fd;
+  border-color: #0056b3;
+}
+
+.action-button:active {
+  background: #bbdefb;
+}
+
+/* Structure view button */
+.structure-view-button {
+  padding: 4px 8px;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  background: white;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.structure-view-button:hover:not(:disabled) {
+  background: #e3f2fd;
+}
+
+.structure-view-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: #6c757d;
+}
+
+/* UniProt button */
+.uniprot-button {
+  padding: 4px 8px;
+  border: 1px solid #28a745;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.uniprot-button.enabled {
+  background: white;
+  color: #28a745;
+}
+
+.uniprot-button.enabled:hover {
+  background: #e8f5e8;
+}
+
+.uniprot-button.disabled {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Load both button */
+.load-both-button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: 1px solid #007bff;
+  border-radius: 4px;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.load-both-button:hover {
+  background: #0056b3;
+}
+
+/* Structure viewer container */
+.structure-viewer-container {
+  margin-top: 20px;
+}
+
+.structure-viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.structure-viewer-title {
+  margin: 0;
+}
+
+.structure-viewer-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: normal;
+}
+
+.structure-viewer-close-button {
+  padding: 6px 12px;
+  border: 1px solid #6c757d;
+  border-radius: 4px;
+  background: white;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.structure-viewer-close-button:hover {
+  background: #f8f9fa;
 }

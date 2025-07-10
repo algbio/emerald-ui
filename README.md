@@ -52,3 +52,5 @@ export default tseslint.config({
   },
 })
 ```
+### Breaking example:
+ROS1_ARATH and ROS1A_ORYSJ

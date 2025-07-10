@@ -544,25 +544,13 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   };
 
   return (
-    <div className="structure-viewer" style={{ width, height, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+    <div className="structure-viewer" style={{ width, height }}>
       {/* Main viewer container */}
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div className="structure-viewer-main">
        
         {/* Structure info */}
         {(uniprotId || pdbId || selectedPdbId) && (
-          <div style={{
-            position: 'absolute',
-            bottom: 15,
-            right: 15,
-            zIndex: 1001,
-            background: 'rgba(255, 255, 255, 0.9)',
-            padding: '6px 10px',
-            borderRadius: '4px',
-            fontSize: '11px',
-            border: '1px solid #ddd',
-            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-            maxWidth: '200px'
-          }}>
+          <div className="structure-info">
             {uniprotId && (
               <div><strong>UniProt:</strong> {uniprotId}</div>
             )}
@@ -574,17 +562,17 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
               }
             </div>
             {useAlphaFold && (
-              <div style={{ fontSize: '10px', color: '#28a745' }}>
+              <div className="structure-info-complete-model">
                 Complete sequence model
               </div>
             )}
             {availablePdbIds.length > 0 && (
-              <div style={{ fontSize: '10px', color: '#666' }}>
+              <div className="structure-info-secondary">
                 {availablePdbIds.length} PDB structure{availablePdbIds.length > 1 ? 's' : ''} available
               </div>
             )}
             {!useAlphaFold && hasAlphaFold && (
-              <div style={{ fontSize: '10px', color: '#666' }}>
+              <div className="structure-info-secondary">
                 AlphaFold structure available
               </div>
             )}
@@ -593,50 +581,19 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
         {/* Loading indicator */}
         {isLoading && showLoading && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 1000,
-            background: 'rgba(255, 255, 255, 0.9)',
-            padding: '20px',
-            borderRadius: '8px',
-            textAlign: 'center'
-          }}>
+          <div className="loading-overlay">
             Loading structure...
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 1000,
-            background: 'rgba(255, 255, 255, 0.95)',
-            padding: '20px',
-            borderRadius: '8px',
-            textAlign: 'center',
-            border: '2px solid #ff6b6b',
-            color: '#d63031'
-          }}>
+          <div className="error-overlay">
             <strong>Error:</strong> {error}
             <br />
             <button
               onClick={handleRetryInitialization}
-              style={{
-                marginTop: '10px',
-                padding: '8px 16px',
-                border: '1px solid #d63031',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#d63031',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className="error-retry-button"
             >
               Retry Initialization
             </button>
@@ -646,56 +603,21 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         {/* Mol* container */}
         <div
           ref={containerRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            minHeight: '400px', // Ensure minimum height
-            border: '1px solid #e0e0e0',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            position: 'relative' // Ensure proper positioning
-          }}
+          className="molstar-container"
         />
       </div>
       
       {/* External Database Links Footer */}
       {(uniprotId || pdbId || selectedPdbId) && (
-        <div style={{
-          background: '#f8f9fa',
-          borderTop: '1px solid #e9ecef',
-          padding: '12px 16px',
-          borderRadius: '0 0 8px 8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ 
-            fontSize: '13px', 
-            fontWeight: 'bold', 
-            color: '#495057',
-            marginRight: '8px'
-          }}>
+        <div className="external-links-footer">
+          <div className="external-links-label">
             External Databases:
           </div>
           
           {uniprotId && (
             <button
               onClick={() => window.open(`https://www.uniprot.org/uniprotkb/${uniprotId}`, '_blank')}
-              style={{
-                padding: '6px 12px',
-                border: '1px solid #28a745',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#28a745',
-                cursor: 'pointer',
-                fontSize: '12px',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontWeight: '500'
-              }}
+              className="external-link-button external-link-uniprot"
               title={`View ${uniprotId} in UniProt`}
             >
               🔗 UniProt
@@ -705,20 +627,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           {uniprotId && (
             <button
               onClick={() => window.open(`https://alphafold.ebi.ac.uk/entry/${uniprotId}`, '_blank')}
-              style={{
-                padding: '6px 12px',
-                border: '1px solid #0074D9',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#0074D9',
-                cursor: 'pointer',
-                fontSize: '12px',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontWeight: '500'
-              }}
+              className="external-link-button external-link-alphafold"
               title={`View ${uniprotId} in AlphaFold Database`}
             >
               🧬 AlphaFold
@@ -728,20 +637,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           {uniprotId && (
             <button
               onClick={() => window.open(`https://swissmodel.expasy.org/repository/uniprot/${uniprotId}`, '_blank')}
-              style={{
-                padding: '6px 12px',
-                border: '1px solid #FF851B',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#FF851B',
-                cursor: 'pointer',
-                fontSize: '12px',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontWeight: '500'
-              }}
+              className="external-link-button external-link-swiss-model"
               title={`View ${uniprotId} models in SWISS-MODEL Repository`}
             >
               📐 SWISS-MODEL
@@ -753,20 +649,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
               onClick={() => {
                 window.open(`https://cluster.foldseek.com/cluster/${uniprotId}`, '_blank');
               }}
-              style={{
-                padding: '6px 12px',
-                border: '1px solid #B10DC9',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#B10DC9',
-                cursor: 'pointer',
-                fontSize: '12px',
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontWeight: '500'
-              }}
+              className="external-link-button external-link-foldseek"
               title={`Search ${selectedPdbId || pdbId} in Foldseek cluster database`}
             >
               🔍 Foldseek

@@ -73,6 +73,7 @@ const UniProtSearch: React.FC = () => {
     
     dispatch({ type: 'UPDATE_SEQUENCE_A', payload: result.sequence });
     dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: descriptor });
+    dispatch({ type: 'UPDATE_ACCESSION_A', payload: result.accession });
     
     // Add this to set the structure information
     dispatch({ 
@@ -97,6 +98,7 @@ const UniProtSearch: React.FC = () => {
     
     dispatch({ type: 'UPDATE_SEQUENCE_B', payload: result.sequence });
     dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: descriptor });
+    dispatch({ type: 'UPDATE_ACCESSION_B', payload: result.accession });
     
     // Add this to set the structure information
     dispatch({ 

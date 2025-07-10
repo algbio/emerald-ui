@@ -83,7 +83,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                     <button
                       title="Use as Sequence A"
                       onClick={() => onSelectA(seq)}
-                      style={{ marginRight: 4 }}
+                      className="action-button"
                     >
                       A
                     </button>
@@ -92,6 +92,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                     <button
                       title="Use as Sequence B"
                       onClick={() => onSelectB(seq)}
+                      className="action-button"
                     >
                       B
                     </button>
@@ -102,15 +103,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                 <button
                   onClick={() => handleViewStructure(seq)}
                   disabled={!effectiveUniprotId && (!seq.pdbIds || seq.pdbIds.length === 0)}
-                  style={{
-                    padding: '4px 8px',
-                    border: '1px solid #007bff',
-                    borderRadius: '4px',
-                    background: 'white',
-                    color: '#007bff',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
+                  className="structure-view-button"
                   title={effectiveUniprotId ? `View 3D structure and sequence (PDB/AlphaFold) for ${effectiveUniprotId}` : 
                          (seq.pdbIds && seq.pdbIds.length > 0) ? `View PDB structure and sequence: ${seq.pdbIds[0]}` : 
                          'No structure available'}
@@ -128,15 +121,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                     }
                   }}
                   disabled={!effectiveUniprotId}
-                  style={{
-                    padding: '4px 8px',
-                    border: '1px solid #28a745',
-                    borderRadius: '4px',
-                    background: effectiveUniprotId ? 'white' : '#f8f9fa',
-                    color: effectiveUniprotId ? '#28a745' : '#6c757d',
-                    cursor: effectiveUniprotId ? 'pointer' : 'not-allowed',
-                    fontSize: '12px'
-                  }}
+                  className={`uniprot-button ${effectiveUniprotId ? 'enabled' : 'disabled'}`}
                   title={effectiveUniprotId ? `Open UniProt page for ${effectiveUniprotId}` : 'No UniProt ID available'}
                 >
                   🔗 UniProt
@@ -151,43 +136,25 @@ export const SequenceList: React.FC<SequenceListProps> = ({
         <button
           className="load-both-button"
           onClick={() => onLoadBoth(sequences[0], sequences[1])}
-          style={{ marginTop: 12 }}
         >
           Load First Two Sequences
         </button>
       )}
       
       {selectedSequence && (
-        <div className="structure-viewer-container" style={{ marginTop: '20px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '10px',
-            padding: '10px',
-            background: '#f8f9fa',
-            borderRadius: '6px',
-            border: '1px solid #e9ecef'
-          }}>
-            <h3 style={{ margin: 0 }}>
+        <div className="structure-viewer-container">
+          <div className="structure-viewer-header">
+            <h3 className="structure-viewer-title">
               3D Structure & Sequence: {selectedSequence.id}
               {selectedSequence.proteinName && (
-                <span style={{ fontSize: '14px', color: '#6c757d', fontWeight: 'normal' }}>
+                <span className="structure-viewer-subtitle">
                   {' - '}{selectedSequence.proteinName}
                 </span>
               )}
             </h3>
             <button
               onClick={handleCloseStructureViewer}
-              style={{
-                padding: '6px 12px',
-                border: '1px solid #6c757d',
-                borderRadius: '4px',
-                background: 'white',
-                color: '#6c757d',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className="structure-viewer-close-button"
             >
               Close
             </button>

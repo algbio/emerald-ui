@@ -10,67 +10,150 @@
   flex-direction: column;
 }
 
-/* Ensure Mol* sequence viewer is visible */
-.structure-viewer .msp-layout-top {
-  display: block !important;
-  visibility: visible !important;
+/* Main viewer container */
+.structure-viewer-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
-.structure-viewer .msp-sequence {
-  display: block !important;
-  visibility: visible !important;
+/* Structure info overlay */
+.structure-viewer-main .structure-info {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  z-index: 1001;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  max-width: 200px;
 }
 
-/* Override any hiding of Mol* top panel */
-.structure-viewer .msp-plugin-content .msp-layout-top {
-  height: auto !important;
-  min-height: 80px !important;
+.structure-info-complete-model {
+  font-size: 10px;
+  color: #28a745;
 }
 
-/* Override any molstar plugin styles that might interfere */
-.structure-viewer .msp-plugin {
-  border: none !important;
-  border-radius: 0 !important;
+.structure-info-secondary {
+  font-size: 10px;
+  color: #666;
 }
 
-.structure-viewer .msp-viewport {
+/* Loading overlay */
+.structure-viewer-main .loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 20px;
   border-radius: 8px;
+  text-align: center;
 }
 
-/* Control buttons styling */
-.structure-viewer-controls {
+/* Error overlay */
+.structure-viewer-main .error-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #ff6b6b;
+  color: #d63031;
+}
+
+.error-retry-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: 1px solid #d63031;
+  border-radius: 4px;
+  background: white;
+  color: #d63031;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.error-retry-button:hover {
+  background: #f8f9fa;
+}
+
+/* Mol* container */
+.molstar-container {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* External database links footer */
+.external-links-footer {
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  padding: 12px 16px;
+  border-radius: 0 0 8px 8px;
   display: flex;
-  gap: 5px;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.structure-viewer-controls button {
-  padding: 5px 10px;
-  border: 1px solid #ccc;
+.external-links-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: #495057;
+  margin-right: 8px;
+}
+
+.external-link-button {
+  padding: 6px 12px;
   border-radius: 4px;
   background: white;
   cursor: pointer;
   font-size: 12px;
-  transition: background-color 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  border: 1px solid;
 }
 
-.structure-viewer-controls button:hover {
-  background-color: #f5f5f5;
+.external-link-button:hover {
+  background: #f8f9fa;
 }
 
-.structure-viewer-controls button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.external-link-uniprot {
+  border-color: #28a745;
+  color: #28a745;
 }
 
-.structure-viewer-controls select {
-  padding: 4px 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: white;
-  font-size: 12px;
+.external-link-alphafold {
+  border-color: #0074D9;
+  color: #0074D9;
 }
 
+.external-link-swiss-model {
+  border-color: #FF851B;
+  color: #FF851B;
+}
+
+.external-link-foldseek {
+  border-color: #B10DC9;
+  color: #B10DC9;
+}
+
+/* Control buttons styling */
 .structure-viewer-controls {
   display: flex;
   gap: 5px;
@@ -78,6 +161,7 @@
   top: 10px;
   right: 10px;
   z-index: 1000;
+  align-items: center;
 }
 
 .structure-viewer-controls button {
@@ -110,21 +194,16 @@
   cursor: not-allowed;
 }
 
-.structure-viewer .loading-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px 30px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e9ecef;
+.structure-viewer-controls select {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  font-size: 12px;
 }
 
-.structure-viewer .loading-spinner {
+/* Loading spinner animation */
+.loading-spinner {
   width: 20px;
   height: 20px;
   border: 2px solid #f3f3f3;
@@ -141,27 +220,24 @@
   100% { transform: rotate(360deg); }
 }
 
-.structure-viewer .error-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.98);
-  padding: 20px 30px;
-  border-radius: 8px;
-  text-align: center;
-  border: 2px solid #dc3545;
-  color: #721c24;
-  max-width: 80%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+/* Ensure Mol* sequence viewer is visible */
+.structure-viewer .msp-layout-top {
+  display: block !important;
+  visibility: visible !important;
 }
 
-.structure-viewer .error-overlay strong {
-  color: #dc3545;
+.structure-viewer .msp-sequence {
+  display: block !important;
+  visibility: visible !important;
 }
 
-/* Mol* specific overrides for better integration */
+/* Override any hiding of Mol* top panel */
+.structure-viewer .msp-plugin-content .msp-layout-top {
+  height: auto !important;
+  min-height: 80px !important;
+}
+
+/* Override any molstar plugin styles that might interfere */
 .structure-viewer .msp-plugin {
   border: none !important;
   border-radius: 0 !important;
@@ -194,9 +270,19 @@
     font-size: 11px;
   }
   
-  .structure-viewer .loading-overlay,
-  .structure-viewer .error-overlay {
+  .structure-viewer-main .loading-overlay,
+  .structure-viewer-main .error-overlay {
     padding: 15px 20px;
     max-width: 90%;
+  }
+  
+  .external-links-footer {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .external-link-button {
+    padding: 4px 8px;
+    font-size: 11px;
   }
 }
