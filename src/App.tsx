@@ -5,6 +5,8 @@ import { SequenceProvider, useSequence } from './context/SequenceContext'
 import SequenceInputPanel from './components/SequenceInputPanel'
 import AlignmentStructuresViewer from './components/AlignmentStructuresViewer'
 import AlignmentGraphWithInfoPanel from './components/AlignmentGraphWithInfoPanel'
+import ShareUrlPanel from './components/ShareUrlPanel'
+import SharedUrlNotification from './components/SharedUrlNotification'
 import type { Alignment } from './components/PointGridPlot'
 
 // Create a separate component for the app content to use the context hook
@@ -48,6 +50,9 @@ function AppContent() {
 
   return (
     <div className="app-container">
+      {/* Shared URL Notification */}
+      <SharedUrlNotification />
+      
       <h1>Emerald Web</h1>
       <p>Protein Sequence Alignment Visualization</p>
 
@@ -86,6 +91,17 @@ function AppContent() {
             <p><strong>Representative (x-axis): </strong> {representativeDescriptor}</p>
             <p><strong>Member (y-axis):</strong> {memberDescriptor}</p>
           </div>
+          
+          {/* Share URL Panel */}
+          <ShareUrlPanel
+            descriptorA={representativeDescriptor}
+            descriptorB={memberDescriptor}
+            alpha={state.params.alpha}
+            delta={state.params.delta}
+            accessionA={state.sequences.accessionA}
+            accessionB={state.sequences.accessionB}
+          />
+          
           <AlignmentGraphWithInfoPanel
             key={JSON.stringify(localAlignments)}
             representative={representative}

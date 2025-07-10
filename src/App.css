@@ -54,3 +54,101 @@
   min-width: 320px;
   max-width: 600px;
 }
+
+/* Multi-file navigation styles */
+.file-navigation {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.file-navigation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.file-navigation-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.file-navigation-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.file-indicator {
+  padding: 0.5rem 1rem;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #1565c0;
+}
+
+.remove-button {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #dc3545;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.remove-button:hover {
+  background-color: #c82333;
+}
+
+.file-list {
+  border-top: 1px solid #ddd;
+  padding-top: 1rem;
+}
+
+.file-list h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.file-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.file-tab {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tab:hover {
+  border-color: #007acc;
+  background-color: #f0f8ff;
+}
+
+.file-tab.active {
+  border-color: #007acc;
+  background-color: #007acc;
+  color: white;
+}
+
+.file-tab.active:hover {
+  background-color: #005999;
+}
