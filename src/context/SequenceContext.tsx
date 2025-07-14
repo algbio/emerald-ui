@@ -548,6 +548,25 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       }
     }
     
+    // Process sequence alignment data
+    if (result.alignment_representative && result.alignment_member) {
+      // Store the text-based sequence alignment for display
+      alignments.push({
+        color: "alignment",
+        edges: [], // Empty edges array to satisfy the type
+        textAlignment: {
+          representative: {
+            sequence: result.alignment_representative,
+            descriptor: result.representative_descriptor
+          },
+          member: {
+            sequence: result.alignment_member,
+            descriptor: result.mem_descriptor
+          }
+        }
+      });
+    }
+    
     // Process window data
     if (result.windows_representative && Array.isArray(result.windows_representative)) {
       for (let i = 0; i < result.windows_representative.length; i++) {
@@ -630,15 +649,7 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       // Process the results using the function from FileUploader
       const processedAlignments = processAlignmentResult(result);
       
-      console.log('Alignment generated successfully:', {
-        alignmentsCount: processedAlignments.length,
-        processedAlignments: processedAlignments.map(a => ({ 
-          color: a.color, 
-          edgesCount: a.edges.length,
-          hasStartDot: !!a.startDot,
-          hasEndDot: !!a.endDot
-        }))
-      });
+      console.log('Alignment generated successfully:', result);
       
       dispatch({ 
         type: 'ALIGNMENT_SUCCESS', 

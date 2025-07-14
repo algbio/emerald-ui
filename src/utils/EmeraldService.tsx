@@ -95,6 +95,17 @@ export class EmeraldService {
       return JSON.parse(jsonResult) as AlignmentResult;
     } catch (error) {
       console.error('Error generating alignment:', error);
+      
+      // Check for memory-related errors
+      if (error instanceof Error && 
+          (error.message.includes('Cannot enlarge memory') || 
+           error.message.includes('Aborted'))) {
+        throw new Error(
+          `Memory limit exceeded: The sequences (${refSeq.length}×${memSeq.length} characters) ` +
+          `are too large for your browser to process. Please try using shorter sequences.`
+        );
+      }
+      
       throw new Error(`Failed to generate alignment: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

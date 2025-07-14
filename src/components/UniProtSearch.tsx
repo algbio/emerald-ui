@@ -16,6 +16,8 @@ const UniProtSearch: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<UniProtResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [resultsPerPage] = useState(5);
   
   const { dispatch } = useSequence();
   
@@ -30,7 +32,7 @@ const UniProtSearch: React.FC = () => {
     try {
       // Update the fetch URL to include cross-references
       const response = await fetch(
-        `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchTerm)}&fields=accession,id,protein_name,organism_name,sequence,xref_pdb&format=json&size=5`
+        `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchTerm)}&fields=accession,id,protein_name,organism_name,sequence,xref_pdb&format=json&size=25`
       );
       
       if (!response.ok) {
@@ -52,6 +54,7 @@ const UniProtSearch: React.FC = () => {
       }));
       
       setResults(mappedResults);
+      setCurrentPage(0); // Reset to first page when new search is performed
       
     } catch (error) {
       console.error('Error searching UniProt:', error);
@@ -110,6 +113,20 @@ const UniProtSearch: React.FC = () => {
     
     console.log('Dispatched structure B with UniProt ID:', result.accession);
   };
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(results.length / resultsPerPage);
+  const startIndex = currentPage * resultsPerPage;
+  const endIndex = startIndex + resultsPerPage;
+  const currentResults = results.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
+  };
   
   return (
     <div className="uniprot-search">
@@ -166,9 +183,38 @@ const UniProtSearch: React.FC = () => {
       {results.length === 0 && !isSearching && searchTerm && (
         <div className="no-results">No results found. Try a different search term.</div>
       )}
-      
+
+      {results.length > 0 && (
+        <div className="pagination-info">
+          <p>
+            Showing {startIndex + 1}-{Math.min(endIndex, results.length)} of {results.length} results
+          </p>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button 
+                onClick={handlePreviousPage} 
+                disabled={currentPage === 0}
+                className="pagination-button"
+              >
+                Previous
+              </button>
+              <span className="pagination-status">
+                Page {currentPage + 1} of {totalPages}
+              </span>
+              <button 
+                onClick={handleNextPage} 
+                disabled={currentPage === totalPages - 1}
+                className="pagination-button"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <SequenceList
-        sequences={results.map(result => ({
+        sequences={currentResults.map(result => ({
           id: result.id,
           description: `${result.id} | ${result.proteinName} | ${result.organismName}`,
           sequence: result.sequence,

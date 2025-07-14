@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PointGridPlot from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
+import SequenceAlignmentViewer from './SequenceAlignmentViewer';
 import type { Alignment } from '../types/PointGrid';
 import './AlignmentGraphWithInfoPanel.css';
 
@@ -78,38 +79,49 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
 
   return (
     <div className="alignment-graph-with-info-panel">
-      <div className="graph-container">
-        <PointGridPlot
-          representative={representative}
-          member={member}
-          alignments={alignments}
-          width={width}
-          height={height}
-          xDomain={[0, representative.length]}
-          yDomain={[0, member.length]}
-          showMinimap={showMinimap}
-          minimapSize={minimapSize}
-          minimapPadding={minimapPadding}
-          selectedSafetyWindowId={selectedSafetyWindowId}
-          hoveredSafetyWindowId={hoveredSafetyWindowId}
-          onSafetyWindowHover={handleSafetyWindowHover}
-          onSafetyWindowSelect={handleSafetyWindowSelect}
-        />
-      </div>
+      {/* Display sequence alignment if available */}
+      {alignments.some(a => a.textAlignment) && (
+        <div className="sequence-alignment-viewer-container">
+          <SequenceAlignmentViewer 
+            alignment={alignments.find(a => a.textAlignment)?.textAlignment!} 
+          />
+        </div>
+      )}
       
-      <div className="info-panel-container">
-        <SafetyWindowsInfoPanel
-          safetyWindows={safetyWindows}
-          selectedWindowId={selectedSafetyWindowId}
-          hoveredWindowId={hoveredSafetyWindowId}
-          onWindowHover={handleSafetyWindowHover}
-          onNavigateToPrevious={handleNavigateToPrevious}
-          onNavigateToNext={handleNavigateToNext}
-          representative={representative}
-          member={member}
-          representativeDescriptor={representativeDescriptor}
-          memberDescriptor={memberDescriptor}
-        />
+      <div className="graph-and-info-container" style={{ display: 'flex', gap: '20px', width: '100%' }}>
+        <div className="graph-container">
+          <PointGridPlot
+            representative={representative}
+            member={member}
+            alignments={alignments}
+            width={width}
+            height={height}
+            xDomain={[0, representative.length]}
+            yDomain={[0, member.length]}
+            showMinimap={showMinimap}
+            minimapSize={minimapSize}
+            minimapPadding={minimapPadding}
+            selectedSafetyWindowId={selectedSafetyWindowId}
+            hoveredSafetyWindowId={hoveredSafetyWindowId}
+            onSafetyWindowHover={handleSafetyWindowHover}
+            onSafetyWindowSelect={handleSafetyWindowSelect}
+          />
+        </div>
+        
+        <div className="info-panel-container">
+          <SafetyWindowsInfoPanel
+            safetyWindows={safetyWindows}
+            selectedWindowId={selectedSafetyWindowId}
+            hoveredWindowId={hoveredSafetyWindowId}
+            onWindowHover={handleSafetyWindowHover}
+            onNavigateToPrevious={handleNavigateToPrevious}
+            onNavigateToNext={handleNavigateToNext}
+            representative={representative}
+            member={member}
+            representativeDescriptor={representativeDescriptor}
+            memberDescriptor={memberDescriptor}
+          />
+        </div>
       </div>
     </div>
   );

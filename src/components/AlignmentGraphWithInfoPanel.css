@@ -1,5 +1,6 @@
 .alignment-graph-with-info-panel {
   display: flex;
+  flex-direction: column;
   gap: 20px;
   align-items: flex-start;
   width: 100%;
@@ -21,15 +22,30 @@
   top: 20px;
 }
 
+.sequence-alignment-viewer-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 10px auto;
+  padding: 10px;
+  background-color: #2A2A2A; /* Dark gray background */
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid #444444;
+}
+
 /* Responsive layout */
 @media (max-width: 1400px) {
   .alignment-graph-with-info-panel {
     gap: 16px;
   }
+  
+  .graph-and-info-container {
+    gap: 16px;
+  }
 }
 
 @media (max-width: 1200px) {
-  .alignment-graph-with-info-panel {
+  .graph-and-info-container {
     flex-direction: column;
     gap: 20px;
   }

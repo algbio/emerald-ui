@@ -39,6 +39,18 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
 
   const handleSubmit = async () => {
     if (isValid) {
+      // Check if sequences are very large and might cause memory issues
+      const seqProduct = sequences.sequenceA.length * sequences.sequenceB.length;
+      if (seqProduct > 1500000) { // Threshold based on observed failures
+        const warnMsg = `Warning: The sequences you're trying to align are very large ` +
+                       `(${sequences.sequenceA.length}×${sequences.sequenceB.length} characters). ` +
+                       `This might cause memory issues in your browser. Do you want to continue anyway?`;
+        
+        if (!window.confirm(warnMsg)) {
+          return; // User chose to cancel
+        }
+      }
+      
       // First run the internal alignment using EmeraldService
       await runAlignment();
       
@@ -65,7 +77,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
       <div className="emerald-grid">
         {/* Sequence A */}
         <div className="emerald-column">
-          <h3>Sequence A</h3>
+          <h2>Sequence A</h2>
           <div className="input-group">
             <label htmlFor="descriptorA">Descriptor</label>
             <input
@@ -136,7 +148,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         
         {/* Sequence B */}
         <div className="emerald-column">
-          <h3>Sequence B</h3>
+          <h2>Sequence B</h2>
           <div className="input-group">
             <label htmlFor="descriptorB">Descriptor</label>
             <input

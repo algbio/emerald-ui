@@ -4,11 +4,23 @@ export interface Edge {
   probability: number;
 }
 
+export interface TextAlignment {
+  representative: {
+    sequence: string;
+    descriptor: string;
+  };
+  member: {
+    sequence: string;
+    descriptor: string;
+  };
+}
+
 export interface Alignment {
   color: string;
   edges: Edge[];
   startDot?: { x: number; y: number };
   endDot?: { x: number; y: number };
+  textAlignment?: TextAlignment;
 }
 
 export interface PointGridPlotProps {

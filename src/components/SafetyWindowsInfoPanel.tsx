@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Alignment } from '../types/PointGrid';
 import './SafetyWindowsInfoPanel.css';
 
@@ -39,6 +39,21 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   representativeDescriptor,
   memberDescriptor
 }) => {
+  const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
+  
+  // Function to copy text to clipboard
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopyStatus({id, success: true});
+        setTimeout(() => setCopyStatus(null), 2000);
+      })
+      .catch(() => {
+        setCopyStatus({id, success: false});
+        setTimeout(() => setCopyStatus(null), 2000);
+      });
+  };
+  
   // Convert alignments to safety window info objects
   const safetyWindowsInfo: SafetyWindowInfo[] = safetyWindows
     .filter(window => window.startDot && window.endDot)
@@ -297,8 +312,24 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                   <div className="sequence-preview">
                     <div className="sequence-info">
                       <div className="sequence-label">X-sequence:</div>
-                      <div className="sequence-segment">
-                        {formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd)}
+                      <div className="sequence-container">
+                        <div className="sequence-segment">
+                          {formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd)}
+                        </div>
+                        <button 
+                          className="copy-button"
+                          onClick={() => {
+                            const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
+                            copyToClipboard(sequence, 'x-sequence');
+                          }}
+                          title="Copy to clipboard"
+                        >
+                          {copyStatus?.id === 'x-sequence' ? (
+                            copyStatus.success ? '✓ Copied!' : '❌ Failed'
+                          ) : (
+                            <span className="copy-icon">📋</span>
+                          )}
+                        </button>
                       </div>
                       <button 
                         className="uniprot-search-button"
@@ -314,8 +345,24 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                     </div>
                     <div className="sequence-info">
                       <div className="sequence-label">Y-sequence:</div>
-                      <div className="sequence-segment">
-                        {formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd)}
+                      <div className="sequence-container">
+                        <div className="sequence-segment">
+                          {formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd)}
+                        </div>
+                        <button 
+                          className="copy-button"
+                          onClick={() => {
+                            const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
+                            copyToClipboard(sequence, 'y-sequence');
+                          }}
+                          title="Copy to clipboard"
+                        >
+                          {copyStatus?.id === 'y-sequence' ? (
+                            copyStatus.success ? '✓ Copied!' : '❌ Failed'
+                          ) : (
+                            <span className="copy-icon">📋</span>
+                          )}
+                        </button>
                       </div>
                       <button 
                         className="uniprot-search-button"

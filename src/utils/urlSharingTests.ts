@@ -2,7 +2,7 @@
 // This file helps validate that the URL sharing feature works correctly
 
 import { 
-  getShareableDataFromUrl, 
+  // getShareableDataFromUrl, 
   generateShareableUrl, 
   isAlignmentShareable,
   validateShareableData,

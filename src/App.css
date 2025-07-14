@@ -152,3 +152,69 @@
 .file-tab.active:hover {
   background-color: #005999;
 }
+
+/* Pagination styles for UniProt search */
+.pagination-info {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.pagination-info p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #007acc;
+  background-color: #007acc;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #005999;
+}
+
+.pagination-button:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pagination-status {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Dark mode styles for pagination */
+@media (prefers-color-scheme: dark) {
+  .pagination-info {
+    background-color: #2d3748;
+    border-color: #4a5568;
+  }
+  
+  .pagination-info p {
+    color: #a0aec0;
+  }
+  
+  .pagination-status {
+    color: #a0aec0;
+  }
+}

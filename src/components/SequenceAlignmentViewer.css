@@ -1,0 +1,207 @@
+.sequence-alignment-viewer {
+  font-family: monospace;
+  margin: 10px 0;
+  width: 100%;
+  overflow-x: auto;
+  background-color: #1E1E1E; /* Dark background for dark mode */
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #E0E0E0; /* Light text for dark background */
+}
+
+.sequence-alignment-viewer h3 {
+  color: #82AAFF;
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 8px;
+}
+
+.alignment-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #BBBBBB;
+}
+
+.scrollable-alignment {
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 10px;
+}
+
+.alignment-container {
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
+  min-width: max-content;
+}
+
+.alignment-row {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  margin-bottom: 2px;
+  min-width: max-content;
+}
+
+.alignment-row-content {
+  flex: 1;
+  min-width: max-content;
+}
+
+.sequence-row {
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+
+.sequence-name {
+  flex: 0 0 80px;
+  font-weight: bold;
+  color: #82AAFF; /* Light blue for dark mode */
+  text-align: right;
+  padding-right: 10px;
+  position: sticky;
+  left: 0;
+  background-color: #1E1E1E; /* Match parent background */
+  z-index: 1;
+}
+
+.sequence-content {
+  flex: 1;
+  white-space: pre;
+  font-size: 18px; /* Larger font size */
+  letter-spacing: 0;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+}
+
+.position-indicators {
+  display: flex;
+  margin-left: 90px; /* Account for sequence name width */
+  font-size: 10px;
+  color: #AAAAAA; /* Light gray for dark background */
+  margin-bottom: 5px;
+  overflow-x: auto;
+  position: relative;
+  white-space: nowrap;
+}
+
+.position-marker {
+  width: 16px;
+  display: inline-block;
+  text-align: center;
+  font-size: 10px;
+  color: #AAAAAA;
+}
+
+.similarity-row {
+  display: flex;
+  height: 8px;
+  margin-bottom: 10px;
+  margin-left: 90px;
+  overflow-x: auto;
+  min-width: max-content;
+}
+
+/* Amino acid highlighting for dark mode */
+.aa-hydrophobic {
+  background-color: #D32F2F; /* Red for hydrophobic */
+  color: #FFFFFF;
+}
+
+.aa-polar {
+  background-color: #2E7D32; /* Green for polar */
+  color: #FFFFFF;
+}
+
+.aa-acidic {
+  background-color: #C2185B; /* Pink for acidic */
+  color: #FFFFFF;
+}
+
+.aa-basic {
+  background-color: #1976D2; /* Blue for basic */
+  color: #FFFFFF;
+}
+
+.aa-neutral {
+  background-color: #424242; /* Dark gray for neutral */
+  color: #FFFFFF;
+}
+
+.aa-special {
+  background-color: #F57F17; /* Orange for special cases like cysteine */
+  color: #FFFFFF;
+}
+
+.aa-gap {
+  background-color: #303030; /* Dark gray background for gaps */
+  color: #757575; /* Medium gray text for gaps */
+}
+
+/* Conservation highlighting for dark mode */
+.similarity-high {
+  background-color: #4CAF50; /* Bright green for high conservation */
+}
+
+.similarity-medium {
+  background-color: #FFC107; /* Bright amber for medium conservation */
+}
+
+.similarity-low {
+  background-color: #F44336; /* Bright red for low conservation */
+}
+
+.similarity-none {
+  background-color: #424242; /* Dark gray for no conservation */
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 15px;
+  border-top: 1px solid #444; /* Darker border for dark mode */
+  padding-top: 10px;
+}
+
+.legend-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.legend-title {
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+  color: #BBBBBB; /* Light gray for dark mode */
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.85rem;
+  color: #CCCCCC; /* Light gray for dark mode */
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: inline-block;
+}

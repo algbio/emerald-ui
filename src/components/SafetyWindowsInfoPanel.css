@@ -426,12 +426,19 @@
   font-weight: 500;
 }
 
+.sequence-container {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
 .sequence-segment {
   font-family: 'Courier New', monospace;
   background: #f8f9fa;
   padding: 8px 10px;
-  border-radius: 4px;
+  border-radius: 4px 0 0 4px;
   border: 1px solid #e8e9ea;
+  border-right: none;
   font-size: 11px;
   color: #333;
   word-break: break-all;
@@ -440,6 +447,34 @@
   overflow-y: auto;
   white-space: pre-wrap;
   min-height: 30px;
+  flex-grow: 1;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border: 1px solid #e8e9ea;
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  padding: 0 8px;
+  font-size: 11px;
+  min-width: 36px;
+}
+
+.copy-button:hover {
+  background: #e3e3e3;
+}
+
+.copy-button:active {
+  background: #d7d7d7;
+}
+
+.copy-icon {
+  font-size: 14px;
 }
 
 /* Sequence segment scrollbar styling */
