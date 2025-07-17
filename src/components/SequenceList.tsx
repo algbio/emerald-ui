@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StructureViewer } from './StructureViewer';
 import { getEffectiveUniProtId } from '../utils/uniprotUtils';
 import './SequenceList.css';
@@ -18,6 +18,8 @@ interface SequenceListProps {
   onSelectA?: (seq: SequenceListItem) => void;
   onSelectB?: (seq: SequenceListItem) => void;
   onLoadBoth?: (seqA: SequenceListItem, seqB: SequenceListItem) => void;
+  showDescription?: boolean; // Add this prop to control descriptor column visibility
+  useIdAsProteinName?: boolean; // Add this prop to use id field for protein name (for search results)
 }
 
 export const SequenceList: React.FC<SequenceListProps> = ({
@@ -25,16 +27,19 @@ export const SequenceList: React.FC<SequenceListProps> = ({
   onSelectA,
   onSelectB,
   onLoadBoth,
+  showDescription = false, // Default to false to not show descriptor for search results
+  useIdAsProteinName = false, // Default to false to use proteinName field
 }) => {
   const [selectedSequence, setSelectedSequence] = useState<SequenceListItem | null>(null);
   const [viewerKey, setViewerKey] = useState<number>(0);
+  const [previewSequenceId, setPreviewSequenceId] = useState<string | null>(null);
 
-  if (!sequences.length) return null;
-
-  // Check if any sequence has UniProt-specific fields
-  const showAccession = sequences.some(seq => !!getEffectiveUniProtId(seq));
-  const showProteinName = sequences.some(seq => !!seq.proteinName);
-  const showOrganismName = sequences.some(seq => !!seq.organismName);
+  // Clean up modal state on unmount
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, []);
 
   const handleViewStructure = (sequence: SequenceListItem) => {
     // Force a complete remount by incrementing the key
@@ -46,92 +51,148 @@ export const SequenceList: React.FC<SequenceListProps> = ({
     setSelectedSequence(null);
   };
 
+  const handleTogglePreview = (sequenceId: string) => {
+    setPreviewSequenceId(prev => prev === sequenceId ? null : sequenceId);
+  };
+
+  const copySequenceToClipboard = (sequence: string) => {
+    navigator.clipboard.writeText(sequence).then(() => {
+      // You could add a toast notification here
+      console.log('Sequence copied to clipboard');
+    }).catch(err => {
+      console.error('Failed to copy sequence:', err);
+    });
+  };
+
+  if (!sequences.length) return null;
+
+  // Check if any sequence has UniProt-specific fields
+  const showAccession = sequences.some(seq => !!getEffectiveUniProtId(seq));
+  const showProteinName = sequences.some(seq => !!seq.proteinName);
+  const showOrganismName = sequences.some(seq => !!seq.organismName);
+  const shouldShowDescription = showDescription && sequences.some(seq => !!seq.description);
+
   return (
     <div className="parsed-sequences">
-      <h3>Found {sequences.length} sequences:</h3>
-      <table className="sequence-table">
-        <thead>
-          <tr>
-            {showAccession && <th>Accession</th>}
-            {showProteinName && <th>Protein Name</th>}
-            {showOrganismName && <th>Organism</th>}
-            <th>Length</th>
-            <th>Preview</th>
-            {(onSelectA || onSelectB) && <th>Actions</th>}
-            <th>3D Structure</th>
-            <th>UniProt Entry</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sequences.map((seq, index) => {
-            const effectiveUniprotId = getEffectiveUniProtId(seq);
-            return (
-            <tr key={index}>
-              {showAccession && <td>{effectiveUniprotId || '-'}</td>}
-              {showProteinName && <td>{seq.proteinName || '-'}</td>}
-              {showOrganismName && <td>{seq.organismName || '-'}</td>}
-              <td>{seq.sequence.length}</td>
-              <td>
-                <span title={seq.sequence}>
-                  {seq.sequence.substring(0, 20)}
-                  {seq.sequence.length > 20 ? '…' : ''}
-                </span>
-              </td>
-              {(onSelectA || onSelectB) && (
-                <td>
-                  {onSelectA && (
-                    <button
-                      title="Use as Sequence A"
-                      onClick={() => onSelectA(seq)}
-                      className="action-button"
-                    >
-                      A
-                    </button>
-                  )}
-                  {onSelectB && (
-                    <button
-                      title="Use as Sequence B"
-                      onClick={() => onSelectB(seq)}
-                      className="action-button"
-                    >
-                      B
-                    </button>
-                  )}
-                </td>
-              )}
-              <td>
-                <button
-                  onClick={() => handleViewStructure(seq)}
-                  disabled={!effectiveUniprotId && (!seq.pdbIds || seq.pdbIds.length === 0)}
-                  className="structure-view-button"
-                  title={effectiveUniprotId ? `View 3D structure and sequence (PDB/AlphaFold) for ${effectiveUniprotId}` : 
-                         (seq.pdbIds && seq.pdbIds.length > 0) ? `View PDB structure and sequence: ${seq.pdbIds[0]}` : 
-                         'No structure available'}
-                >
-                  {effectiveUniprotId ? '🧬 View Structure' : 
-                   (seq.pdbIds && seq.pdbIds.length > 0) ? '🧬 View PDB' : 
-                   '🚫'}
-                </button>
-              </td>
-              <td>
-                <button
-                  onClick={() => {
-                    if (effectiveUniprotId) {
-                      window.open(`https://www.uniprot.org/uniprotkb/${effectiveUniprotId}`, '_blank');
-                    }
-                  }}
-                  disabled={!effectiveUniprotId}
-                  className={`uniprot-button ${effectiveUniprotId ? 'enabled' : 'disabled'}`}
-                  title={effectiveUniprotId ? `Open UniProt page for ${effectiveUniprotId}` : 'No UniProt ID available'}
-                >
-                  🔗 UniProt
-                </button>
-              </td>
+      <div className="sequence-table-container">
+        <table className="sequence-table">
+          <thead>
+            <tr>
+              {showAccession && <th>Accession</th>}
+              {showProteinName && <th>Protein Name</th>}
+              {showOrganismName && <th>Organism</th>}
+              {shouldShowDescription && <th>Description</th>}
+              <th>Length</th>
+              <th>Load</th>
+              <th>Actions</th>
             </tr>
-            );
-          })}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sequences.map((seq) => {
+              const effectiveUniprotId = getEffectiveUniProtId(seq);
+              const isPreviewOpen = previewSequenceId === seq.id;
+              
+              return (
+                <React.Fragment key={seq.id}>
+                  <tr>
+                    {showAccession && <td>{effectiveUniprotId || '-'}</td>}
+                    {showProteinName && <td>{useIdAsProteinName ? 
+                      seq.id.split(' | ').map((part, index) => (
+                        <div key={index}>{part}</div>
+                      )) : 
+                      seq.proteinName || '-'
+                    }</td>}
+                    {showOrganismName && <td>{seq.organismName || '-'}</td>}
+                    {shouldShowDescription && <td title={seq.description}>{seq.description || '-'}</td>}
+                    <td>{seq.sequence.length}</td>
+                    <td>
+                      <div className="load-buttons">
+                        {onSelectA && (
+                          <button
+                            onClick={() => onSelectA(seq)}
+                            className="btn-outline-success"
+                            title="Load sequence A"
+                          >
+                            Load A
+                          </button>
+                        )}
+                        {onSelectB && (
+                          <button
+                            onClick={() => onSelectB(seq)}
+                            className="btn-outline-success"
+                            title="Load sequence B"
+                          >
+                            Load B
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          onClick={() => handleTogglePreview(seq.id)}
+                          className="btn-ghost"
+                          title={isPreviewOpen ? "Hide sequence preview" : "Show sequence preview"}
+                        >
+                          {isPreviewOpen ? 'Hide' : 'Preview'}
+                        </button>
+                        {effectiveUniprotId && (
+                          <button
+                            onClick={() => {
+                              window.open(`https://www.uniprot.org/uniprotkb/${effectiveUniprotId}`, '_blank');
+                            }}
+                            className="btn-ghost"
+                            title={`Open UniProt page for ${effectiveUniprotId}`}
+                          >
+                            UniProt
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleViewStructure(seq)}
+                          disabled={!effectiveUniprotId && (!seq.pdbIds || seq.pdbIds.length === 0)}
+                          className="btn-ghost"
+                          title={effectiveUniprotId ? `View 3D structure and sequence (PDB/AlphaFold) for ${effectiveUniprotId}` : 
+                                 (seq.pdbIds && seq.pdbIds.length > 0) ? `View PDB structure and sequence: ${seq.pdbIds[0]}` : 
+                                 'No structure available'}
+                        >
+                          3D Structure
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isPreviewOpen && (
+                    <tr className="sequence-preview-row">
+                      <td colSpan={3 + (showAccession ? 1 : 0) + (showProteinName ? 1 : 0) + (showOrganismName ? 1 : 0) + (shouldShowDescription ? 1 : 0)} className="sequence-preview-cell">
+                        <div className="sequence-preview-container">
+                          <div className="sequence-preview-header">
+                            <div className="sequence-preview-info">
+                              <strong>Sequence for {seq.id}</strong>
+                              {seq.proteinName && <span> - {seq.proteinName}</span>}
+                              <span className="sequence-length"> ({seq.sequence.length} amino acids)</span>
+                            </div>
+                            <button
+                              onClick={() => copySequenceToClipboard(seq.sequence)}
+                              className="copy-sequence-button"
+                              title="Copy sequence to clipboard"
+                            >
+                              📋 Copy
+                            </button>
+                          </div>
+                          <div className="sequence-preview-text">
+                            <div className="sequence-scroll-container">
+                              {seq.sequence}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       {onLoadBoth && sequences.length >= 2 && (
         <button
           className="load-both-button"

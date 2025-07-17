@@ -4,10 +4,10 @@
   right: 20px;
   z-index: 1000;
   max-width: 400px;
-  background: white;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--bg-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
   animation: slideIn 0.3s ease-out;
 }
 
@@ -32,18 +32,19 @@
   gap: 0.5rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .notification-icon {
   font-size: 1.25rem;
+  color: var(--color-primary);
 }
 
 .notification-header h3 {
   margin: 0;
   flex: 1;
   font-size: 1rem;
-  color: #007bff;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -51,7 +52,7 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6c757d;
+  color: var(--text-tertiary);
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -60,18 +61,18 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
 }
 
 .close-button:hover {
-  background: #f8f9fa;
-  color: #495057;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
 .notification-body p {
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--text-secondary);
 }
 
 .notification-body ul {
@@ -82,13 +83,13 @@
 
 .notification-body li {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--text-tertiary);
   margin-bottom: 0.25rem;
 }
 
 .notification-status {
   font-style: italic;
-  color: #007bff !important;
+  color: var(--color-primary) !important;
   margin-top: 0.75rem !important;
   font-size: 0.85rem !important;
 }

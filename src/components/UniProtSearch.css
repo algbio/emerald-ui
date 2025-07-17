@@ -1,0 +1,205 @@
+/* UniProtSearch Component Styles */
+
+.uniprot-search {
+  flex: 0 0 60%;
+  min-width: 320px;
+  max-width: 60%;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+}
+
+.uniprot-search h2 {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Search box container */
+.search-box {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.search-box input {
+  flex: 1;
+  font-family: var(--font-family-primary);
+  font-size: 0.875rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-normal);
+}
+
+.search-box input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.search-box input:hover {
+  border-color: var(--border-color-hover);
+}
+
+.search-box button {
+  font-family: var(--font-family-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  white-space: nowrap;
+}
+
+.search-box button:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.search-box button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-gray-400);
+  border-color: var(--color-gray-400);
+}
+
+.search-box button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Error message styling */
+.error-message {
+  text-align: center;
+  padding: 1rem;
+  background: var(--color-error-light);
+  border: 1px solid var(--color-error);
+  border-radius: var(--border-radius-lg);
+  color: var(--color-error);
+  margin: 1rem 0;
+}
+
+/* No results message styling */
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  color: var(--text-secondary);
+  margin: 1rem 0;
+}
+
+/* Search results container for UniProt search */
+.search-results-container {
+  border-radius: var(--border-radius-lg);
+
+  overflow: hidden;
+}
+
+.search-results-container .parsed-sequences {
+  margin-top: 0;
+  border-radius: var(--border-radius-lg);
+  padding-top: 0;
+  border-top: none;
+}
+
+.search-results-container .parsed-sequences h3 {
+  display: none;
+}
+
+.search-results-container .sequence-table-container {
+  margin: 0;
+  box-shadow: none;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.search-results-container .sequence-table {
+  border-radius: var(--border-radius-lg);
+}
+
+.search-results-container .pagination-info {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+/* Pagination styles for UniProt search */
+.pagination-info {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.pagination-info p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color var(--transition-normal);
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.pagination-button:disabled {
+  background-color: var(--color-gray-400);
+  border-color: var(--color-gray-400);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pagination-status {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Dark mode styles for pagination */
+@media (prefers-color-scheme: dark) {
+  .pagination-info {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+  
+  .pagination-info p {
+    color: var(--text-secondary);
+  }
+  
+  .pagination-status {
+    color: var(--text-secondary);
+  }
+}

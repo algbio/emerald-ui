@@ -3,6 +3,8 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .logo {
@@ -12,10 +14,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em rgba(16, 185, 129, 0.4));
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em rgba(16, 185, 129, 0.6));
 }
 
 @keyframes logo-spin {
@@ -38,30 +40,55 @@
 }
 
 .read-the-docs {
-  color: #888;
+  color: var(--text-tertiary);
 }
 
 /* Add to your CSS file */
 .sequence-input-panel {
   display: flex;
-  gap: 2rem; /* space between the two panels */
+  gap: 2rem;
   align-items: flex-start;
+  margin-bottom: 2rem;
 }
 
-.fasta-uploader,
-.uniprot-search {
-  flex: 1 1 0;
+.fasta-uploader {
+  flex: 0 0 40%;
   min-width: 320px;
-  max-width: 600px;
+  max-width: 40%;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+}
+
+/* Ensure proper separation between upload and results sections */
+.parsed-sequences {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.parsed-sequences h3 {
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+/* Make sure structure viewer doesn't overlap */
+.structure-viewer-container {
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 2px solid var(--color-primary-light);
+  border-radius: var(--border-radius-lg);
+  background: var(--bg-accent);
 }
 
 /* Multi-file navigation styles */
 .file-navigation {
   margin: 1rem 0;
   padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #f9f9f9;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--bg-secondary);
 }
 
 .file-navigation-header {
@@ -74,7 +101,7 @@
 .file-navigation-header h3 {
   margin: 0;
   font-size: 1rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .file-navigation-controls {
@@ -85,10 +112,10 @@
 
 .file-indicator {
   padding: 0.5rem 1rem;
-  background-color: #e3f2fd;
-  border-radius: 4px;
+  background-color: var(--color-primary-light);
+  border-radius: var(--border-radius-sm);
   font-weight: 500;
-  color: #1565c0;
+  color: var(--color-primary-dark);
 }
 
 .remove-button {
@@ -107,14 +134,14 @@
 }
 
 .file-list {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--border-color);
   padding-top: 1rem;
 }
 
 .file-list h4 {
   margin: 0 0 0.5rem 0;
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .file-tabs {
@@ -125,13 +152,13 @@
 
 .file-tab {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #ddd;
-  background-color: white;
-  color: #333;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
   font-size: 0.875rem;
-  transition: all 0.2s;
+  transition: all var(--transition-normal);
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -139,82 +166,16 @@
 }
 
 .file-tab:hover {
-  border-color: #007acc;
-  background-color: #f0f8ff;
+  border-color: var(--color-primary);
+  background-color: var(--bg-accent);
 }
 
 .file-tab.active {
-  border-color: #007acc;
-  background-color: #007acc;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
   color: white;
 }
 
 .file-tab.active:hover {
-  background-color: #005999;
-}
-
-/* Pagination styles for UniProt search */
-.pagination-info {
-  margin: 1rem 0;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-}
-
-.pagination-info p {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.pagination-button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #007acc;
-  background-color: #007acc;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-}
-
-.pagination-button:hover:not(:disabled) {
-  background-color: #005999;
-}
-
-.pagination-button:disabled {
-  background-color: #ccc;
-  border-color: #ccc;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.pagination-status {
-  font-size: 0.9rem;
-  color: #666;
-  font-weight: 500;
-}
-
-/* Dark mode styles for pagination */
-@media (prefers-color-scheme: dark) {
-  .pagination-info {
-    background-color: #2d3748;
-    border-color: #4a5568;
-  }
-  
-  .pagination-info p {
-    color: #a0aec0;
-  }
-  
-  .pagination-status {
-    color: #a0aec0;
-  }
+  background-color: var(--color-primary-hover);
 }

@@ -1,126 +1,135 @@
 .share-url-panel {
-  background: #f8f9fa;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+  background: var(--bg-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-lg) 0;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
+}
+
+.share-url-panel:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .share-url-header h3 {
-  margin: 0 0 0.5rem 0;
-  color: #007bff;
-  font-size: 1.1rem;
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-primary);
+  font-size: 1.125rem;
   font-weight: 600;
 }
 
 .share-url-header p {
-  margin: 0 0 1rem 0;
-  color: #6c757d;
-  font-size: 0.9rem;
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .share-url-content {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-lg);
 }
 
 .url-display {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   align-items: center;
 }
 
 .share-url-input {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-family: monospace;
-  background: white;
-  color: #495057 !important;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  font-family: var(--font-family-mono);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   cursor: pointer;
+  transition: all var(--transition-normal);
 }
 
 .share-url-input:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-  color: #495057 !important;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.share-url-input:hover {
+  border-color: var(--border-color-hover);
 }
 
 .share-url-input::selection {
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
 }
 
 .copy-button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #007bff;
-  border-radius: 4px;
-  background: #007bff;
+  background: var(--color-primary);
   color: white;
-  cursor: pointer;
-  font-size: 0.9rem;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all var(--transition-normal);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .copy-button:hover {
-  background: #0056b3;
-  border-color: #0056b3;
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.copy-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .copy-button.copied {
-  background: #28a745;
-  border-color: #28a745;
+  background: var(--color-success);
 }
 
 .copy-error {
-  padding: 0.5rem;
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
+  padding: var(--spacing-sm);
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  margin-top: var(--spacing-sm);
 }
 
 .share-url-info {
-  background: white;
-  padding: 0.75rem;
-  border-radius: 4px;
-  border: 1px solid #e9ecef;
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .share-url-info p {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9rem;
-  color: #495057;
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
-.share-url-info ul {
-  margin: 0;
-  padding-left: 1.5rem;
-  list-style: disc;
+.share-url-info p:last-child {
+  margin-bottom: 0;
 }
 
-.share-url-info li {
-  font-size: 0.9rem;
-  color: #6c757d;
-  margin-bottom: 0.25rem;
+.share-url-info strong {
+  color: var(--text-primary);
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .url-display {
-    flex-direction: column;
-  }
-  
-  .copy-button {
-    align-self: stretch;
-  }
+.share-url-info code {
+  background: var(--bg-tertiary);
+  padding: 0.125rem 0.25rem;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
 }

@@ -54,7 +54,7 @@ function AppContent() {
       <SharedUrlNotification />
       
       <h1>Emerald Web</h1>
-      <p>Protein Sequence Alignment Visualization</p>
+      <p>Optimal and suboptimal protein Sequence Alignment Visualization</p>
 
       <div style={{padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem", fontSize: "1rem" }}>
         <p>
@@ -88,19 +88,11 @@ function AppContent() {
         <div className="results-section">
           <h2>Alignment Results</h2>
           <div className="sequence-info">
-            <p><strong>Representative (x-axis): </strong> {representativeDescriptor}</p>
-            <p><strong>Member (y-axis):</strong> {memberDescriptor}</p>
+            <p><strong>X-axis: </strong> {representativeDescriptor}</p>
+            <p><strong>Y-axis: </strong> {memberDescriptor}</p>
           </div>
           
-          {/* Share URL Panel */}
-          <ShareUrlPanel
-            descriptorA={representativeDescriptor}
-            descriptorB={memberDescriptor}
-            alpha={state.params.alpha}
-            delta={state.params.delta}
-            accessionA={state.sequences.accessionA}
-            accessionB={state.sequences.accessionB}
-          />
+         
           
           <AlignmentGraphWithInfoPanel
             key={JSON.stringify(localAlignments)}
@@ -111,6 +103,16 @@ function AppContent() {
             alignments={localAlignments}
             width={900}
             height={900}
+          />
+
+           {/* Share URL Panel */}
+          <ShareUrlPanel
+            descriptorA={representativeDescriptor}
+            descriptorB={memberDescriptor}
+            alpha={state.params.alpha}
+            delta={state.params.delta}
+            accessionA={state.sequences.accessionA}
+            accessionB={state.sequences.accessionB}
           />
         </div>
       )}

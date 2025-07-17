@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSequence } from '../context/SequenceContext';
 import { SequenceList } from './SequenceList';
+import './UniProtSearch.css';
 
 interface UniProtResult {
   accession: string;
@@ -150,113 +151,68 @@ const UniProtSearch: React.FC = () => {
       
       {error && <div className="error-message">{error}</div>}
       
-      {false && (
-        <div className="uniprot-results">
-          <h3>Results:</h3>
-          
-          <ul className="result-list">
-            {results.map((result) => (
-              <li key={result.accession} className="result-item">
-                <div className="result-header">
-                  <span className="result-id">{result.id}</span>
-                  <span className="result-accession">({result.accession})</span>
-                </div>
-                <div className="result-protein">{result.proteinName}</div>
-                <div className="result-organism">{result.organismName}</div>
-                <div className="result-sequence">
-                  {result.sequence.substring(0, 50)}...
-                </div>
-                <div className="result-actions">
-                  <button onClick={() => loadToSequenceA(result)}>
-                    Use as Sequence A
-                  </button>
-                  <button onClick={() => loadToSequenceB(result)}>
-                    Use as Sequence B
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      
       {results.length === 0 && !isSearching && searchTerm && (
         <div className="no-results">No results found. Try a different search term.</div>
       )}
 
       {results.length > 0 && (
-        <div className="pagination-info">
-          <p>
-            Showing {startIndex + 1}-{Math.min(endIndex, results.length)} of {results.length} results
-          </p>
-          {totalPages > 1 && (
-            <div className="pagination-controls">
-              <button 
-                onClick={handlePreviousPage} 
-                disabled={currentPage === 0}
-                className="pagination-button"
-              >
-                Previous
-              </button>
-              <span className="pagination-status">
-                Page {currentPage + 1} of {totalPages}
-              </span>
-              <button 
-                onClick={handleNextPage} 
-                disabled={currentPage === totalPages - 1}
-                className="pagination-button"
-              >
-                Next
-              </button>
-            </div>
-          )}
+        <div className="search-results-container">
+          <SequenceList
+            sequences={currentResults.map(result => ({
+              id: `${result.id} | ${result.proteinName}`,
+              description: `${result.id} | ${result.proteinName} | ${result.organismName}`,
+              sequence: result.sequence,
+              accession: result.accession,
+              proteinName: result.proteinName,
+              organismName: result.organismName,
+            }))}
+            useIdAsProteinName={true}
+            onSelectA={seq => loadToSequenceA({
+              accession: seq.accession || '',
+              id: seq.id,
+              proteinName: seq.proteinName || '',
+              organismName: seq.organismName || '',
+              sequence: seq.sequence,
+              pdbIds: []
+            })}
+            onSelectB={seq => loadToSequenceB({
+              accession: seq.accession || '',
+              id: seq.id,
+              proteinName: seq.proteinName || '',
+              organismName: seq.organismName || '',
+              sequence: seq.sequence,
+              pdbIds: []
+            })}
+          />
+          
+          <div className="pagination-info">
+            <p>
+              Showing {startIndex + 1}-{Math.min(endIndex, results.length)} of {results.length} results
+            </p>
+            {totalPages > 1 && (
+              <div className="pagination-controls">
+                <button 
+                  onClick={handlePreviousPage} 
+                  disabled={currentPage === 0}
+                  className="pagination-button"
+                >
+                  Previous
+                </button>
+                <span className="pagination-status">
+                  Page {currentPage + 1} of {totalPages}
+                </span>
+                <button 
+                  onClick={handleNextPage} 
+                  disabled={currentPage === totalPages - 1}
+                  className="pagination-button"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      <SequenceList
-        sequences={currentResults.map(result => ({
-          id: result.id,
-          description: `${result.id} | ${result.proteinName} | ${result.organismName}`,
-          sequence: result.sequence,
-          accession: result.accession,
-          proteinName: result.proteinName,
-          organismName: result.organismName,
-        }))}
-        onSelectA={seq => loadToSequenceA({
-          accession: seq.accession || '',
-          id: seq.id,
-          proteinName: seq.proteinName || '',
-          organismName: seq.organismName || '',
-          sequence: seq.sequence,
-          pdbIds: []
-        })}
-        onSelectB={seq => loadToSequenceB({
-          accession: seq.accession || '',
-          id: seq.id,
-          proteinName: seq.proteinName || '',
-          organismName: seq.organismName || '',
-          sequence: seq.sequence,
-          pdbIds: []
-        })}
-        onLoadBoth={(a, b) => {
-          loadToSequenceA({
-            accession: a.accession || '', 
-            id: a.id, 
-            proteinName: a.proteinName || '', 
-            organismName: a.organismName || '', 
-            sequence: a.sequence,
-            pdbIds: []
-          });
-          loadToSequenceB({
-            accession: b.accession || '', 
-            id: b.id, 
-            proteinName: b.proteinName || '', 
-            organismName: b.organismName || '', 
-            sequence: b.sequence,
-            pdbIds: []
-          });
-        }}
-      />
     </div>
   );
 };

@@ -236,6 +236,7 @@ export const FastaFileUploader: React.FC = () => {
           onSelectA={seq => loadSequence(seq, true)}
           onSelectB={seq => loadSequence(seq, false)}
           onLoadBoth={loadBothSequences}
+          showDescription={true}
         />
       )}
     </div>
