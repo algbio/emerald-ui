@@ -122,6 +122,36 @@ body {
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
+/* Global mobile reset and optimization */
+@media (max-width: 768px) {
+  /* Prevent any horizontal scrolling and ensure full width usage */
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Reset any containers that might have fixed widths */
+  div, section, article, main, aside, header, footer {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Ensure all form elements and inputs are responsive */
+  input, textarea, select, button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Fix any potential grid or flexbox issues */
+  .grid, .flex, [class*="grid"], [class*="flex"] {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 /* Main layout improvements */
 .main-content {
   max-width: 1400px;

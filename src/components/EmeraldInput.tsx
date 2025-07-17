@@ -112,37 +112,41 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
               </div>
             ))}
           </div>
-          <div className="input-group">
-            <label htmlFor="accessionA">UniProt Accession</label>
-            <div className="accession-input-group">
-              <input
-                id="accessionA"
-                type="text"
-                value={sequences.accessionA}
-                onChange={(e) => dispatch({ 
-                  type: 'UPDATE_ACCESSION_A', 
-                  payload: e.target.value 
-                })}
-                placeholder="e.g., P04637"
-                className="emerald-input"
-              />
-              <button
-                type="button"
-                onClick={handleFetchSequenceA}
-                disabled={!sequences.accessionA.trim() || fetchStatusA === 'loading'}
-                className="fetch-button"
-              >
-                {fetchStatusA === 'loading' ? 'Fetching...' : 'Fetch'}
-              </button>
+          <div className="fetch-upload-row">
+            <div className="input-group">
+              <label htmlFor="accessionA">UniProt Accession</label>
+              <div className="accession-input-group">
+                <input
+                  id="accessionA"
+                  type="text"
+                  value={sequences.accessionA}
+                  onChange={(e) => dispatch({ 
+                    type: 'UPDATE_ACCESSION_A', 
+                    payload: e.target.value 
+                  })}
+                  placeholder="e.g., P04637"
+                  className="emerald-input"
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchSequenceA}
+                  disabled={!sequences.accessionA.trim() || fetchStatusA === 'loading'}
+                  className="fetch-button"
+                >
+                  {fetchStatusA === 'loading' ? 'Fetching...' : 'Fetch'}
+                </button>
+              </div>
+              {fetchErrorA && <div className="error-text">{fetchErrorA}</div>}
             </div>
-            {fetchErrorA && <div className="error-text">{fetchErrorA}</div>}
-          </div>
-          <div className="input-group">
-            <StructureFileUploader
-              onStructureSelect={loadStructureFileA}
-              label="PDB/CIF File"
-              disabled={fetchStatusA === 'loading'}
-            />
+            <div className="input-group">
+              <label htmlFor="accessionA">File upload</label>
+
+              <StructureFileUploader
+                onStructureSelect={loadStructureFileA}
+                label="PDB/CIF File"
+                disabled={fetchStatusA === 'loading'}
+              />
+            </div>
           </div>
         </div>
         
@@ -178,37 +182,40 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
             />
             {!sequences.sequenceB.trim() && <div className="error-text">Sequence cannot be empty</div>}
           </div>
-          <div className="input-group">
-            <label htmlFor="accessionB">UniProt Accession</label>
-            <div className="accession-input-group">
-              <input
-                id="accessionB"
-                type="text"
-                value={sequences.accessionB}
-                onChange={(e) => dispatch({
-                  type: 'UPDATE_ACCESSION_B',
-                  payload: e.target.value
-                })}
-                placeholder="e.g., P02769"
-                className="emerald-input"
-              />
-              <button
-                type="button"
-                onClick={handleFetchSequenceB}
-                disabled={!sequences.accessionB.trim() || fetchStatusB === 'loading'}
-                className="fetch-button"
-              >
-                {fetchStatusB === 'loading' ? 'Fetching...' : 'Fetch'}
-              </button>
+          <div className="fetch-upload-row">
+            <div className="input-group">
+              <label htmlFor="accessionB">UniProt Accession</label>
+              <div className="accession-input-group">
+                <input
+                  id="accessionB"
+                  type="text"
+                  value={sequences.accessionB}
+                  onChange={(e) => dispatch({
+                    type: 'UPDATE_ACCESSION_B',
+                    payload: e.target.value
+                  })}
+                  placeholder="e.g., P02769"
+                  className="emerald-input"
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchSequenceB}
+                  disabled={!sequences.accessionB.trim() || fetchStatusB === 'loading'}
+                  className="fetch-button"
+                >
+                  {fetchStatusB === 'loading' ? 'Fetching...' : 'Fetch'}
+                </button>
+              </div>
+              {fetchErrorB && <div className="error-text">{fetchErrorB}</div>}
             </div>
-            {fetchErrorB && <div className="error-text">{fetchErrorB}</div>}
-          </div>
-          <div className="input-group">
-            <StructureFileUploader
-              onStructureSelect={loadStructureFileB}
-              label="PDB/CIF File"
-              disabled={fetchStatusB === 'loading'}
-            />
+            <div className="input-group">
+              <label htmlFor="accessionA">File upload</label>
+              <StructureFileUploader
+                onStructureSelect={loadStructureFileB}
+                label="PDB/CIF File"
+                disabled={fetchStatusB === 'loading'}
+              />
+            </div>
           </div>
         </div>
         

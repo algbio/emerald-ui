@@ -7,6 +7,25 @@
   color: var(--text-primary);
 }
 
+/* Mobile and tablet root styling */
+@media (max-width: 1024px) {
+  #root {
+    padding: 0.5rem;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    overflow-x: hidden;
+  }
+}
+
+/* Tablet-specific root styling */
+@media (min-width: 769px) and (max-width: 1024px) {
+  #root {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -51,6 +70,15 @@
   margin-bottom: 2rem;
 }
 
+/* Mobile and tablet sequence input panel styling */
+@media (max-width: 1024px) {
+  .sequence-input-panel {
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
 .fasta-uploader {
   flex: 0 0 40%;
   min-width: 320px;
@@ -59,6 +87,16 @@
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
+}
+
+/* Mobile and tablet fasta uploader styling */
+@media (max-width: 1024px) {
+  .fasta-uploader {
+    flex: none;
+    min-width: auto;
+    max-width: 100%;
+    padding: 0.75rem;
+  }
 }
 
 /* Ensure proper separation between upload and results sections */
@@ -178,4 +216,175 @@
 
 .file-tab.active:hover {
   background-color: var(--color-primary-hover);
+}
+
+/* Mobile responsiveness enhancements */
+@media (max-width: 768px) {
+  .file-navigation {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+  }
+  
+  .file-navigation-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .file-tab {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    max-width: none;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .file-tabs {
+    gap: 0.75rem;
+  }
+  
+  .structure-viewer-container {
+    margin-top: 1rem;
+    padding: 0.75rem;
+  }
+  
+  .parsed-sequences {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+  }
+  
+  .card {
+    padding: 1rem;
+  }
+  
+  .logo {
+    height: 4em;
+    padding: 1em;
+  }
+}
+
+/* Tablet-specific adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .file-navigation {
+    padding: 0.875rem;
+  }
+  
+  .file-tab {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9rem;
+  }
+  
+  .structure-viewer-container {
+    padding: 0.875rem;
+  }
+  
+  .card {
+    padding: 1.5rem;
+  }
+}
+
+/* Ensure proper touch targets and spacing */
+@media (max-width: 768px) {
+  /* Make sure all interactive elements have proper touch targets */
+  button, input[type="button"], input[type="submit"], .file-tab {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve text readability on small screens */
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  /* Prevent horizontal scrolling */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Comprehensive mobile layout fixes to ensure full width usage */
+@media (max-width: 768px) {
+  /* Reset any potential width constraints */
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .app-container,
+  .input-methods,
+  .results-section,
+  .input-method-tabs,
+  .tabs-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+  
+  /* Ensure main content sections use full width */
+  .input-methods {
+    padding: 0 0.5rem !important;
+  }
+  
+  .results-section {
+    padding: 0 0.5rem !important;
+  }
+  
+  .sequence-info {
+    width: 100%;
+  }
+  
+  /* Fix any containers with fixed widths */
+  div[style*="padding"],
+  div[style*="margin"],
+  div[style*="width"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Typography adjustments for mobile */
+  h1 {
+    font-size: 1.5rem;
+    text-align: center;
+    margin: 1rem 0;
+    padding: 0 0.5rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+    text-align: center;
+    margin: 0.75rem 0;
+    padding: 0 0.5rem;
+  }
+  
+  p {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0.5rem 0;
+    padding: 0 0.5rem;
+  }
+  
+  /* Ensure all flex and grid containers adapt */
+  [style*="display: flex"],
+  [style*="display: grid"],
+  .flex,
+  .grid {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }

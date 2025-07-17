@@ -205,3 +205,56 @@
   border-radius: 3px;
   display: inline-block;
 }
+
+/* Mobile responsiveness for sequence alignment viewer */
+@media (max-width: 768px) {
+  .sequence-alignment-viewer {
+    padding: 8px;
+    margin: 8px 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .sequence-name {
+    flex: 0 0 60px;
+    font-size: 12px;
+    padding-right: 8px;
+  }
+  
+  .sequence-content {
+    font-size: 14px;
+  }
+  
+  .position-indicators {
+    margin-left: 68px;
+    font-size: 9px;
+  }
+  
+  .position-marker {
+    width: 14px;
+    font-size: 9px;
+  }
+  
+  .alignment-header {
+    font-size: 0.9rem;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  
+  .legend-items {
+    gap: 8px;
+  }
+  
+  .legend-item {
+    font-size: 0.8rem;
+  }
+  
+  .legend-color {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .scrollable-alignment {
+    padding-bottom: 8px;
+  }
+}

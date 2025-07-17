@@ -7,11 +7,33 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Mobile and tablet styling for better usability */
+@media (max-width: 1024px) {
+  .emerald-input-card {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: var(--border-radius-md);
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 .emerald-title {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 16px;
   color: var(--text-primary);
+}
+
+/* Mobile and tablet title styling */
+@media (max-width: 1024px) {
+  .emerald-title {
+    font-size: 18px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
 }
 
 .emerald-grid {
@@ -20,15 +42,32 @@
   gap: 24px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .emerald-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    width: 100%;
+  }
+}
+
+/* Tablet-specific styling */
+@media (min-width: 1025px) and (max-width: 1400px) {
+  .emerald-grid {
+    gap: 20px;
   }
 }
 
 .emerald-column {
   display: flex;
   flex-direction: column;
+}
+
+/* Mobile and tablet column styling */
+@media (max-width: 1024px) {
+  .emerald-column {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .emerald-full-width {
@@ -59,13 +98,28 @@ label {
   transition: all var(--transition-normal);
 }
 
+/* Mobile-specific input styling for better touch interaction */
+@media (max-width: 768px) {
+  .emerald-input, .emerald-textarea {
+    padding: 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: var(--border-radius-lg);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .emerald-textarea {
+    min-height: 120px;
+  }
+}
+
 .emerald-textarea {
   resize: vertical;
 }
 
 .emerald-input:focus, .emerald-textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
@@ -82,6 +136,7 @@ label {
 .emerald-slider {
   width: 100%;
   margin: 8px 0;
+  accent-color: #10b981;
 }
 
 .slider-container {
@@ -97,7 +152,7 @@ label {
 }
 
 .emerald-button {
-  background-color: var(--color-primary);
+  background-color: #10b981;
   color: white;
   border: none;
   border-radius: var(--border-radius-md);
@@ -109,8 +164,18 @@ label {
   transition: background-color var(--transition-normal);
 }
 
+/* Mobile-specific button styling */
+@media (max-width: 768px) {
+  .emerald-button {
+    padding: 16px 20px;
+    font-size: 1rem;
+    border-radius: var(--border-radius-lg);
+    min-height: 48px; /* Minimum touch target size */
+  }
+}
+
 .emerald-button:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  background-color: #059669;
 }
 
 .emerald-button:disabled {
@@ -136,8 +201,20 @@ h3 {
   flex: 1;
 }
 
+/* Mobile and tablet accession input group styling */
+@media (max-width: 1024px) {
+  .accession-input-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .accession-input-group .emerald-input {
+    flex: none;
+  }
+}
+
 .fetch-button {
-  background-color: var(--color-secondary);
+  background-color: #10b981;
   color: white;
   border: none;
   border-radius: var(--border-radius-md);
@@ -149,11 +226,116 @@ h3 {
   transition: background-color var(--transition-normal);
 }
 
+/* Mobile-specific fetch button styling */
+@media (max-width: 768px) {
+  .fetch-button {
+    padding: 14px 18px;
+    font-size: 1rem;
+    border-radius: var(--border-radius-lg);
+    min-height: 48px;
+  }
+}
+
 .fetch-button:hover:not(:disabled) {
-  background-color: var(--color-secondary-hover);
+  background-color: #059669;
 }
 
 .fetch-button:disabled {
   background-color: var(--color-gray-400);
   cursor: not-allowed;
+}
+
+.fetch-upload-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.fetch-upload-row > .input-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Mobile and tablet layout for fetch/upload row */
+@media (max-width: 1024px) {
+  .fetch-upload-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .fetch-upload-row > .input-group {
+    margin-bottom: 12px;
+  }
+}
+
+.warning-text {
+  color: #ff9800;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 14px;
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: var(--border-radius-md);
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+/* Additional mobile enhancements */
+@media (max-width: 768px) {
+  .input-group {
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  
+  .slider-container {
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  
+  label {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+  
+  .error-text, .warning-text {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  
+  .error-message {
+    font-size: 1rem;
+    padding: 12px;
+    margin-top: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  
+  /* Improve slider touch targets */
+  .emerald-slider {
+    height: 6px;
+    margin: 12px 0;
+    width: 100%;
+    accent-color: #10b981;
+  }
+  
+  /* Ensure all form elements fill the available width */
+  .emerald-full-width {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Make sure the grid containers don't have any unwanted margins */
+  .emerald-grid {
+    margin: 0;
+    padding: 0;
+  }
 }

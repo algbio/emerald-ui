@@ -39,6 +39,37 @@
   }
 }
 
+/* Mobile-specific styling */
+@media (max-width: 768px) {
+  .alignment-structures-viewer {
+    margin-top: 1rem;
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .structures-container {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+    width: 100%;
+  }
+  
+  .structure-panel {
+    padding: 0.75rem;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .structures-title {
+    font-size: 1.25rem;
+  }
+  
+  .structures-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+}
+
 .structure-panel {
   background: white;
   border-radius: 8px;

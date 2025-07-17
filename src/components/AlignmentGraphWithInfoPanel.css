@@ -65,10 +65,27 @@
 
 @media (max-width: 768px) {
   .alignment-graph-with-info-panel {
-    padding: 0 10px;
+    padding: 0;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
   }
   
   .graph-container {
     overflow-x: auto;
+    width: 100%;
+  }
+  
+  .info-panel-container {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .sequence-alignment-viewer-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 8px;
+    box-sizing: border-box;
   }
 }

@@ -49,6 +49,7 @@
 .sequence-table-container {
   overflow-x: auto;
   max-width: 100%;
+  width: 100%;
   /* border-radius: var(--border-radius-lg); */
   box-shadow: var(--shadow-md);
   margin: 1em 0;
@@ -460,26 +461,32 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .sequence-input-panel {
     flex-direction: column;
     gap: 1rem;
+    width: 100%;
   }
   
   .fasta-uploader,
   .uniprot-search {
     min-width: 100%;
     max-width: 100%;
+    width: 100%;
   }
   
   .sequence-table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    margin: 1rem 0;
   }
   
   .sequence-table {
     min-width: 600px;
     font-size: 0.6rem;
+    width: 100%;
   }
   
   .sequence-table th,

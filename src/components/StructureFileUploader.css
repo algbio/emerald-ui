@@ -3,7 +3,7 @@
 }
 
 .upload-button {
-  background-color: #9c27b0;
+  background-color: #10b981;
   color: white;
   border: none;
   border-radius: 4px;
@@ -15,8 +15,18 @@
   transition: background-color 0.2s ease;
 }
 
+/* Mobile-specific upload button styling */
+@media (max-width: 768px) {
+  .upload-button {
+    padding: 14px 16px;
+    font-size: 1rem;
+    border-radius: 8px;
+    min-height: 48px;
+  }
+}
+
 .upload-button:hover:not(:disabled) {
-  background-color: #7b1fa2;
+  background-color: #059669;
 }
 
 .upload-button:disabled {
@@ -34,6 +44,15 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: #f9f9f9;
+}
+
+/* Mobile-specific chain selector styling */
+@media (max-width: 768px) {
+  .chain-selector {
+    padding: 16px;
+    margin-top: 16px;
+    border-radius: 8px;
+  }
 }
 
 .chain-selector h4 {

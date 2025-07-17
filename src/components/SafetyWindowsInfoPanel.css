@@ -11,6 +11,17 @@
   flex-direction: column;
 }
 
+/* Mobile responsiveness for safety windows panel */
+@media (max-width: 768px) {
+  .safety-windows-info-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: auto;
+    min-height: 400px;
+    max-height: 60vh;
+  }
+}
+
 .panel-header {
   padding: 16px;
   background: #f8f9fa;
