@@ -548,36 +548,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       {/* Main viewer container */}
       <div className="structure-viewer-main">
        
-        {/* Structure info */}
-        {(uniprotId || pdbId || selectedPdbId) && (
-          <div className="structure-info">
-            {uniprotId && (
-              <div><strong>UniProt:</strong> {uniprotId}</div>
-            )}
-            <div>
-              <strong>{useAlphaFold ? 'AlphaFold:' : 'PDB:'}</strong> 
-              {useAlphaFold ? 
-                ` AF-${uniprotId}-F1` : 
-                (selectedPdbId || pdbId || 'Loading...').toUpperCase()
-              }
-            </div>
-            {useAlphaFold && (
-              <div className="structure-info-complete-model">
-                Complete sequence model
-              </div>
-            )}
-            {availablePdbIds.length > 0 && (
-              <div className="structure-info-secondary">
-                {availablePdbIds.length} PDB structure{availablePdbIds.length > 1 ? 's' : ''} available
-              </div>
-            )}
-            {!useAlphaFold && hasAlphaFold && (
-              <div className="structure-info-secondary">
-                AlphaFold structure available
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Loading indicator */}
         {isLoading && showLoading && (
