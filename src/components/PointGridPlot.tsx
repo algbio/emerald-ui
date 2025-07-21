@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, forwardRef } from 'react'
 import * as d3 from "d3";
 import { usePointGridScales } from '../hooks/usePointGridScales';
 import { usePointGridTicks } from '../hooks/usePointGridTicks';
@@ -30,17 +30,19 @@ interface PointGridProps {
   alignments: Alignment[];
   xDomain: number[];
   yDomain: number[];
-  showMinimap?: boolean;  // Add this new prop
-  minimapSize?: number;    // Add this new prop
-  minimapPadding?: number; // Add this new prop
+  showMinimap?: boolean;  
+  minimapSize?: number;    
+  minimapPadding?: number; 
   // Safety window interaction props
   selectedSafetyWindowId?: string | null;
   hoveredSafetyWindowId?: string | null;
   onSafetyWindowHover?: (windowId: string | null, alignment?: Alignment | null) => void;
   onSafetyWindowSelect?: (windowId: string | null, alignment?: Alignment | null) => void;
+  // Zoom transform callback
+  onTransformChange?: (transform: any) => void;
 }
 
-function PointGridPlot({
+const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
   width = 800,
   height = 800,
   marginTop = 80,
@@ -58,10 +60,23 @@ function PointGridPlot({
   selectedSafetyWindowId,
   hoveredSafetyWindowId,
   onSafetyWindowHover,
-  onSafetyWindowSelect
-}: PointGridProps) {
+  onSafetyWindowSelect,
+  onTransformChange
+}, ref) => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // If a ref is forwarded, merge it with our internal ref
+  const mergedRef = (node: HTMLCanvasElement | null) => {
+    canvasRef.current = node;
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(node);
+      } else {
+        ref.current = node;
+      }
+    }
+  };
   const [transform, setTransform] = useState(d3.zoomIdentity);
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
   const [highlightedWindow] = useState<Alignment | null>(null);
@@ -366,7 +381,13 @@ function PointGridPlot({
 
     const zoom = d3.zoom()
       .scaleExtent([0.1, 100])
-      .on("zoom", (event) => setTransform(event.transform));
+      .on("zoom", (event) => {
+        setTransform(event.transform);
+        // Notify parent component of transform change
+        if (onTransformChange) {
+          onTransformChange(event.transform);
+        }
+      });
 
     // Use type assertion to fix the incompatible call
     const selection = d3.select(canvasRef.current);
@@ -379,7 +400,7 @@ function PointGridPlot({
 
   return (
     <canvas
-      ref={canvasRef}
+      ref={mergedRef}
       width={width}
       height={height}
       style={{ cursor: isMinimapDragging ? 'move' : 'grab' }}
@@ -392,7 +413,9 @@ function PointGridPlot({
       onMouseUp={handleMouseUp}
     />
   );
-}
+});
+
+PointGridPlot.displayName = 'PointGridPlot';
 
 export default PointGridPlot;
 export type { Alignment, PointGridPlotProps };

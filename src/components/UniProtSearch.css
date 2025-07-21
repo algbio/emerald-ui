@@ -151,6 +151,7 @@
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  text-align: center;
 }
 
 .pagination-controls {
@@ -197,6 +198,7 @@
   
   .pagination-info p {
     color: var(--text-secondary);
+    text-align: center;
   }
   
   .pagination-status {

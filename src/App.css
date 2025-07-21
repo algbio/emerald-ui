@@ -2,7 +2,7 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
+  text-align: left;
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -360,7 +360,7 @@
   /* Typography adjustments for mobile */
   h1 {
     font-size: 1.5rem;
-    text-align: center;
+    /* We already have text-align: center in the .app-title class */
     margin: 1rem 0;
     padding: 0 0.5rem;
   }
@@ -393,6 +393,12 @@
 .app-title {
   color: #18ca54ff;
   font-weight: bold;
+  text-align: center;
+}
+
+/* Center the subtitle below the app title */
+.app-title + p {
+  text-align: center;
 }
 
 .citation-section {
@@ -406,6 +412,10 @@
   text-align: center;
   color: #666;
   margin-top: 2rem;
+}
+
+.input-title {
+  text-align: center;
 }
 
 /* Mobile adjustments for app-specific styles */

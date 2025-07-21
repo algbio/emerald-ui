@@ -1,0 +1,35 @@
+.share-and-export-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-lg) 0;
+  width: 100%;
+}
+
+.panel-section {
+  min-height: 0; /* Allow sections to shrink if needed */
+}
+
+.share-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.export-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive design - stack vertically on smaller screens */
+@media (max-width: 768px) {
+  .share-and-export-panel {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
+/* Ensure children don't have conflicting margins */
+.share-and-export-panel .share-url-panel,
+.share-and-export-panel .export-image-panel {
+  margin: 0;
+}

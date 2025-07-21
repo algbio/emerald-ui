@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import EmeraldInput from './components/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
 import SequenceInputPanel from './components/SequenceInputPanel'
 import AlignmentStructuresViewer from './components/AlignmentStructuresViewer'
 import AlignmentGraphWithInfoPanel from './components/AlignmentGraphWithInfoPanel'
-import ShareUrlPanel from './components/ShareUrlPanel'
+import ShareAndExportPanel from './components/ShareAndExportPanel'
 import SharedUrlNotification from './components/SharedUrlNotification'
 import type { Alignment } from './components/PointGridPlot'
 
@@ -19,6 +19,7 @@ function AppContent() {
   const [representativeDescriptor, setRepresentativeDescriptor] = useState("");
   const [memberDescriptor, setMemberDescriptor] = useState("");
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Update local state when context state changes
   useEffect(() => {
@@ -44,6 +45,11 @@ function AppContent() {
     setRepresentativeDescriptor(data.descriptorA);
     setMemberDescriptor(data.descriptorB);
   }
+
+  // Callback to receive canvas ref from AlignmentGraphWithInfoPanel
+  const handleCanvasRef = (ref: React.RefObject<HTMLCanvasElement | null>) => {
+    canvasRef.current = ref.current;
+  };
 
   // Check if we have data to display
   const hasData = representative && member && localAlignments.length > 0;
@@ -75,7 +81,7 @@ function AppContent() {
       
       <div className="input-methods">
         <div className="input-method-tabs">
-          <h1>Input Options</h1>
+          <h1 className="input-title">Input Options</h1>
           <div className="tabs-container">
                   <SequenceInputPanel />
 
@@ -105,16 +111,18 @@ function AppContent() {
             alignments={localAlignments}
             width={900}
             height={900}
+            onCanvasRef={handleCanvasRef}
           />
 
-           {/* Share URL Panel */}
-          <ShareUrlPanel
+           {/* Share URL and Export Image Panel */}
+          <ShareAndExportPanel
             descriptorA={representativeDescriptor}
             descriptorB={memberDescriptor}
             alpha={state.params.alpha}
             delta={state.params.delta}
             accessionA={state.sequences.accessionA}
             accessionB={state.sequences.accessionB}
+            canvasRef={canvasRef}
           />
         </div>
       )}

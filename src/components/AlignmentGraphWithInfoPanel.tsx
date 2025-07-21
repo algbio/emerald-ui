@@ -16,6 +16,7 @@ interface AlignmentGraphWithInfoPanelProps {
   showMinimap?: boolean;
   minimapSize?: number;
   minimapPadding?: number;
+  onCanvasRef?: (ref: React.RefObject<HTMLCanvasElement | null>) => void;
 }
 
 export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelProps> = ({
@@ -28,7 +29,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   height = 900,
   showMinimap = true,
   minimapSize = 250,
-  minimapPadding = 100
+  minimapPadding = 100,
+  onCanvasRef
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
@@ -105,6 +107,13 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             hoveredSafetyWindowId={hoveredSafetyWindowId}
             onSafetyWindowHover={handleSafetyWindowHover}
             onSafetyWindowSelect={handleSafetyWindowSelect}
+            ref={(canvasElement) => {
+              // Create a ref object to pass back to the parent
+              const canvasRefObj = { current: canvasElement };
+              if (onCanvasRef) {
+                onCanvasRef(canvasRefObj);
+              }
+            }}
           />
         </div>
         
