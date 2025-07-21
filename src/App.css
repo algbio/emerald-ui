@@ -388,3 +388,31 @@
     max-width: 100% !important;
   }
 }
+
+/* App-specific styles */
+.app-title {
+  color: #18ca54ff;
+  font-weight: bold;
+}
+
+.citation-section {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.no-data-message {
+  text-align: center;
+  color: #666;
+  margin-top: 2rem;
+}
+
+/* Mobile adjustments for app-specific styles */
+@media (max-width: 768px) {
+  .citation-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+}

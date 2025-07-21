@@ -53,10 +53,12 @@ function AppContent() {
       {/* Shared URL Notification */}
       <SharedUrlNotification />
       
-      <h1>Emerald Web</h1>
+      <h1 className="app-title">
+        Emerald Web
+      </h1>
       <p>Optimal and suboptimal protein Sequence Alignment Visualization</p>
 
-      <div style={{padding: "1rem", borderRadius: "8px", marginBottom: "1.5rem", fontSize: "1rem" }}>
+      <div className="citation-section">
         <p>
           <strong>Please cite the following reference when using EMERALD for your research:</strong>
         </p>
@@ -118,7 +120,7 @@ function AppContent() {
       )}
       
       {!hasData && (
-        <p style={{ textAlign: 'center', color: '#666', marginTop: '2rem' }}>
+        <p className="no-data-message">
           Upload a FASTA file or enter sequences to view alignment visualization
         </p>
       )}
