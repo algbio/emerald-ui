@@ -1,9 +1,9 @@
 /* UniProtSearch Component Styles */
 
 .uniprot-search {
-  flex: 0 0 60%;
+  flex: 0 0 55%; /* Reduced from 60% for better fit with the wider page */
   min-width: 320px;
-  max-width: 60%;
+  max-width: 55%; /* Reduced from 60% for better fit */
   padding: 1rem;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);

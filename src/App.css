@@ -1,5 +1,5 @@
 #root {
-  max-width: 1280px;
+  max-width: 1440px; /* Increased from 1280px for better element fit */
   margin: 0 auto;
   padding: 2rem;
   text-align: left;
@@ -65,7 +65,7 @@
 /* Add to your CSS file */
 .sequence-input-panel {
   display: flex;
-  gap: 2rem;
+  gap: 3%; /* Changed from 2rem to 3% for better spacing with new widths */
   align-items: flex-start;
   margin-bottom: 2rem;
 }
@@ -80,9 +80,9 @@
 }
 
 .fasta-uploader {
-  flex: 0 0 40%;
+  flex: 0 0 42%; /* Increased from 40% for better balance with UniProt search */
   min-width: 320px;
-  max-width: 40%;
+  max-width: 42%; /* Increased from 40% for better balance */
   padding: 1rem;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
