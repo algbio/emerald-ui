@@ -115,6 +115,38 @@
   margin-right: 8px;
 }
 
+/* Structure selector styles */
+.structure-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 12px;
+  padding: 4px 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.structure-selector label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.structure-selector input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.structure-selector select {
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #ced4da;
+}
+
 .external-link-button {
   padding: 6px 12px;
   border-radius: 4px;

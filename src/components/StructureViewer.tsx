@@ -64,12 +64,12 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   const pluginRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [availablePdbIds, setAvailablePdbIds] = useState<string[]>([]);
   const [selectedPdbId, setSelectedPdbId] = useState<string>('');
-  const [hasAlphaFold, setHasAlphaFold] = useState<boolean>(false);
   const [useAlphaFold, setUseAlphaFold] = useState<boolean>(false);
   const [isPluginReady, setIsPluginReady] = useState<boolean>(false);
   const [initAttempts, setInitAttempts] = useState<number>(0);
+  const [hasAlphaFold, setHasAlphaFold] = useState<boolean>(false);
+  const [availablePdbIds, setAvailablePdbIds] = useState<string[]>([]);
 
   // Custom Mol* plugin configuration for better protein visualization with sequence viewer
   const getPluginSpec = (): PluginUISpec => {
@@ -583,6 +583,32 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           <div className="external-links-label">
             External Databases:
           </div>
+          
+          {/* Display structure selector when multiple PDB IDs are available */}
+          {availablePdbIds.length > 1 && hasAlphaFold && (
+            <div className="structure-selector">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={useAlphaFold}
+                  onChange={(e) => setUseAlphaFold(e.target.checked)}
+                />
+                Use AlphaFold
+              </label>
+              {!useAlphaFold && (
+                <select
+                  value={selectedPdbId}
+                  onChange={(e) => setSelectedPdbId(e.target.value)}
+                >
+                  {availablePdbIds.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
           
           {uniprotId && (
             <button
