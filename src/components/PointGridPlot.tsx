@@ -16,6 +16,7 @@ import {
   handleMinimapInteraction as handleMinimapInteractionUtil,
   isMouseInMinimap
 } from '../utils/canvas';
+import type { SafetyWindowBounds } from '../utils/canvas';
 import type { PointGridPlotProps, Alignment } from '../types/PointGrid';
 
 interface PointGridProps {
@@ -210,8 +211,17 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
     // Draw axes
     drawAxes(ctx, x, y, marginTop, marginLeft);
     
+    // Create safety window bounds object for display
+    const safetyWindowBounds: SafetyWindowBounds | undefined = selectedWindow ? {
+      // Match the axis orientation from the isInSafetyWindow function
+      xStart: selectedWindow.startDot?.x,
+      xEnd: selectedWindow.endDot?.x,
+      yStart: selectedWindow.startDot?.y,
+      yEnd: selectedWindow.endDot?.y
+    } : undefined;
+
     // Draw axis labels
-    drawAxisLabels(ctx, xTicks, yTicks, x, y, fontSize, marginTop, marginLeft, isInSafetyWindow);
+    drawAxisLabels(ctx, xTicks, yTicks, x, y, fontSize, marginTop, marginLeft, isInSafetyWindow, safetyWindowBounds);
 
     // Set up clipping and draw grid/data
     ctx.save();

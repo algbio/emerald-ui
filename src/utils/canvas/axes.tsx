@@ -1,6 +1,14 @@
 // Axis drawing functions
 import type { ScaleLinear } from 'd3-scale';
 
+// Interface for safety window bounds
+export interface SafetyWindowBounds {
+  xStart?: number;
+  xEnd?: number;
+  yStart?: number;
+  yEnd?: number;
+}
+
 export function drawAxes(
   ctx: CanvasRenderingContext2D,
   x: ScaleLinear<number, number>,
@@ -35,7 +43,9 @@ function drawXIndexMarkers(
   x: ScaleLinear<number, number>,
   marginLeft: number,
   fontSize: number,
-  stringLength: number
+  stringLength: number,
+  marginTop: number,
+  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean
 ) {
   // Get actual X axis range end point
   const xAxisEnd = x.range()[1];
@@ -43,7 +53,12 @@ function drawXIndexMarkers(
   ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
   ctx.fillStyle = '#555';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'bottom';
+  
+  // Calculate character height-based offset for vertical positioning
+  // Use the same vertical positioning logic as safety window indices
+  const charHeight = fontSize * 1.2; // Consistent with safety window indices
+  const topOffset = charHeight * 1.5; // Space from top of axis area, matching safety window indices
   
   // Calculate the visible range in domain units
   const xStart = Math.floor(x.invert(marginLeft));
@@ -57,10 +72,19 @@ function drawXIndexMarkers(
     // Skip if beyond string length
     if (i >= stringLength) break;
     
-    const xPos = x(i);
+    // Position markers centered on characters (at i + 0.5)
+    const xPos = x(i + 0.5);
     // Only draw if in visible range
     if (xPos >= marginLeft && xPos <= xAxisEnd) {
-      ctx.fillText(i.toString(), xPos, 5);
+      // Check if in safety window and highlight if it is
+      if (isInSafetyWindow) {
+        const isInSafety = isInSafetyWindow(i, 'x');
+        ctx.fillStyle = isInSafety ? 'green' : '#555';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+      }
+      
+      // Add 1 to index for display (1-indexed)
+      ctx.fillText((i + 1).toString(), xPos, marginTop - topOffset);
     }
   }
   
@@ -74,12 +98,18 @@ function drawYIndexMarkers(
   marginTop: number,
   marginLeft: number,
   fontSize: number,
-  stringLength: number
+  stringLength: number,
+  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean
 ) {
   ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
   ctx.fillStyle = '#555';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
+  
+  // Calculate character width-based offset for horizontal positioning
+  // Use the same horizontal positioning logic as safety window indices
+  const charHeight = fontSize * 1.2; // Consistent with safety window indices
+  const leftOffset = charHeight * 1.2; // Space for indices, matching safety window indices
   
   // Calculate the visible range for Y axis
   const yStart = Math.floor(y.invert(0));
@@ -92,10 +122,19 @@ function drawYIndexMarkers(
     // Skip if beyond string length
     if (i >= stringLength) break;
     
-    const yPos = y(i);
+    // Position markers centered on characters (at i + 0.5)
+    const yPos = y(i + 0.5);
     // Only draw if in visible range
     if (yPos >= marginTop && yPos <= y.range()[1]) {
-      ctx.fillText(i.toString(), marginLeft - 35, yPos);
+      // Check if in safety window and highlight if it is
+      if (isInSafetyWindow) {
+        const isInSafety = isInSafetyWindow(i, 'y');
+        ctx.fillStyle = isInSafety ? 'green' : '#555';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+      }
+      
+      // Add 1 to index for display (1-indexed)
+      ctx.fillText((i + 1).toString(), marginLeft - leftOffset, yPos);
     }
   }
   
@@ -221,7 +260,8 @@ export function drawAxisLabels(
   fontSize: number,
   marginTop: number,
   marginLeft: number,
-  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
+  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean,
+  selectedSafetyWindow?: SafetyWindowBounds
 ) {
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
@@ -242,9 +282,9 @@ export function drawAxisLabels(
   
   // Draw index markers (either full or minimal based on overlap)
   if (xOverlap) {
-    drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
+    drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
   } else {
-    drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
+    drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
   }
   
   ctx.restore();
@@ -256,9 +296,9 @@ export function drawAxisLabels(
   ctx.clip();
   
   if (yOverlap) {
-    drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
+    drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
   } else {
-    drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
+    drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
   }
   
   ctx.restore();
@@ -268,6 +308,11 @@ export function drawAxisLabels(
   
   // Draw X axis character labels (this function applies its own clipping)
   drawXLabels(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
+  
+  // Draw selected safety window indices if provided
+  if (selectedSafetyWindow) {
+    drawSafetyWindowIndices(ctx, x, y, marginTop, marginLeft, fontSize, selectedSafetyWindow);
+  }
 }
 
 // Draw minimal index markers for X axis showing just first, middle and last visible
@@ -277,6 +322,8 @@ export function drawMinimalXIndexMarkers(
   marginLeft: number,
   fontSize: number,
   stringLength: number,
+  marginTop: number,
+  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean,
 ) {
   // Get actual X axis range end point
   const xAxisEnd = x.range()[1];
@@ -284,7 +331,12 @@ export function drawMinimalXIndexMarkers(
   ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
   ctx.fillStyle = '#555';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
+  ctx.textBaseline = 'bottom';
+  
+  // Calculate character height-based offset for vertical positioning
+  // Use the same vertical positioning logic as safety window indices
+  const charHeight = fontSize * 1.2; // Consistent with safety window indices
+  const topOffset = charHeight * 1.5; // Space from top of axis area, matching safety window indices
   
   // Calculate the visible range in domain units
   const xStart = Math.max(0, Math.floor(x.invert(marginLeft)));
@@ -296,16 +348,33 @@ export function drawMinimalXIndexMarkers(
   // Calculate the middle index
   const xMiddle = Math.floor((xStart + xEnd) / 2);
   
-  // Draw first index marker - always at the start of visible area
-  const xStartPos = Math.max(marginLeft, x(xStart));
-  ctx.fillText(xStart.toString(), xStartPos, 5);
+  // Draw first index marker - always at the start of visible area (centered on character)
+  const xStartPos = Math.max(marginLeft, x(xStart + 0.5));
+  
+  // Check if this position is in a safety window (if function provided)
+  if (isInSafetyWindow) {
+    const isInSafety = isInSafetyWindow(xStart, 'x');
+    ctx.fillStyle = isInSafety ? 'green' : '#555';
+    ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+  }
+  
+  // Add 1 to index for display (1-indexed)
+  ctx.fillText((xStart + 1).toString(), xStartPos, marginTop - topOffset);
   
   // Draw middle index marker (only if it's different from start and end and we have enough space)
   const rangeWidth = Math.abs(x(xEnd) - x(xStart));
   if (xMiddle !== xStart && xMiddle !== xEnd && xMiddle < stringLength && rangeWidth > 60) {
-    const xMiddlePos = x(xMiddle);
+    const xMiddlePos = x(xMiddle + 0.5);
     if (xMiddlePos >= marginLeft && xMiddlePos <= xAxisEnd) {
-      ctx.fillText(xMiddle.toString(), xMiddlePos, 5);
+      // Check if this position is in a safety window (if function provided)
+      if (isInSafetyWindow) {
+        const isInSafety = isInSafetyWindow(xMiddle, 'x');
+        ctx.fillStyle = isInSafety ? 'green' : '#555';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+      }
+      
+      // Add 1 to index for display (1-indexed)
+      ctx.fillText((xMiddle + 1).toString(), xMiddlePos, marginTop - topOffset);
     }
   }
   
@@ -314,16 +383,32 @@ export function drawMinimalXIndexMarkers(
     // Show the last index of the sequence if it's in view
     const lastIndex = stringLength - 1;
     if (lastIndex >= xStart && lastIndex < xEnd) {
-      const lastIndexPos = x(lastIndex);
+      const lastIndexPos = x(lastIndex + 0.5);
       if (lastIndexPos >= marginLeft && lastIndexPos <= xAxisEnd) {
-        ctx.fillText(lastIndex.toString(), lastIndexPos, 5);
+        // Check if this position is in a safety window (if function provided)
+        if (isInSafetyWindow) {
+          const isInSafety = isInSafetyWindow(lastIndex, 'x');
+          ctx.fillStyle = isInSafety ? 'green' : '#555';
+          ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+        }
+        
+        // Add 1 to index for display (1-indexed)
+        ctx.fillText((lastIndex + 1).toString(), lastIndexPos, marginTop - topOffset);
       }
     } 
     // Otherwise show the last visible index
     else if (xEnd - 1 > xStart) {
-      const xEndPos = Math.min(x(xEnd - 1), xAxisEnd - 5);
+      const xEndPos = Math.min(x(xEnd - 1 + 0.5), xAxisEnd - 5);
       if (xEndPos >= marginLeft && xEndPos <= xAxisEnd) {
-        ctx.fillText((xEnd - 1).toString(), xEndPos, 5);
+        // Check if this position is in a safety window (if function provided)
+        if (isInSafetyWindow) {
+          const isInSafety = isInSafetyWindow(xEnd - 1, 'x');
+          ctx.fillStyle = isInSafety ? 'green' : '#555';
+          ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+        }
+        
+        // Add 1 to index for display (1-indexed)
+        ctx.fillText((xEnd).toString(), xEndPos, marginTop - topOffset);
       }
     }
   }
@@ -337,11 +422,17 @@ export function drawMinimalYIndexMarkers(
   marginLeft: number,
   fontSize: number,
   stringLength: number,
+  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean,
 ) {
   ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
   ctx.fillStyle = '#555';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
+  
+  // Calculate character width-based offset for horizontal positioning
+  // Use the same horizontal positioning logic as safety window indices
+  const charHeight = fontSize * 1.2; // Consistent with safety window indices
+  const leftOffset = charHeight * 1.2; // Space for indices, matching safety window indices
   
   // Calculate the visible range for Y axis
   const yStart = Math.max(0, Math.floor(y.invert(marginTop)));
@@ -353,16 +444,33 @@ export function drawMinimalYIndexMarkers(
   // Calculate the middle index
   const yMiddle = Math.floor((yStart + yEnd) / 2);
   
-  // Draw first index marker - always at the start of visible area
-  const yStartPos = Math.max(marginTop, y(yStart));
-  ctx.fillText(yStart.toString(), marginLeft - 35, yStartPos);
+  // Draw first index marker - always at the start of visible area (centered on character)
+  const yStartPos = Math.max(marginTop, y(yStart + 0.5));
+  
+  // Check if this position is in a safety window (if function provided)
+  if (isInSafetyWindow) {
+    const isInSafety = isInSafetyWindow(yStart, 'y');
+    ctx.fillStyle = isInSafety ? 'green' : '#555';
+    ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+  }
+  
+  // Add 1 to index for display (1-indexed)
+  ctx.fillText((yStart + 1).toString(), marginLeft - leftOffset, yStartPos);
   
   // Draw middle index marker (only if it's different from start and end and we have enough space)
   const rangeHeight = Math.abs(y(yEnd) - y(yStart));
   if (yMiddle !== yStart && yMiddle !== yEnd && yMiddle < stringLength && rangeHeight > 60) {
-    const yMiddlePos = y(yMiddle);
+    const yMiddlePos = y(yMiddle + 0.5);
     if (yMiddlePos >= marginTop && yMiddlePos <= y.range()[1]) {
-      ctx.fillText(yMiddle.toString(), marginLeft - 35, yMiddlePos);
+      // Check if this position is in a safety window (if function provided)
+      if (isInSafetyWindow) {
+        const isInSafety = isInSafetyWindow(yMiddle, 'y');
+        ctx.fillStyle = isInSafety ? 'green' : '#555';
+        ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+      }
+      
+      // Add 1 to index for display (1-indexed)
+      ctx.fillText((yMiddle + 1).toString(), marginLeft - leftOffset, yMiddlePos);
     }
   }
   
@@ -371,16 +479,32 @@ export function drawMinimalYIndexMarkers(
     // Show the last index of the sequence if it's in view
     const lastIndex = stringLength - 1;
     if (lastIndex >= yStart && lastIndex < yEnd) {
-      const lastIndexPos = y(lastIndex);
+      const lastIndexPos = y(lastIndex + 0.5);
       if (lastIndexPos >= marginTop && lastIndexPos <= y.range()[1]) {
-        ctx.fillText(lastIndex.toString(), marginLeft - 35, lastIndexPos);
+        // Check if this position is in a safety window (if function provided)
+        if (isInSafetyWindow) {
+          const isInSafety = isInSafetyWindow(lastIndex, 'y');
+          ctx.fillStyle = isInSafety ? 'green' : '#555';
+          ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+        }
+        
+        // Add 1 to index for display (1-indexed)
+        ctx.fillText((lastIndex + 1).toString(), marginLeft - leftOffset, lastIndexPos);
       }
     }
     // Otherwise show the last visible index
     else if (yEnd - 1 > yStart) {
-      const yEndPos = Math.min(y(yEnd - 1), y.range()[1] - 5);
+      const yEndPos = Math.min(y(yEnd - 1 + 0.5), y.range()[1] - 5);
       if (yEndPos >= marginTop && yEndPos <= y.range()[1]) {
-        ctx.fillText((yEnd - 1).toString(), marginLeft - 35, yEndPos);
+        // Check if this position is in a safety window (if function provided)
+        if (isInSafetyWindow) {
+          const isInSafety = isInSafetyWindow(yEnd - 1, 'y');
+          ctx.fillStyle = isInSafety ? 'green' : '#555';
+          ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
+        }
+        
+        // Add 1 to index for display (1-indexed)
+        ctx.fillText((yEnd).toString(), marginLeft - leftOffset, yEndPos);
       }
     }
   }
@@ -399,9 +523,10 @@ function drawXLabelsWithIndices(
   // Get actual X axis range end point
   const xAxisEnd = x.range()[1];
   
-  // Calculate safe vertical positions
-  const indexVerticalPosition = marginTop - 25;
-  const labelVerticalPosition = marginTop - 10;
+  // Calculate character height-based positioning
+  const charHeight = fontSize * 1.2;
+  const indexVerticalPosition = marginTop - (charHeight * 1.8); // Position indices further up
+  const labelVerticalPosition = marginTop - (charHeight * 0.8); // Character labels closer to axis
   
   // Save current context
   ctx.save();
@@ -425,10 +550,10 @@ function drawXLabelsWithIndices(
       if (xPos >= marginLeft && xPos <= xAxisEnd) {
         const isInSafety = isInSafetyWindow(tick.value, 'x');
         
-        // Draw position index above the character
+        // Draw position index above the character (1-indexed)
         ctx.fillStyle = '#555';
         ctx.font = `${Math.max(10, fontSize * 0.6)}px monospace`;
-        ctx.fillText(tick.value.toString(), xPos, indexVerticalPosition);
+        ctx.fillText((tick.value + 1).toString(), xPos, indexVerticalPosition);
         
         // Draw character label
         ctx.fillStyle = isInSafety ? 'green' : 'black';
@@ -439,6 +564,78 @@ function drawXLabelsWithIndices(
   });
   
   // Restore context after drawing
+  ctx.restore();
+}
+
+// Draw the indices of a selected safety window
+export function drawSafetyWindowIndices(
+  ctx: CanvasRenderingContext2D,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
+  marginTop: number,
+  marginLeft: number,
+  fontSize: number,
+  safetyWindow: SafetyWindowBounds
+) {
+  if (!safetyWindow || (!safetyWindow.xStart && !safetyWindow.yStart)) {
+    return; // No safety window selected
+  }
+  
+  // Save current context
+  ctx.save();
+  
+  // Style for safety window indices
+  ctx.fillStyle = 'green';
+  ctx.font = `bold ${Math.max(11, fontSize * 0.9)}px monospace`;
+  
+  // Calculate character height-based offsets
+  const charHeight = fontSize * 1.2; // Approximate height of a character with line spacing
+  const xIndexOffset = charHeight * 1.5; // Vertical offset for X axis indices
+  const yIndexOffset = charHeight * 1.2; // Horizontal offset for Y axis indices
+  
+  // Draw X axis safety window indices (horizontally along top axis)
+  if (safetyWindow.xStart !== undefined && safetyWindow.xEnd !== undefined) {
+    // Beginning index - place above the axis with vertical offset, centered on character
+    const xStartPos = x(safetyWindow.xStart + 0.5); // +0.5 to center on character
+    if (xStartPos >= marginLeft) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      // Add 1 for 1-indexed display
+      ctx.fillText(`${safetyWindow.xStart + 1}`, xStartPos, marginTop - xIndexOffset);
+    }
+    
+    // End index - place above the axis with vertical offset, centered on character
+    // For end index, use the last included position (xEnd-1) + 0.5 for centering
+    const xEndPos = x(safetyWindow.xEnd - 0.5); // -0.5 because end is exclusive
+    if (xEndPos <= x.range()[1]) {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`${safetyWindow.xEnd}`, xEndPos, marginTop - xIndexOffset);
+    }
+  }
+  
+  // Draw Y axis safety window indices (vertically along left axis)
+  if (safetyWindow.yStart !== undefined && safetyWindow.yEnd !== undefined) {
+    // Beginning index - place to the left of the axis, centered on character
+    const yStartPos = y(safetyWindow.yStart + 0.5); // +0.5 to center on character
+    if (yStartPos >= marginTop) {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      // Add 1 for 1-indexed display
+      ctx.fillText(`${safetyWindow.yStart + 1}`, marginLeft - yIndexOffset, yStartPos);
+    }
+    
+    // End index - place to the left of the axis, centered on character
+    // For end index, use the last included position (yEnd-1) + 0.5 for centering
+    const yEndPos = y(safetyWindow.yEnd - 0.5); // -0.5 because end is exclusive
+    if (yEndPos <= y.range()[1]) {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${safetyWindow.yEnd}`, marginLeft - yIndexOffset, yEndPos);
+    }
+  }
+  
+  // Restore context
   ctx.restore();
 }
 
@@ -460,6 +657,11 @@ function drawYLabelsWithIndices(
   
   ctx.textBaseline = 'middle';
   
+  // Calculate character width-based positioning
+  const charWidth = fontSize * 0.6; // Approximate width of a character
+  const indexOffset = charWidth * 3.5; // Space for index digits (up to 3 digits)
+  const labelOffset = charWidth * 1.5; // Space for character labels
+  
   // Get the visible domain range (with a small buffer for partial visibility)
   const visibleYStart = Math.max(0, Math.floor(y.invert(marginTop)) - 1);
   const visibleYEnd = Math.ceil(y.invert(y.range()[1])) + 1;
@@ -470,17 +672,17 @@ function drawYLabelsWithIndices(
       const yPos = y(tick.value + 0.5);
       const isInSafety = isInSafetyWindow(tick.value, 'y');
       
-      // Draw position index to the left of the character
+      // Draw position index to the left of the character (1-indexed)
       ctx.textAlign = 'right';
       ctx.fillStyle = '#555';
       ctx.font = `${Math.max(10, fontSize * 0.6)}px monospace`;
-      ctx.fillText(tick.value.toString(), marginLeft - 25, yPos);
+      ctx.fillText((tick.value + 1).toString(), marginLeft - indexOffset, yPos);
       
       // Draw character label
       ctx.textAlign = 'end';
       ctx.fillStyle = isInSafety ? 'green' : 'black';
       ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
-      ctx.fillText(tick.label, marginLeft - 12, yPos);
+      ctx.fillText(tick.label, marginLeft - labelOffset, yPos);
     }
   });
   
@@ -498,7 +700,8 @@ export function drawIndexedAxisLabels(
   fontSize: number,
   marginTop: number,
   marginLeft: number,
-  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
+  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean,
+  selectedSafetyWindow?: SafetyWindowBounds
 ) {
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
@@ -513,8 +716,8 @@ export function drawIndexedAxisLabels(
   ctx.rect(marginLeft, 0, canvasWidth - marginLeft, marginTop);
   ctx.clip();
   
-  // Draw minimal X index markers
-  drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength);
+  // Draw minimal X index markers with safety window highlighting
+  drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
   
   ctx.restore();
   
@@ -524,8 +727,8 @@ export function drawIndexedAxisLabels(
   ctx.rect(0, marginTop, marginLeft, canvasHeight - marginTop);
   ctx.clip();
   
-  // Draw minimal Y index markers
-  drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength);
+  // Draw minimal Y index markers with safety window highlighting
+  drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
   
   ctx.restore();
   
@@ -533,4 +736,9 @@ export function drawIndexedAxisLabels(
   // Draw Y labels first, then X labels
   drawYLabelsWithIndices(ctx, yTicks, y, marginTop, marginLeft, fontSize, isInSafetyWindow);
   drawXLabelsWithIndices(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
+  
+  // Draw selected safety window indices if provided
+  if (selectedSafetyWindow) {
+    drawSafetyWindowIndices(ctx, x, y, marginTop, marginLeft, fontSize, selectedSafetyWindow);
+  }
 }
