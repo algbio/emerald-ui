@@ -1,7 +1,7 @@
 // EmeraldService.ts
 
 // Import the type declarations (assumes emerald.d.ts is in the same directory as emerald.js)
-import EmeraldModule from '../emerald-wasm/emerald';
+import EmeraldModule from '../../emerald-wasm/emerald';
 
 export interface AlignmentResult {
   ref_desc: string;

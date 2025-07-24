@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PointGridPlot from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
 import SequenceAlignmentViewer from './SequenceAlignmentViewer';
-import type { Alignment } from '../types/PointGrid';
+import type { Alignment } from '../../types/PointGrid';
 import './AlignmentGraphWithInfoPanel.css';
 
 interface AlignmentGraphWithInfoPanelProps {

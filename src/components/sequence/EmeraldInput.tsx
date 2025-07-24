@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useSequence } from '../context/SequenceContext';
-import StructureFileUploader from './StructureFileUploader';
-// import type { StructureData } from '../utils/pdbParser';
+import { useSequence } from '../../context/SequenceContext';
+import StructureFileUploader from '../structure/StructureFileUploader';
+// import type { StructureData } from '../../utils/structure/pdbParser';
 import './EmeraldInput.css';
 
 interface EmeraldInputProps {

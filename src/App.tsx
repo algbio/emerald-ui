@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import EmeraldInput from './components/EmeraldInput'
+import EmeraldInput from './components/sequence/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
-import SequenceInputPanel from './components/SequenceInputPanel'
-import AlignmentStructuresViewer from './components/AlignmentStructuresViewer'
-import AlignmentGraphWithInfoPanel from './components/AlignmentGraphWithInfoPanel'
-import ShareAndExportPanel from './components/ShareAndExportPanel'
-import SharedUrlNotification from './components/SharedUrlNotification'
-import type { Alignment } from './components/PointGridPlot'
+import SequenceInputPanel from './components/sequence/SequenceInputPanel'
+import { AlignmentStructuresViewer } from './components/structure/AlignmentStructuresViewer'
+import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWithInfoPanel'
+import ShareAndExportPanel from './components/share/ShareAndExportPanel'
+import SharedUrlNotification from './components/ui/SharedUrlNotification'
+import type { Alignment } from './components/alignment/PointGridPlot'
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {

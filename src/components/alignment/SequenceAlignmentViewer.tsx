@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TextAlignment } from '../types/PointGrid';
+import type { TextAlignment } from '../../types/PointGrid';
 import './SequenceAlignmentViewer.css';
 
 interface SequenceAlignmentViewerProps {

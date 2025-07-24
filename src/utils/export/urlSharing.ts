@@ -1,6 +1,6 @@
 // Utility functions for URL-based sharing of alignments with UniProt sequences
 
-import { extractUniProtId } from './uniprotUtils';
+import { extractUniProtId } from '../api/uniprotUtils';
 
 /**
  * Basic UniProt ID format validation

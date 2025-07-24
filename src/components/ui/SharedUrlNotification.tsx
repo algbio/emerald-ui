@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getShareableDataFromUrl } from '../utils/urlSharing';
+import { getShareableDataFromUrl } from '../../utils/export/urlSharing';
 import './SharedUrlNotification.css';
 
 const SharedUrlNotification: React.FC = () => {

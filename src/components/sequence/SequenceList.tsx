@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StructureViewer } from './StructureViewer';
-import { getEffectiveUniProtId } from '../utils/uniprotUtils';
+import { StructureViewer } from '../structure/StructureViewer';
+import { getEffectiveUniProtId } from '../../utils/api/uniprotUtils';
 import './SequenceList.css';
 
 export interface SequenceListItem {

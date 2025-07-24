@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { parseStructureFile } from '../utils/pdbParser';
-import type { StructureData } from '../utils/pdbParser';
+import { parseStructureFile } from '../../utils/structure/pdbParser';
+import type { StructureData } from '../../utils/structure/pdbParser';
 import './StructureFileUploader.css';
 
 interface StructureFileUploaderProps {

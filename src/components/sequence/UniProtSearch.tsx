@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSequence } from '../context/SequenceContext';
+import { useSequence } from '../../context/SequenceContext';
 import { SequenceList } from './SequenceList';
 import './UniProtSearch.css';
 

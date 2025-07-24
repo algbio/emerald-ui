@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateShareableUrl, isAlignmentShareable, checkBrowserCompatibility } from '../utils/urlSharing';
+import { generateShareableUrl, isAlignmentShareable, checkBrowserCompatibility } from '../../utils/export/urlSharing';
 import './ShareUrlPanel.css';
 
 interface ShareUrlPanelProps {

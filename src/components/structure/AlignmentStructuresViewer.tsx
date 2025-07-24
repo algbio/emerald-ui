@@ -1,7 +1,7 @@
 import React from 'react';
-import { useSequence } from '../context/SequenceContext';
+import { useSequence } from '../../context/SequenceContext';
 import { StructureViewer } from './StructureViewer';
-import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../utils/safetyWindowUtils';
+import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
 import './AlignmentStructuresViewer.css';
 
 export const AlignmentStructuresViewer: React.FC = () => {

@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { Alignment } from '../components/PointGridPlot';
-import type { StructureData } from '../utils/pdbParser';
-import { emeraldService } from '../utils/EmeraldService';
-import { extractUniProtId } from '../utils/uniprotUtils';
-import { fetchUniProtSequence } from '../utils/uniprotFetcher';
-import { getShareableDataFromUrl } from '../utils/urlSharing';
+import type { Alignment } from '../components/alignment/PointGridPlot';
+import type { StructureData } from '../utils/structure/pdbParser';
+import { emeraldService } from '../utils/api/EmeraldService';
+import { extractUniProtId } from '../utils/api/uniprotUtils';
+import { fetchUniProtSequence } from '../utils/api/uniprotFetcher';
+import { getShareableDataFromUrl } from '../utils/export/urlSharing';
 
 // Helper function to validate sequence for asterisks
 const validateSequenceAsterisks = (sequence: string) => {

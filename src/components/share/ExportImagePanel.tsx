@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { exportCanvasAsPNG, exportCanvasAsJPEG, copyCanvasToClipboard, generateExportFilename } from '../utils/exportUtils';
+import { exportCanvasAsPNG, exportCanvasAsJPEG, copyCanvasToClipboard, generateExportFilename } from '../../utils/export/exportUtils';
 import './ExportImagePanel.css';
 
 interface ExportImagePanelProps {

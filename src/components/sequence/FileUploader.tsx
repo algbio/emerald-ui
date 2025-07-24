@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Alignment, Edge } from '../types/PointGrid';
-import { emeraldService } from '../utils/EmeraldService';
+import type { Alignment, Edge } from '../../types/PointGrid';
+import { emeraldService } from '../../utils/api/EmeraldService';
 
 interface FileUploaderProps {
   onAlignmentsGenerated: (data: {

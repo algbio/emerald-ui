@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, forwardRef } from 'react'
 import * as d3 from "d3";
-import { usePointGridScales } from '../hooks/usePointGridScales';
-import { usePointGridTicks } from '../hooks/usePointGridTicks';
+import { usePointGridScales } from '../../hooks/usePointGridScales';
+import { usePointGridTicks } from '../../hooks/usePointGridTicks';
 import { 
   drawSafetyWindows, 
   drawAxes, 
@@ -15,9 +15,9 @@ import {
   drawMinimap,
   handleMinimapInteraction as handleMinimapInteractionUtil,
   isMouseInMinimap
-} from '../utils/canvas';
-import type { SafetyWindowBounds } from '../utils/canvas';
-import type { PointGridPlotProps, Alignment } from '../types/PointGrid';
+} from '../../utils/canvas';
+import type { SafetyWindowBounds } from '../../utils/canvas';
+import type { PointGridPlotProps, Alignment } from '../../types/PointGrid';
 
 interface PointGridProps {
   width?: number;

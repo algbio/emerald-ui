@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { Alignment } from '../types/PointGrid';
+import type { Alignment } from '../../types/PointGrid';
 import './SafetyWindowsInfoPanel.css';
 
 interface SafetyWindowInfo {
