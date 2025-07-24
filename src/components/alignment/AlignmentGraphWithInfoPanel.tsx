@@ -3,6 +3,7 @@ import PointGridPlot from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
 import SequenceAlignmentViewer from './SequenceAlignmentViewer';
 import type { Alignment } from '../../types/PointGrid';
+import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
 
 interface AlignmentGraphWithInfoPanelProps {
@@ -13,7 +14,6 @@ interface AlignmentGraphWithInfoPanelProps {
   alignments: Alignment[];
   width?: number;
   height?: number;
-  showMinimap?: boolean;
   minimapSize?: number;
   minimapPadding?: number;
   onCanvasRef?: (ref: React.RefObject<HTMLCanvasElement | null>) => void;
@@ -27,13 +27,23 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   alignments,
   width = 900,
   height = 900,
-  showMinimap = true,
   minimapSize = 250,
   minimapPadding = 100,
   onCanvasRef
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
+  
+  // Default visualization settings
+  const [visualizationSettings, setVisualizationSettings] = useState<VisualizationSettings>({
+    showAxes: true,
+    showAxisLabels: true,
+    showGrid: true,
+    showMinimap: true,
+    showSafetyWindows: true,
+    showAlignmentEdges: true,
+    showAlignmentDots: true
+  });
 
   // Extract safety windows from alignments
   const safetyWindows = alignments.filter(alignment => 
@@ -100,7 +110,13 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             height={height}
             xDomain={[0, representative.length]}
             yDomain={[0, member.length]}
-            showMinimap={showMinimap}
+            showMinimap={visualizationSettings.showMinimap}
+            showAxes={visualizationSettings.showAxes}
+            showAxisLabels={visualizationSettings.showAxisLabels}
+            showGrid={visualizationSettings.showGrid}
+            showSafetyWindows={visualizationSettings.showSafetyWindows}
+            showAlignmentEdges={visualizationSettings.showAlignmentEdges}
+            showAlignmentDots={visualizationSettings.showAlignmentDots}
             minimapSize={minimapSize}
             minimapPadding={minimapPadding}
             selectedSafetyWindowId={selectedSafetyWindowId}
@@ -129,6 +145,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             member={member}
             representativeDescriptor={representativeDescriptor}
             memberDescriptor={memberDescriptor}
+            visualizationSettings={visualizationSettings}
+            onVisualizationSettingsChange={setVisualizationSettings}
           />
         </div>
       </div>

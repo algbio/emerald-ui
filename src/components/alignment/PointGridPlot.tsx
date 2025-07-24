@@ -34,6 +34,13 @@ interface PointGridProps {
   showMinimap?: boolean;  
   minimapSize?: number;    
   minimapPadding?: number; 
+  // Visualization settings
+  showAxes?: boolean;
+  showAxisLabels?: boolean;
+  showGrid?: boolean;
+  showSafetyWindows?: boolean;
+  showAlignmentEdges?: boolean;
+  showAlignmentDots?: boolean;
   // Safety window interaction props
   selectedSafetyWindowId?: string | null;
   hoveredSafetyWindowId?: string | null;
@@ -58,6 +65,13 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
   showMinimap = true,       // Default to showing minimap
   minimapSize = 250,         // Default size of minimap
   minimapPadding = 100,      // Padding around minimap
+  // Visualization settings with defaults
+  showAxes = true,
+  showAxisLabels = true,
+  showGrid = true,
+  showSafetyWindows = true,
+  showAlignmentEdges = true,
+  showAlignmentDots = true,
   selectedSafetyWindowId,
   hoveredSafetyWindowId,
   onSafetyWindowHover,
@@ -184,35 +198,40 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw safety windows
-    drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft);
-    
-    // Draw safety window highlight if applicable
-    if (highlightedWindow) {
-      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, highlightedWindow);
-    }
+    // Draw safety windows if enabled
+    if (showSafetyWindows) {
+      drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft);
+      
+      // Draw safety window highlight if applicable
+      if (highlightedWindow) {
+        drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, highlightedWindow);
+      }
 
-    // Draw external selection highlights
-    const selectedWindow = getSelectedWindow();
-    const hoveredWindow = getHoveredWindow();
-    
-    if (selectedWindow) {
-      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, selectedWindow);
+      // Draw external selection highlights
+      const selectedWindow = getSelectedWindow();
+      const hoveredWindow = getHoveredWindow();
+      
+      if (selectedWindow) {
+        drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, selectedWindow);
+      }
+      
+      if (hoveredWindow && hoveredWindow !== selectedWindow) {
+        // Draw a lighter highlight for hovered windows
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, hoveredWindow);
+        ctx.restore();
+      }
     }
     
-    if (hoveredWindow && hoveredWindow !== selectedWindow) {
-      // Draw a lighter highlight for hovered windows
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, hoveredWindow);
-      ctx.restore();
+    // Draw axes if enabled
+    if (showAxes) {
+      drawAxes(ctx, x, y, marginTop, marginLeft);
     }
-    
-    // Draw axes
-    drawAxes(ctx, x, y, marginTop, marginLeft);
     
     // Create safety window bounds object for display
-    const safetyWindowBounds: SafetyWindowBounds | undefined = selectedWindow ? {
+    const selectedWindow = getSelectedWindow();
+    const safetyWindowBounds: SafetyWindowBounds | undefined = (showSafetyWindows && selectedWindow) ? {
       // Match the axis orientation from the isInSafetyWindow function
       xStart: selectedWindow.startDot?.x,
       xEnd: selectedWindow.endDot?.x,
@@ -220,8 +239,10 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
       yEnd: selectedWindow.endDot?.y
     } : undefined;
 
-    // Draw axis labels
-    drawAxisLabels(ctx, xTicks, yTicks, x, y, fontSize, marginTop, marginLeft, isInSafetyWindow, safetyWindowBounds);
+    // Draw axis labels if enabled
+    if (showAxisLabels) {
+      drawAxisLabels(ctx, xTicks, yTicks, x, y, fontSize, marginTop, marginLeft, isInSafetyWindow, safetyWindowBounds);
+    }
 
     // Set up clipping and draw grid/data
     ctx.save();
@@ -229,19 +250,30 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
     ctx.rect(marginLeft, marginTop, width - marginLeft - marginRight, height - marginTop - marginBottom);
     ctx.clip();
 
-    drawGridLines(ctx, xTicks, yTicks, x, y);
-    drawAlignmentEdges(ctx, alignments, x, y);
-    drawAlignmentDots(ctx, alignments, x, y);
+    // Draw grid if enabled
+    if (showGrid) {
+      drawGridLines(ctx, xTicks, yTicks, x, y);
+    }
+    
+    // Draw alignment elements if enabled
+    if (showAlignmentEdges) {
+      drawAlignmentEdges(ctx, alignments, x, y);
+    }
+    if (showAlignmentDots) {
+      drawAlignmentDots(ctx, alignments, x, y);
+    }
 
-    // Draw hover highlight
+    // Draw hover highlight (always shown when hovering for usability)
     if (hoveredCell) {
-      // Find all safety windows containing the hovered cell
-      const matchingWindows = findSafetyWindowsForCell(hoveredCell, safetyWindows);
-      
-      // Draw each window that contains the hovered cell
-      matchingWindows.forEach(window => {
-        drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, window);
-      });
+      // Find all safety windows containing the hovered cell (only if safety windows are shown)
+      if (showSafetyWindows) {
+        const matchingWindows = findSafetyWindowsForCell(hoveredCell, safetyWindows);
+        
+        // Draw each window that contains the hovered cell
+        matchingWindows.forEach(window => {
+          drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, window);
+        });
+      }
       
       // Draw hover highlight on top
       drawHoverHighlight(
@@ -259,8 +291,10 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
 
     ctx.restore();
     
-    // Draw minimap on top of everything
-    drawMinimapFn(ctx);
+    // Draw minimap on top of everything if enabled
+    if (showMinimap) {
+      drawMinimapFn(ctx);
+    }
   };
 
   // Handle minimap interactions using utility function
@@ -383,7 +417,7 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
   useEffect(() => {
     const timeoutId = setTimeout(drawCanvas, 16);
     return () => clearTimeout(timeoutId);
-  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId]);
+  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

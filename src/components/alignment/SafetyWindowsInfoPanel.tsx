@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Alignment } from '../../types/PointGrid';
+import VisualizationSettingsPanel from './VisualizationSettingsPanel';
+import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './SafetyWindowsInfoPanel.css';
 
 interface SafetyWindowInfo {
@@ -25,6 +27,8 @@ interface SafetyWindowsInfoPanelProps {
   member: string;
   representativeDescriptor?: string;
   memberDescriptor?: string;
+  visualizationSettings?: VisualizationSettings;
+  onVisualizationSettingsChange?: (settings: VisualizationSettings) => void;
 }
 
 export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
@@ -37,9 +41,12 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   representative,
   member,
   representativeDescriptor,
-  memberDescriptor
+  memberDescriptor,
+  visualizationSettings,
+  onVisualizationSettingsChange
 }) => {
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
+  const [activeTab, setActiveTab] = useState<'safety-windows' | 'visualization'>('safety-windows');
   
   // Function to copy text to clipboard
   const copyToClipboard = (text: string, id: string) => {
@@ -229,172 +236,225 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
 
   const currentWindow = safetyWindowsInfo[currentWindowIndex];
 
+  // When visualization tab is active, clear safety window selection
+  useEffect(() => {
+    if (activeTab === 'visualization' && selectedWindowId) {
+      onWindowHover?.(null);
+    }
+  }, [activeTab, selectedWindowId, onWindowHover]);
+
+  // Default visualization settings if not provided
+  const defaultSettings: VisualizationSettings = {
+    showAxes: true,
+    showAxisLabels: true,
+    showGrid: true,
+    showMinimap: true,
+    showSafetyWindows: true,
+    showAlignmentEdges: true,
+    showAlignmentDots: true
+  };
+
+  const currentSettings = visualizationSettings || defaultSettings;
+
   return (
     <div className="safety-windows-info-panel">
-      <div className="panel-header">
-        <h3>Safety Windows</h3>
-        <div className="panel-subtitle">
-          {safetyWindowsInfo.length} window{safetyWindowsInfo.length !== 1 ? 's' : ''} detected
-        </div>
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
+        <button 
+          className={`tab-button ${activeTab === 'safety-windows' ? 'active' : ''}`}
+          onClick={() => setActiveTab('safety-windows')}
+          title="View and navigate safety windows"
+        >
+          <span className="tab-icon">🎯</span>
+          Safety Windows
+          {safetyWindowsInfo.length > 0 && (
+            <span className="tab-badge">{safetyWindowsInfo.length}</span>
+          )}
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'visualization' ? 'active' : ''}`}
+          onClick={() => setActiveTab('visualization')}
+          title="Customize visualization settings"
+        >
+          <span className="tab-icon">⚙️</span>
+          Visualization
+        </button>
       </div>
-      
-      {safetyWindowsInfo.length === 0 ? (
-        <div className="no-windows-message">
-          <p>No safety windows detected in this alignment.</p>
-          <p className="help-text">
-            Safety windows appear when EMERALD identifies regions with confident alignment.
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Navigation Controls */}
-          <div className="window-navigation">
-            <button 
-              className="nav-button prev-button"
-              onClick={handlePrevious}
-              disabled={safetyWindowsInfo.length <= 1}
-            >
-              <span className="nav-arrow">‹</span>
-            </button>
-            
-            <div className="window-counter">
-              <span className="current-window">{currentWindowIndex + 1}</span>
-              <span className="window-separator"> / </span>
-              <span className="total-windows">{safetyWindowsInfo.length}</span>
+
+      {/* Tab Content */}
+      {activeTab === 'safety-windows' ? (
+        <div className="safety-windows-content">
+          <div className="panel-header">
+            <h3>Safety Windows</h3>
+            <div className="panel-subtitle">
+              {safetyWindowsInfo.length} window{safetyWindowsInfo.length !== 1 ? 's' : ''} detected
             </div>
-            
-            <button 
-              className="nav-button next-button"
-              onClick={handleNext}
-              disabled={safetyWindowsInfo.length <= 1}
-            >
-              <span className="nav-arrow">›</span>
-            </button>
           </div>
-
-          {/* Alignment Display - DISABLED - Contains full sequence alignment with synchronized scrolling */}
-
-          {/* Current Window Display */}
-          {currentWindow && (
-            <div className="current-window-container">
-              <div
-                className={`safety-window-item current-window ${
-                  hoveredWindowId === currentWindow.id ? 'hovered' : ''
-                }`}
-                onMouseEnter={() => onWindowHover?.(currentWindow.id)}
-                onMouseLeave={() => onWindowHover?.(null)}
-              >
-                <div className="window-header">
-                  <div 
-                    className="window-color-indicator"
-                    style={{ backgroundColor: currentWindow.color }}
-                  />
-                  <div className="window-title">
-                    Window {currentWindow.id.split('-')[2]}
-                  </div>
-                  <div className="window-dimensions">
-                    {currentWindow.xLength} × {currentWindow.yLength}
-                  </div>
+          
+          {safetyWindowsInfo.length === 0 ? (
+            <div className="no-windows-message">
+              <p>No safety windows detected in this alignment.</p>
+              <p className="help-text">
+                Safety windows appear when EMERALD identifies regions with confident alignment.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Navigation Controls */}
+              <div className="window-navigation">
+                <button 
+                  className="nav-button prev-button"
+                  onClick={handlePrevious}
+                  disabled={safetyWindowsInfo.length <= 1}
+                >
+                  <span className="nav-arrow">‹</span>
+                </button>
+                
+                <div className="window-counter">
+                  <span className="current-window">{currentWindowIndex + 1}</span>
+                  <span className="window-separator"> / </span>
+                  <span className="total-windows">{safetyWindowsInfo.length}</span>
                 </div>
                 
-                <div className="window-details">
-                  <div className="coordinate-info">
-                    <div className="axis-info">
-                      <span className="axis-label">X-axis ({representativeDescriptor || 'Reference'}):</span>
-                      <span className="coordinates">{currentWindow.xStart + 1}-{currentWindow.xEnd}</span>
-                    </div>
-                    <div className="axis-info">
-                      <span className="axis-label">Y-axis ({memberDescriptor || 'Member'}):</span>
-                      <span className="coordinates">{currentWindow.yStart + 1}-{currentWindow.yEnd}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="sequence-preview">
-                    <div className="sequence-info">
-                      <div className="sequence-label">X-sequence:</div>
-                      <div className="sequence-container">
-                        <div className="sequence-segment">
-                          {formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd)}
-                        </div>
-                        <button 
-                          className="copy-button"
-                          onClick={() => {
-                            const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
-                            copyToClipboard(sequence, 'x-sequence');
-                          }}
-                          title="Copy to clipboard"
-                        >
-                          {copyStatus?.id === 'x-sequence' ? (
-                            copyStatus.success ? '✓ Copied!' : '❌ Failed'
-                          ) : (
-                            <span className="copy-icon">📋</span>
-                          )}
-                        </button>
+                <button 
+                  className="nav-button next-button"
+                  onClick={handleNext}
+                  disabled={safetyWindowsInfo.length <= 1}
+                >
+                  <span className="nav-arrow">›</span>
+                </button>
+              </div>
+
+              {/* Current Window Display */}
+              {currentWindow && (
+                <div className="current-window-container">
+                  <div
+                    className={`safety-window-item current-window ${
+                      hoveredWindowId === currentWindow.id ? 'hovered' : ''
+                    }`}
+                    onMouseEnter={() => onWindowHover?.(currentWindow.id)}
+                    onMouseLeave={() => onWindowHover?.(null)}
+                  >
+                    <div className="window-header">
+                      <div 
+                        className="window-color-indicator"
+                        style={{ backgroundColor: currentWindow.color }}
+                      />
+                      <div className="window-title">
+                        Window {currentWindow.id.split('-')[2]}
                       </div>
-                      <button 
-                        className="uniprot-search-button"
-                        onClick={() => {
-                          const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
-                          searchInUniProt(sequence);
-                        }}
-                        title="Search this sequence in UniProt BLAST (temporarily disabled)"
-                        disabled
-                      >
-                        🔍 Search in UniProt
-                      </button>
-                    </div>
-                    <div className="sequence-info">
-                      <div className="sequence-label">Y-sequence:</div>
-                      <div className="sequence-container">
-                        <div className="sequence-segment">
-                          {formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd)}
-                        </div>
-                        <button 
-                          className="copy-button"
-                          onClick={() => {
-                            const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
-                            copyToClipboard(sequence, 'y-sequence');
-                          }}
-                          title="Copy to clipboard"
-                        >
-                          {copyStatus?.id === 'y-sequence' ? (
-                            copyStatus.success ? '✓ Copied!' : '❌ Failed'
-                          ) : (
-                            <span className="copy-icon">📋</span>
-                          )}
-                        </button>
+                      <div className="window-dimensions">
+                        {currentWindow.xLength} × {currentWindow.yLength}
                       </div>
-                      <button 
-                        className="uniprot-search-button"
-                        onClick={() => {
-                          const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
-                          searchInUniProt(sequence);
-                        }}
-                        title="Search this sequence in UniProt BLAST (temporarily disabled)"
-                        disabled
-                      >
-                        🔍 Search in UniProt
-                      </button>
+                    </div>
+                    
+                    <div className="window-details">
+                      <div className="coordinate-info">
+                        <div className="axis-info">
+                          <span className="axis-label">X-axis ({representativeDescriptor || 'Reference'}):</span>
+                          <span className="coordinates">{currentWindow.xStart + 1}-{currentWindow.xEnd}</span>
+                        </div>
+                        <div className="axis-info">
+                          <span className="axis-label">Y-axis ({memberDescriptor || 'Member'}):</span>
+                          <span className="coordinates">{currentWindow.yStart + 1}-{currentWindow.yEnd}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="sequence-preview">
+                        <div className="sequence-info">
+                          <div className="sequence-label">X-sequence:</div>
+                          <div className="sequence-container">
+                            <div className="sequence-segment">
+                              {formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd)}
+                            </div>
+                            <button 
+                              className="copy-button"
+                              onClick={() => {
+                                const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
+                                copyToClipboard(sequence, 'x-sequence');
+                              }}
+                              title="Copy to clipboard"
+                            >
+                              {copyStatus?.id === 'x-sequence' ? (
+                                copyStatus.success ? '✓ Copied!' : '❌ Failed'
+                              ) : (
+                                <span className="copy-icon">📋</span>
+                              )}
+                            </button>
+                          </div>
+                          <button 
+                            className="uniprot-search-button"
+                            onClick={() => {
+                              const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
+                              searchInUniProt(sequence);
+                            }}
+                            title="Search this sequence in UniProt BLAST (temporarily disabled)"
+                            disabled
+                          >
+                            🔍 Search in UniProt
+                          </button>
+                        </div>
+                        <div className="sequence-info">
+                          <div className="sequence-label">Y-sequence:</div>
+                          <div className="sequence-container">
+                            <div className="sequence-segment">
+                              {formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd)}
+                            </div>
+                            <button 
+                              className="copy-button"
+                              onClick={() => {
+                                const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
+                                copyToClipboard(sequence, 'y-sequence');
+                              }}
+                              title="Copy to clipboard"
+                            >
+                              {copyStatus?.id === 'y-sequence' ? (
+                                copyStatus.success ? '✓ Copied!' : '❌ Failed'
+                              ) : (
+                                <span className="copy-icon">📋</span>
+                              )}
+                            </button>
+                          </div>
+                          <button 
+                            className="uniprot-search-button"
+                            onClick={() => {
+                              const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
+                              searchInUniProt(sequence);
+                            }}
+                            title="Search this sequence in UniProt BLAST (temporarily disabled)"
+                            disabled
+                          >
+                            🔍 Search in UniProt
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+              )}
+            </>
+          )}
+          
+          <div className="panel-footer">
+            <div className="legend">
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#90EE90' }} />
+                <span>Safety window region</span>
               </div>
             </div>
-          )}
-        </>
-      )}
-      
-      <div className="panel-footer">
-        <div className="legend">
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#90EE90' }} />
-            <span>Safety window region</span>
+            <div className="help-text">
+              Use ← → arrow keys or navigation buttons to cycle through safety windows. Full sequences are displayed for each window.
+            </div>
           </div>
         </div>
-        <div className="help-text">
-          Use ← → arrow keys or navigation buttons to cycle through safety windows. Full sequences are displayed for each window.
+      ) : (
+        <div className="visualization-content">
+          <VisualizationSettingsPanel
+            settings={currentSettings}
+            onSettingsChange={(settings) => onVisualizationSettingsChange?.(settings)}
+          />
         </div>
-      </div>
+      )}
     </div>
   );
 };
