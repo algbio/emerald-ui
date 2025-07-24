@@ -72,6 +72,13 @@
   z-index: 1;
 }
 
+/* Remove sticky positioning during fullscreen to prevent interference */
+body:has(:fullscreen) .sequence-name,
+body:has(:-webkit-full-screen) .sequence-name,
+body:has(:-moz-full-screen) .sequence-name {
+  position: static !important;
+}
+
 .sequence-content {
   flex: 1;
   white-space: pre;

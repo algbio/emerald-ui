@@ -28,7 +28,14 @@
   padding: 0.6em 0.5em;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 10; /* Ensure headers are above table content but below fullscreen elements */
+}
+
+/* Hide sticky headers when fullscreen elements are present */
+body:has(:fullscreen) .sequence-table th,
+body:has(:-webkit-full-screen) .sequence-table th,
+body:has(:-moz-full-screen) .sequence-table th {
+  position: static !important; /* Remove sticky positioning during fullscreen */
 }
 
 .sequence-table td {
@@ -54,7 +61,19 @@
   box-shadow: var(--shadow-md);
   margin: 1em 0;
   position: relative;
-  z-index: 1;
+}
+
+/* Ensure sequence table doesn't interfere with fullscreen mol* viewers */
+body:has(:fullscreen) .sequence-table-container,
+body:has(:-webkit-full-screen) .sequence-table-container,
+body:has(:-moz-full-screen) .sequence-table-container {
+  z-index: 1 !important;
+}
+
+body:has(:fullscreen) .sequence-table,
+body:has(:-webkit-full-screen) .sequence-table,
+body:has(:-moz-full-screen) .sequence-table {
+  z-index: 1 !important;
 }
 
 /* Constrain cell widths for better layout */
@@ -213,7 +232,7 @@
   box-shadow: var(--shadow-md);
   clear: both;
   position: relative;
-  z-index: 10;
+  z-index: 10; /* Ensure structure viewer container is above table elements */
 }
 
 .structure-viewer-header {
@@ -553,13 +572,11 @@
 .parsed-sequences {
   clear: both;
   position: relative;
-  z-index: 1;
 }
 
 .structure-viewer-container {
   clear: both;
   position: relative;
-  z-index: 2;
 }
 
 /* Button containers for stacked layout */

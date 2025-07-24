@@ -4,6 +4,8 @@
   background: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
+  position: relative;
+  z-index: 10; /* Ensure structure viewers appear above other content */
 }
 
 .structures-title {
@@ -76,6 +78,8 @@
   border: 1px solid #dee2e6;
   padding: 1rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10; /* Ensure structure panels appear above table content */
 }
 
 .structure-header {

@@ -290,6 +290,37 @@
   border-left: 1px solid #dee2e6 !important;
 }
 
+/* Fullscreen z-index handling to ensure mol* viewer appears above other elements */
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen {
+  z-index: 99999 !important;
+}
+
+/* Ensure fullscreen canvas containers have high z-index */
+:fullscreen canvas,
+:-webkit-full-screen canvas,
+:-moz-full-screen canvas {
+  z-index: 99999 !important;
+}
+
+/* Ensure any mol* fullscreen elements have high z-index */
+:fullscreen .molstar-container,
+:-webkit-full-screen .molstar-container,
+:-moz-full-screen .molstar-container,
+:fullscreen .msp-plugin,
+:-webkit-full-screen .msp-plugin,
+:-moz-full-screen .msp-plugin {
+  z-index: 99999 !important;
+}
+
+/* Handle fullscreen state for the structure viewer itself */
+.structure-viewer:fullscreen,
+.structure-viewer:-webkit-full-screen,
+.structure-viewer:-moz-full-screen {
+  z-index: 99999 !important;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .structure-viewer-controls {

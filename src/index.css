@@ -709,3 +709,17 @@ pre {
   position: relative;
   z-index: 1;
 }
+
+/* Fullscreen elements should have the highest z-index */
+:fullscreen,
+:-webkit-full-screen,
+:-moz-full-screen {
+  z-index: 99999 !important;
+}
+
+/* Ensure all fullscreen content and children inherit high z-index */
+:fullscreen *,
+:-webkit-full-screen *,
+:-moz-full-screen * {
+  z-index: inherit !important;
+}
