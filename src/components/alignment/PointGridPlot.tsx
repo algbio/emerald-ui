@@ -63,6 +63,7 @@ interface PointGridProps {
   showSafetyWindows?: boolean;
   showAlignmentEdges?: boolean;
   showAlignmentDots?: boolean;
+  showOptimalPath?: boolean;
   // Safety window interaction props
   selectedSafetyWindowId?: string | null;
   hoveredSafetyWindowId?: string | null;
@@ -94,6 +95,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   showSafetyWindows = true,
   showAlignmentEdges = true,
   showAlignmentDots = true,
+  showOptimalPath = true,
   selectedSafetyWindowId,
   hoveredSafetyWindowId,
   onSafetyWindowHover,
@@ -144,10 +146,11 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showMinimap,
         showSafetyWindows,
         showAlignmentEdges,
-        showAlignmentDots
+        showAlignmentDots,
+        showOptimalPath
       }
     })
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots]);
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath]);
   
   // Extract safety windows and helper function
   const safetyWindows = alignments.filter(alignment => 
@@ -290,10 +293,25 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     
     // Draw alignment elements if enabled
     if (showAlignmentEdges) {
-      drawAlignmentEdges(ctx, alignments, x, y);
+      // Filter alignments based on settings
+      const filteredAlignments = alignments.filter(alignment => {
+        // If showOptimalPath is false, exclude blue (optimal path) alignments
+        if (!showOptimalPath && alignment.color === 'blue') {
+          return false;
+        }
+        return true;
+      });
+      drawAlignmentEdges(ctx, filteredAlignments, x, y);
     }
     if (showAlignmentDots) {
-      drawAlignmentDots(ctx, alignments, x, y);
+      // Apply same filtering for dots
+      const filteredAlignments = alignments.filter(alignment => {
+        if (!showOptimalPath && alignment.color === 'blue') {
+          return false;
+        }
+        return true;
+      });
+      drawAlignmentDots(ctx, filteredAlignments, x, y);
     }
 
     // Draw hover highlight (always shown when hovering for usability)
@@ -450,7 +468,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   useEffect(() => {
     const timeoutId = setTimeout(drawCanvas, 16);
     return () => clearTimeout(timeoutId);
-  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots]);
+  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

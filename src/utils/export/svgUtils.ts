@@ -316,15 +316,25 @@ function drawSVGAlignmentEdges(
       const [fromX, fromY] = edge.from;
       const [toX, toY] = edge.to;
       
-      const opacity = Math.max(0.5, edge.probability);
-      const strokeWidth = Math.max(2, edge.probability * 4);
+      // Special styling for the optimal path (blue)
+      let strokeColor, strokeWidth, opacity;
+      if (alignment.color === 'blue') {
+        strokeColor = 'rgba(30, 144, 255, 0.8)'; // Dodger blue with good visibility
+        strokeWidth = 1.5; // Slightly thicker but still thin
+        opacity = 0.85; // Higher opacity for visibility
+      } else {
+        // Default styling for other alignments
+        opacity = Math.max(0.5, edge.probability);
+        strokeWidth = Math.max(2, edge.probability * 4);
+        strokeColor = alignment.color || '#666';
+      }
       
       edgesGroup.append('line')
         .attr('x1', x(fromX))
         .attr('y1', y(fromY))
         .attr('x2', x(toX))
         .attr('y2', y(toY))
-        .attr('stroke', alignment.color || '#666')
+        .attr('stroke', strokeColor)
         .attr('stroke-width', strokeWidth)
         .attr('opacity', opacity)
         .attr('class', `alignment-${alignIndex}-edge-${edgeIndex}`);
@@ -601,11 +611,26 @@ export const exportCanvasAsSVG = (
     }
 
     if (visualizationSettings.showAlignmentEdges) {
-      drawSVGAlignmentEdges({...ctx, svg: plotGroup}, alignments);
+      // Filter alignments based on settings
+      const filteredAlignments = alignments.filter(alignment => {
+        // If showOptimalPath is false, exclude blue (optimal path) alignments
+        if (!visualizationSettings.showOptimalPath && alignment.color === 'blue') {
+          return false;
+        }
+        return true;
+      });
+      drawSVGAlignmentEdges({...ctx, svg: plotGroup}, filteredAlignments);
     }
 
     if (visualizationSettings.showAlignmentDots) {
-      drawSVGAlignmentDots({...ctx, svg: plotGroup}, alignments);
+      // Apply same filtering for dots
+      const filteredAlignments = alignments.filter(alignment => {
+        if (!visualizationSettings.showOptimalPath && alignment.color === 'blue') {
+          return false;
+        }
+        return true;
+      });
+      drawSVGAlignmentDots({...ctx, svg: plotGroup}, filteredAlignments);
     }
 
     if (visualizationSettings.showMinimap) {

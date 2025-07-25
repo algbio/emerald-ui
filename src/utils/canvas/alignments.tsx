@@ -13,12 +13,20 @@ export function drawAlignmentEdges(
       const [fromX, fromY] = edge.from;
       const [toX, toY] = edge.to;
       
-      const opacity = Math.max(0.5, edge.probability);
-      const strokeWidth = Math.max(2, edge.probability * 4);
-      
-      ctx.strokeStyle = alignment.color;
-      ctx.lineWidth = strokeWidth;
-      ctx.globalAlpha = opacity;
+      // Special styling for the optimal path (blue)
+      if (alignment.color === 'blue') {
+        ctx.strokeStyle = 'rgba(30, 144, 255, 1)'; // Dodger blue with good visibility
+        ctx.lineWidth = 2.5; // Slightly thicker but still thin
+        ctx.globalAlpha = 0.85; // Higher opacity for visibility
+      } else {
+        // Default styling for other alignments
+        const opacity = Math.max(0.5, edge.probability);
+        const strokeWidth = Math.max(2, edge.probability * 4);
+        
+        ctx.strokeStyle = alignment.color;
+        ctx.lineWidth = strokeWidth;
+        ctx.globalAlpha = opacity;
+      }
       
       ctx.beginPath();
       ctx.moveTo(x(fromX), y(fromY));

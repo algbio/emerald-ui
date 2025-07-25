@@ -251,7 +251,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     showMinimap: true,
     showSafetyWindows: true,
     showAlignmentEdges: true,
-    showAlignmentDots: true
+    showAlignmentDots: true,
+    showOptimalPath: true
   };
 
   const currentSettings = visualizationSettings || defaultSettings;

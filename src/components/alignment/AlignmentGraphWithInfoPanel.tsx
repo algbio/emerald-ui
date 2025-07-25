@@ -48,7 +48,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     showMinimap: true,
     showSafetyWindows: true,
     showAlignmentEdges: true,
-    showAlignmentDots: true
+    showAlignmentDots: true,
+    showOptimalPath: true
   });
 
   // Extract safety windows from alignments
@@ -117,6 +118,7 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             showSafetyWindows={visualizationSettings.showSafetyWindows}
             showAlignmentEdges={visualizationSettings.showAlignmentEdges}
             showAlignmentDots={visualizationSettings.showAlignmentDots}
+            showOptimalPath={visualizationSettings.showOptimalPath}
             minimapSize={minimapSize}
             minimapPadding={minimapPadding}
             selectedSafetyWindowId={selectedSafetyWindowId}

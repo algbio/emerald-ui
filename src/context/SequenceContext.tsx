@@ -584,6 +584,35 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       }
     }
 
+    // Process optimal path data
+    if (result.optimal_path && Array.isArray(result.optimal_path)) {
+      console.log('Processing optimal path with', result.optimal_path.length, 'points');
+      // Convert optimal path coordinates to edges connecting consecutive points
+      const optimalPathEdges = [];
+      for (let i = 0; i < result.optimal_path.length - 1; i++) {
+        const currentPoint = result.optimal_path[i];
+        const nextPoint = result.optimal_path[i + 1];
+        
+        if (currentPoint && nextPoint && 
+            Array.isArray(currentPoint) && Array.isArray(nextPoint) &&
+            currentPoint.length >= 2 && nextPoint.length >= 2) {
+          optimalPathEdges.push({
+            from: [currentPoint[0], currentPoint[1]] as [number, number],
+            to: [nextPoint[0], nextPoint[1]] as [number, number],
+            probability: 1.0 // Use full probability for the optimal path
+          });
+        }
+      }
+      
+      if (optimalPathEdges.length > 0) {
+        console.log('Adding optimal path with', optimalPathEdges.length, 'edges in blue');
+        alignments.push({
+          color: "blue",
+          edges: optimalPathEdges,
+        });
+      }
+    }
+
     return alignments;
   };
 

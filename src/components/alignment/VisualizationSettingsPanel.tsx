@@ -9,6 +9,7 @@ export interface VisualizationSettings {
   showSafetyWindows: boolean;
   showAlignmentEdges: boolean;
   showAlignmentDots: boolean;
+  showOptimalPath: boolean;
 }
 
 interface VisualizationSettingsPanelProps {
@@ -35,7 +36,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
       showMinimap: true,
       showSafetyWindows: true,
       showAlignmentEdges: true,
-      showAlignmentDots: true
+      showAlignmentDots: true,
+      showOptimalPath: true
     });
   };
 
@@ -151,6 +153,19 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
                 Show Alignment Dots
               </label>
               <p className="setting-description">Display start and end point markers</p>
+            </div>
+
+            <div className="setting-item">
+              <label className="setting-label">
+                <input
+                  type="checkbox"
+                  checked={settings.showOptimalPath}
+                  onChange={() => handleToggle('showOptimalPath')}
+                />
+                <span className="checkmark"></span>
+                Show Optimal Path
+              </label>
+              <p className="setting-description">Display the blue optimal alignment path</p>
             </div>
           </div>
         </div>
