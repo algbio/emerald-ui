@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ShareUrlPanel from './ShareUrlPanel';
 import ExportImagePanel from './ExportImagePanel';
+import type { PointGridPlotRef } from '../alignment/PointGridPlot';
 import './ShareAndExportPanel.css';
 
 interface ShareAndExportPanelProps {
@@ -11,9 +12,9 @@ interface ShareAndExportPanelProps {
   delta: number;
   accessionA?: string;
   accessionB?: string;
-  
   // Props for ExportImagePanel
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  pointGridRef?: React.RefObject<PointGridPlotRef | null>;
 }
 
 const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
@@ -23,7 +24,8 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
   delta,
   accessionA,
   accessionB,
-  canvasRef
+  canvasRef,
+  pointGridRef
 }) => {
   const [isExportExpanded, setIsExportExpanded] = useState(false);
   const [isShareExpanded, setIsShareExpanded] = useState(false);
@@ -45,6 +47,7 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
           <div className={`section-content ${isExportExpanded ? 'expanded' : 'collapsed'}`}>
             <ExportImagePanel
               canvasRef={canvasRef}
+              pointGridRef={pointGridRef}
               descriptorA={descriptorA}
               descriptorB={descriptorB}
             />

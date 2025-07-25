@@ -7,7 +7,10 @@ import { AlignmentStructuresViewer } from './components/structure/AlignmentStruc
 import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWithInfoPanel'
 import ShareAndExportPanel from './components/share/ShareAndExportPanel'
 import SharedUrlNotification from './components/ui/SharedUrlNotification'
-import type { Alignment } from './components/alignment/PointGridPlot'
+import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
+
+const GRAPH_WIDTH = 800;
+const GRAPH_HEIGHT = 800;
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {
@@ -20,6 +23,7 @@ function AppContent() {
   const [memberDescriptor, setMemberDescriptor] = useState("");
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pointGridRef = useRef<PointGridPlotRef | null>(null);
 
   // Update local state when context state changes
   useEffect(() => {
@@ -49,6 +53,11 @@ function AppContent() {
   // Callback to receive canvas ref from AlignmentGraphWithInfoPanel
   const handleCanvasRef = (ref: React.RefObject<HTMLCanvasElement | null>) => {
     canvasRef.current = ref.current;
+  };
+
+  // Callback to receive PointGridPlot ref from AlignmentGraphWithInfoPanel
+  const handlePointGridRef = (ref: React.RefObject<PointGridPlotRef>) => {
+    pointGridRef.current = ref.current;
   };
 
   // Check if we have data to display
@@ -102,16 +111,17 @@ function AppContent() {
           
          
           
-          <AlignmentGraphWithInfoPanel
-            key={JSON.stringify(localAlignments)}
+                    <AlignmentGraphWithInfoPanel
+            key={`${representative}-${member}`}
             representative={representative}
             member={member}
             representativeDescriptor={representativeDescriptor}
             memberDescriptor={memberDescriptor}
             alignments={localAlignments}
-            width={900}
-            height={900}
+            width={GRAPH_WIDTH}
+            height={GRAPH_HEIGHT}
             onCanvasRef={handleCanvasRef}
+            onPointGridRef={handlePointGridRef}
           />
 
            {/* Share URL and Export Image Panel */}
@@ -123,6 +133,7 @@ function AppContent() {
             accessionA={state.sequences.accessionA}
             accessionB={state.sequences.accessionB}
             canvasRef={canvasRef}
+            pointGridRef={pointGridRef}
           />
         </div>
       )}

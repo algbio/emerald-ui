@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { exportCanvasAsPNG, exportCanvasAsJPEG, copyCanvasToClipboard, generateExportFilename } from '../../utils/export/exportUtils';
+import { exportCanvasAsSVG, generateSVGFilename } from '../../utils/export/svgUtils';
+import type { PointGridPlotRef } from '../alignment/PointGridPlot';
 import './ExportImagePanel.css';
 
 interface ExportImagePanelProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  pointGridRef?: React.RefObject<PointGridPlotRef | null>;
   descriptorA?: string;
   descriptorB?: string;
 }
 
 const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
   canvasRef,
+  pointGridRef,
   descriptorA,
   descriptorB
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpeg'>('png');
+  const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpeg' | 'svg'>('png');
   const [quality, setQuality] = useState(0.9);
   const [canvasIsFullyReady, setCanvasIsFullyReady] = useState(false);
 
@@ -98,16 +102,40 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
     try {
       // We've already checked that canvas exists and is ready in checkCanvasStatus
       const canvas = canvasRef.current!;
-      const filename = generateExportFilename(descriptorA, descriptorB, selectedFormat);
       
-      // Proceed with the actual export
-      if (selectedFormat === 'png') {
-        exportCanvasAsPNG(canvas, filename, 1.0);
-      } else {
-        exportCanvasAsJPEG(canvas, filename, quality);
-      }
+      if (selectedFormat === 'svg') {
+        // Get export data on-demand from PointGridPlot ref
+        if (!pointGridRef?.current) {
+          showTemporaryMessage('SVG export not available: Point grid reference is missing.', true);
+          return;
+        }
 
-      showTemporaryMessage(`Graph exported as ${filename}`);
+        const exportData = pointGridRef.current.getExportData();
+        const filename = generateSVGFilename(descriptorA, descriptorB);
+        
+        exportCanvasAsSVG(
+          canvas,
+          exportData.alignments,
+          exportData.representative,
+          exportData.member,
+          exportData.xTicks,
+          exportData.yTicks,
+          exportData.transform,
+          exportData.visualizationSettings,
+          filename
+        );
+        showTemporaryMessage(`Graph exported as ${filename}`);
+      } else {
+        // Handle raster export (PNG/JPEG)
+        const filename = generateExportFilename(descriptorA, descriptorB, selectedFormat);
+        
+        if (selectedFormat === 'png') {
+          exportCanvasAsPNG(canvas, filename, 1.0);
+        } else {
+          exportCanvasAsJPEG(canvas, filename, quality);
+        }
+        showTemporaryMessage(`Graph exported as ${filename}`);
+      }
     } catch (error) {
       console.error('Export failed:', error);
       
@@ -234,11 +262,12 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
                 <select 
                   id="format-select"
                   value={selectedFormat} 
-                  onChange={(e) => setSelectedFormat(e.target.value as 'png' | 'jpeg')}
+                  onChange={(e) => setSelectedFormat(e.target.value as 'png' | 'jpeg' | 'svg')}
                   className="format-select"
                 >
                   <option value="png">PNG (Lossless)</option>
                   <option value="jpeg">JPEG (Smaller file)</option>
+                  <option value="svg">SVG (Vector - Scalable)</option>
                 </select>
               </div>
 
@@ -299,9 +328,10 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
         <div className="export-info">
           <p>Export options:</p>
           <ul>
-            <li><strong>PNG:</strong> High quality, larger file size</li>
-            <li><strong>JPEG:</strong> Smaller file size, adjustable quality</li>
-            <li><strong>Copy:</strong> Copy image directly to clipboard</li>
+            <li><strong>PNG:</strong> High quality raster image, larger file size</li>
+            <li><strong>JPEG:</strong> Compressed raster image, smaller file size, adjustable quality</li>
+            <li><strong>SVG:</strong> Vector image that scales perfectly at any zoom level</li>
+            <li><strong>Copy:</strong> Copy image directly to clipboard (PNG format)</li>
             <li><strong>Highlighted Windows:</strong> Safety window highlights are included in exports</li>
           </ul>
           

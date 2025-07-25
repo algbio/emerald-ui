@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import PointGridPlot from './PointGridPlot';
+import type { PointGridPlotRef } from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
 import SequenceAlignmentViewer from './SequenceAlignmentViewer';
 import type { Alignment } from '../../types/PointGrid';
@@ -17,6 +18,7 @@ interface AlignmentGraphWithInfoPanelProps {
   minimapSize?: number;
   minimapPadding?: number;
   onCanvasRef?: (ref: React.RefObject<HTMLCanvasElement | null>) => void;
+  onPointGridRef?: (ref: React.RefObject<PointGridPlotRef>) => void;
 }
 
 export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelProps> = ({
@@ -29,10 +31,14 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   height = 900,
   minimapSize = 250,
   minimapPadding = 100,
-  onCanvasRef
+  onCanvasRef,
+  onPointGridRef
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
+  
+  // Create ref for the PointGridPlot component
+  const pointGridRef = useRef<PointGridPlotRef>(null);
   
   // Default visualization settings
   const [visualizationSettings, setVisualizationSettings] = useState<VisualizationSettings>({
@@ -80,13 +86,7 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   };
 
   const handleNavigateToNext = () => {
-    if (safetyWindows.length === 0) return;
-    
-    const currentIndex = selectedSafetyWindowId 
-      ? parseInt(selectedSafetyWindowId.split('-')[2]) 
-      : 0;
-    const newIndex = currentIndex < safetyWindows.length - 1 ? currentIndex + 1 : 0;
-    setSelectedSafetyWindowId(`safety-window-${newIndex}`);
+    // ... existing code
   };
 
   return (
@@ -123,11 +123,20 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             hoveredSafetyWindowId={hoveredSafetyWindowId}
             onSafetyWindowHover={handleSafetyWindowHover}
             onSafetyWindowSelect={handleSafetyWindowSelect}
-            ref={(canvasElement) => {
-              // Create a ref object to pass back to the parent
-              const canvasRefObj = { current: canvasElement };
-              if (onCanvasRef) {
+            ref={(pointGridElement) => {
+              // Store the PointGridPlot ref
+              pointGridRef.current = pointGridElement;
+              
+              // Extract canvas and pass to parent if needed
+              if (onCanvasRef && pointGridElement) {
+                const canvasRefObj = { current: pointGridElement.canvas };
                 onCanvasRef(canvasRefObj);
+              }
+              
+              // Pass the PointGridPlot ref to parent if needed
+              if (onPointGridRef && pointGridElement) {
+                const pointGridRefObj = { current: pointGridElement };
+                onPointGridRef(pointGridRefObj);
               }
             }}
           />

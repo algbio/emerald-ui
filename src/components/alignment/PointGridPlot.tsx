@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, forwardRef } from 'react'
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import * as d3 from "d3";
 import { usePointGridScales } from '../../hooks/usePointGridScales';
 import { usePointGridTicks } from '../../hooks/usePointGridTicks';
@@ -18,6 +18,28 @@ import {
 } from '../../utils/canvas';
 import type { SafetyWindowBounds } from '../../utils/canvas';
 import type { PointGridPlotProps, Alignment } from '../../types/PointGrid';
+
+// Extended ref interface that includes export functionality
+export interface PointGridPlotRef {
+  canvas: HTMLCanvasElement | null;
+  getExportData: () => {
+    alignments: Alignment[];
+    representative: string;
+    member: string;
+    xTicks: Array<{value: number; label: string}>;
+    yTicks: Array<{value: number; label: string}>;
+    transform: any;
+    visualizationSettings: {
+      showAxes: boolean;
+      showAxisLabels: boolean;
+      showGrid: boolean;
+      showMinimap: boolean;
+      showSafetyWindows: boolean;
+      showAlignmentEdges: boolean;
+      showAlignmentDots: boolean;
+    };
+  };
+}
 
 interface PointGridProps {
   width?: number;
@@ -50,7 +72,7 @@ interface PointGridProps {
   onTransformChange?: (transform: any) => void;
 }
 
-const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
+const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   width = 800,
   height = 800,
   marginTop = 80,
@@ -81,17 +103,6 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // If a ref is forwarded, merge it with our internal ref
-  const mergedRef = (node: HTMLCanvasElement | null) => {
-    canvasRef.current = node;
-    if (ref) {
-      if (typeof ref === 'function') {
-        ref(node);
-      } else {
-        ref.current = node;
-      }
-    }
-  };
   const [transform, setTransform] = useState(d3.zoomIdentity);
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
   const [highlightedWindow] = useState<Alignment | null>(null);
@@ -115,6 +126,28 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
     y, // Now properly typed as d3.ScaleLinear
     transform // Pass the current transform to control tick density
   });
+
+  // Expose canvas and export data through ref
+  useImperativeHandle(ref, () => ({
+    canvas: canvasRef.current,
+    getExportData: () => ({
+      alignments,
+      representative,
+      member,
+      xTicks: xTicks.map(tick => ({ value: tick.value, label: tick.label })),
+      yTicks: yTicks.map(tick => ({ value: tick.value, label: tick.label })),
+      transform,
+      visualizationSettings: {
+        showAxes,
+        showAxisLabels,
+        showGrid,
+        showMinimap,
+        showSafetyWindows,
+        showAlignmentEdges,
+        showAlignmentDots
+      }
+    })
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots]);
   
   // Extract safety windows and helper function
   const safetyWindows = alignments.filter(alignment => 
@@ -444,7 +477,7 @@ const PointGridPlot = forwardRef<HTMLCanvasElement, PointGridProps>(({
 
   return (
     <canvas
-      ref={mergedRef}
+      ref={canvasRef}
       width={width}
       height={height}
       style={{ cursor: isMinimapDragging ? 'move' : 'grab' }}
