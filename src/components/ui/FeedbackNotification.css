@@ -1,0 +1,223 @@
+.feedback-notification {
+  position: fixed;
+  z-index: 1000;
+  max-width: 400px;
+  min-width: 300px;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: var(--font-family-primary);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Position variants */
+.feedback-notification--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.feedback-notification--top-left {
+  top: 20px;
+  left: 20px;
+  transform: translateX(-100%);
+}
+
+.feedback-notification--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.feedback-notification--bottom-left {
+  bottom: 20px;
+  left: 20px;
+  transform: translateX(-100%);
+}
+
+.feedback-notification--top-center {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+}
+
+.feedback-notification--bottom-center {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+}
+
+/* Visible state */
+.feedback-notification--visible {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.feedback-notification--visible.feedback-notification--top-center {
+  transform: translateX(-50%) translateY(0);
+}
+
+.feedback-notification--visible.feedback-notification--bottom-center {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Leaving animation */
+.feedback-notification--leaving {
+  opacity: 0;
+  transform: translateX(100%);
+  pointer-events: none;
+}
+
+.feedback-notification--leaving.feedback-notification--top-left,
+.feedback-notification--leaving.feedback-notification--bottom-left {
+  transform: translateX(-100%);
+}
+
+.feedback-notification--leaving.feedback-notification--top-center {
+  transform: translateX(-50%) translateY(-100%);
+}
+
+.feedback-notification--leaving.feedback-notification--bottom-center {
+  transform: translateX(-50%) translateY(100%);
+}
+
+/* Type variants */
+.feedback-notification--success {
+  border: 2px solid var(--color-success);
+  background: var(--bg-primary);
+}
+
+.feedback-notification--error {
+  border: 2px solid var(--color-error);
+  background: var(--bg-primary);
+}
+
+.feedback-notification--warning {
+  border: 2px solid var(--color-warning);
+  background: var(--bg-primary);
+}
+
+.feedback-notification--info {
+  border: 2px solid var(--color-primary);
+  background: var(--bg-primary);
+}
+
+/* Content styling */
+.feedback-notification__content {
+  padding: 1rem;
+}
+
+.feedback-notification__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+}
+
+.feedback-notification__icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.feedback-notification__title {
+  margin: 0;
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.feedback-notification--success .feedback-notification__title {
+  color: var(--color-success);
+}
+
+.feedback-notification--error .feedback-notification__title {
+  color: var(--color-error);
+}
+
+.feedback-notification--warning .feedback-notification__title {
+  color: var(--color-warning);
+}
+
+.feedback-notification--info .feedback-notification__title {
+  color: var(--color-primary);
+}
+
+.feedback-notification__close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.feedback-notification__close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.feedback-notification__body {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.feedback-notification__message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Multiple notifications stacking - removed problematic nth-child rules */
+/* Stacking will be handled dynamically by the component */
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .feedback-notification {
+    max-width: calc(100vw - 40px);
+    min-width: calc(100vw - 40px);
+    left: 20px !important;
+    right: 20px !important;
+    transform: translateY(-100%);
+  }
+  
+  .feedback-notification--visible {
+    transform: translateY(0);
+  }
+  
+  .feedback-notification--leaving {
+    transform: translateY(-100%);
+  }
+  
+  .feedback-notification--bottom-right,
+  .feedback-notification--bottom-left,
+  .feedback-notification--bottom-center {
+    transform: translateY(100%);
+  }
+  
+  .feedback-notification--bottom-right.feedback-notification--visible,
+  .feedback-notification--bottom-left.feedback-notification--visible,
+  .feedback-notification--bottom-center.feedback-notification--visible {
+    transform: translateY(0);
+  }
+  
+  .feedback-notification--bottom-right.feedback-notification--leaving,
+  .feedback-notification--bottom-left.feedback-notification--leaving,
+  .feedback-notification--bottom-center.feedback-notification--leaving {
+    transform: translateY(100%);
+  }
+}

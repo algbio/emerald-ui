@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSequence } from '../../context/SequenceContext';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import StructureFileUploader from '../structure/StructureFileUploader';
 // import type { StructureData } from '../../utils/structure/pdbParser';
 import './EmeraldInput.css';
@@ -17,6 +18,9 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   // Get state and dispatch from context
   const { state, dispatch, runAlignment, fetchSequenceA, fetchSequenceB, loadStructureFileA, loadStructureFileB, canRunAlignment, getValidationWarnings } = useSequence();
   const { sequences, params, alignmentStatus, fetchStatusA, fetchErrorA, fetchStatusB, fetchErrorB } = state;
+  
+  // Feedback notifications
+  const { notifySuccess, notifyError, notifyInfo } = useFeedbackNotifications();
   
   // Get validation warnings
   const validationWarnings = getValidationWarnings();
@@ -47,27 +51,80 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
                        `This might cause memory issues in your browser. Do you want to continue anyway?`;
         
         if (!window.confirm(warnMsg)) {
+          notifyInfo('Alignment Cancelled', 'Large sequence alignment was cancelled by user');
           return; // User chose to cancel
         }
       }
       
-      // First run the internal alignment using EmeraldService
-      await runAlignment();
+      notifyInfo('Starting Alignment', 'Generating suboptimal alignment graph...');
       
-      // Then call the onSubmit prop for backward compatibility
-      onSubmit(
-        sequences,
-        params
-      );
+      try {
+        // First run the internal alignment using EmeraldService
+        await runAlignment();
+        
+        // Then call the onSubmit prop for backward compatibility
+        onSubmit(
+          sequences,
+          params
+        );
+        
+        notifySuccess('Alignment Complete', 'Suboptimal alignment graph has been generated successfully');
+      } catch (error) {
+        notifyError('Alignment Failed', `Failed to generate alignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    } else {
+      notifyError('Invalid Input', 'Please check your sequences and parameters before submitting');
     }
   };
 
   const handleFetchSequenceA = async () => {
-    await fetchSequenceA(sequences.accessionA);
+    if (!sequences.accessionA.trim()) {
+      notifyError('Invalid Accession', 'Please enter a valid UniProt accession number for Sequence A');
+      return;
+    }
+    
+    notifyInfo('Fetching Sequence A', `Retrieving sequence for accession ${sequences.accessionA}`);
+    
+    try {
+      await fetchSequenceA(sequences.accessionA);
+      
+      // Check if fetch was successful by looking at the state after fetch
+      // We'll need to wait a bit for the state to update
+      setTimeout(() => {
+        if (state.fetchErrorA) {
+          notifyError('Fetch Failed', `Failed to fetch Sequence A: ${state.fetchErrorA}`);
+        } else if (state.sequences.sequenceA) {
+          notifySuccess('Sequence A Loaded', `Successfully loaded ${sequences.accessionA} from UniProt`);
+        }
+      }, 100);
+    } catch (error) {
+      notifyError('Fetch Failed', `Error fetching Sequence A: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleFetchSequenceB = async () => {
-    await fetchSequenceB(sequences.accessionB);
+    if (!sequences.accessionB.trim()) {
+      notifyError('Invalid Accession', 'Please enter a valid UniProt accession number for Sequence B');
+      return;
+    }
+    
+    notifyInfo('Fetching Sequence B', `Retrieving sequence for accession ${sequences.accessionB}`);
+    
+    try {
+      await fetchSequenceB(sequences.accessionB);
+      
+      // Check if fetch was successful by looking at the state after fetch
+      // We'll need to wait a bit for the state to update
+      setTimeout(() => {
+        if (state.fetchErrorB) {
+          notifyError('Fetch Failed', `Failed to fetch Sequence B: ${state.fetchErrorB}`);
+        } else if (state.sequences.sequenceB) {
+          notifySuccess('Sequence B Loaded', `Successfully loaded ${sequences.accessionB} from UniProt`);
+        }
+      }, 100);
+    } catch (error) {
+      notifyError('Fetch Failed', `Error fetching Sequence B: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   // Load example protein sequences
@@ -87,6 +144,8 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         descriptorB: exampleDescriptorB
       } 
     });
+    
+    notifySuccess('Example Data Loaded', 'Loaded Human p53 and Serum albumin protein sequences');
   };
 
   return (

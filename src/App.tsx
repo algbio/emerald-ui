@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import EmeraldInput from './components/sequence/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
+import { FeedbackProvider } from './context/FeedbackContext'
 import SequenceInputPanel from './components/sequence/SequenceInputPanel'
 import { AlignmentStructuresViewer } from './components/structure/AlignmentStructuresViewer'
 import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWithInfoPanel'
@@ -153,9 +154,11 @@ function AppContent() {
 // Main App component that provides the context
 function App() {
   return (
-    <SequenceProvider>
-      <AppContent />
-    </SequenceProvider>
+    <FeedbackProvider>
+      <SequenceProvider>
+        <AppContent />
+      </SequenceProvider>
+    </FeedbackProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ShareUrlPanel from './ShareUrlPanel';
 import ExportImagePanel from './ExportImagePanel';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import type { PointGridPlotRef } from '../alignment/PointGridPlot';
 import './ShareAndExportPanel.css';
 
@@ -29,6 +30,21 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
 }) => {
   const [isExportExpanded, setIsExportExpanded] = useState(false);
   const [isShareExpanded, setIsShareExpanded] = useState(false);
+  const { notifyInfo } = useFeedbackNotifications();
+
+  const handleExportToggle = () => {
+    setIsExportExpanded(!isExportExpanded);
+    if (!isExportExpanded) {
+      notifyInfo('Export Panel Opened', 'You can now export your alignment visualization');
+    }
+  };
+
+  const handleShareToggle = () => {
+    setIsShareExpanded(!isShareExpanded);
+    if (!isShareExpanded) {
+      notifyInfo('Share Panel Opened', 'Generate a shareable URL for your alignment');
+    }
+  };
 
   return (
     <div className="share-and-export-panel">
@@ -36,7 +52,7 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
         <div className="collapsible-section">
           <button 
             className="section-header"
-            onClick={() => setIsExportExpanded(!isExportExpanded)}
+            onClick={handleExportToggle}
             aria-expanded={isExportExpanded}
           >
             <span className="section-title">📷 Export Image</span>
@@ -58,7 +74,7 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
         <div className="collapsible-section">
           <button 
             className="section-header"
-            onClick={() => setIsShareExpanded(!isShareExpanded)}
+            onClick={handleShareToggle}
             aria-expanded={isShareExpanded}
           >
             <span className="section-title">🔗 Share This Alignment</span>

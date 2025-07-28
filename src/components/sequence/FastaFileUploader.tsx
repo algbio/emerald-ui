@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSequence } from '../../context/SequenceContext';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { SequenceList } from './SequenceList';
 
 interface FastaSequence {
@@ -20,6 +21,7 @@ export const FastaFileUploader: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const { dispatch } = useSequence();
+  const { notifySuccess, notifyError } = useFeedbackNotifications();
   
   // Get current file data
   const currentFile = uploadedFiles[currentFileIndex];
@@ -125,25 +127,39 @@ export const FastaFileUploader: React.FC = () => {
   };
   
   const loadSequence = (seq: FastaSequence, isSequenceA: boolean) => {
-    if (isSequenceA) {
-      dispatch({ type: 'UPDATE_SEQUENCE_A', payload: seq.sequence });
-      dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: seq.description });
-    } else {
-      dispatch({ type: 'UPDATE_SEQUENCE_B', payload: seq.sequence });
-      dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: seq.description });
+    try {
+      if (isSequenceA) {
+        dispatch({ type: 'UPDATE_SEQUENCE_A', payload: seq.sequence });
+        dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: seq.description });
+        notifySuccess('Sequence A Loaded', `Loaded ${seq.description} (${seq.sequence.length} amino acids)`);
+      } else {
+        dispatch({ type: 'UPDATE_SEQUENCE_B', payload: seq.sequence });
+        dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: seq.description });
+        notifySuccess('Sequence B Loaded', `Loaded ${seq.description} (${seq.sequence.length} amino acids)`);
+      }
+    } catch (error) {
+      const sequenceType = isSequenceA ? 'A' : 'B';
+      console.error(`Error loading sequence ${sequenceType}:`, error);
+      notifyError(`Load Failed`, `Failed to load sequence ${sequenceType}`);
     }
   };
   
   const loadBothSequences = (seqA: FastaSequence, seqB: FastaSequence) => {
-    dispatch({ 
-      type: 'LOAD_SEQUENCES', 
-      payload: {
-        sequenceA: seqA.sequence,
-        descriptorA: seqA.description,
-        sequenceB: seqB.sequence,
-        descriptorB: seqB.description
-      } 
-    });
+    try {
+      dispatch({ 
+        type: 'LOAD_SEQUENCES', 
+        payload: {
+          sequenceA: seqA.sequence,
+          descriptorA: seqA.description,
+          sequenceB: seqB.sequence,
+          descriptorB: seqB.description
+        } 
+      });
+      notifySuccess('Both Sequences Loaded', `Loaded ${seqA.description} and ${seqB.description}`);
+    } catch (error) {
+      console.error('Error loading both sequences:', error);
+      notifyError('Load Failed', 'Failed to load both sequences');
+    }
   };
 
   const removeFile = (indexToRemove: number) => {

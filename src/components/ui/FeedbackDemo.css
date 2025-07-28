@@ -1,0 +1,118 @@
+.feedback-demo {
+  padding: 1rem;
+  margin: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  background: var(--bg-secondary);
+  font-family: var(--font-family-primary);
+}
+
+.feedback-demo h3 {
+  margin-top: 0;
+  color: var(--color-primary);
+}
+
+.feedback-demo h4 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.demo-section {
+  margin-bottom: 1.5rem;
+}
+
+.demo-section:last-child {
+  margin-bottom: 0;
+}
+
+.demo-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.demo-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-family-primary);
+}
+
+.demo-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.demo-button:active {
+  transform: translateY(0);
+}
+
+.demo-button.success {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.demo-button.success:hover {
+  background: var(--color-success-light);
+}
+
+.demo-button.error {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.demo-button.error:hover {
+  background: var(--color-error-light);
+}
+
+.demo-button.warning {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.demo-button.warning:hover {
+  background: var(--color-warning-light);
+}
+
+.demo-button.info {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.demo-button.info:hover {
+  background: var(--color-primary-light);
+}
+
+.demo-button.clear {
+  border-color: var(--color-gray-400);
+  color: var(--color-gray-600);
+  background: var(--color-gray-100);
+}
+
+.demo-button.clear:hover {
+  background: var(--color-gray-200);
+  border-color: var(--color-gray-500);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .feedback-demo {
+    margin: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .demo-buttons {
+    flex-direction: column;
+  }
+  
+  .demo-button {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSequence } from '../../context/SequenceContext';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { SequenceList } from './SequenceList';
 import './UniProtSearch.css';
 
@@ -21,14 +22,17 @@ const UniProtSearch: React.FC = () => {
   const [resultsPerPage] = useState(5);
   
   const { dispatch } = useSequence();
+  const { notifySuccess, notifyError, notifyInfo } = useFeedbackNotifications();
   
   const searchUniProt = async () => {
     if (!searchTerm.trim()) {
+      notifyError('Invalid Search', 'Please enter a search term');
       return;
     }
     
     setIsSearching(true);
     setError(null);
+    notifyInfo('Searching UniProt', `Searching for "${searchTerm}"...`);
     
     try {
       // Update the fetch URL to include cross-references
@@ -57,9 +61,17 @@ const UniProtSearch: React.FC = () => {
       setResults(mappedResults);
       setCurrentPage(0); // Reset to first page when new search is performed
       
+      if (mappedResults.length === 0) {
+        notifyInfo('No Results', `No proteins found for "${searchTerm}"`);
+      } else {
+        notifySuccess('Search Complete', `Found ${mappedResults.length} protein${mappedResults.length > 1 ? 's' : ''} for "${searchTerm}"`);
+      }
+      
     } catch (error) {
       console.error('Error searching UniProt:', error);
-      setError('Failed to search UniProt. Please try again.');
+      const errorMsg = 'Failed to search UniProt. Please try again.';
+      setError(errorMsg);
+      notifyError('Search Failed', errorMsg);
     } finally {
       setIsSearching(false);
     }
@@ -68,26 +80,34 @@ const UniProtSearch: React.FC = () => {
   const loadToSequenceA = (result: UniProtResult) => {
     const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
     
-    console.log('Loading to Sequence A:', {
+    console.log('Load A button clicked! Loading to Sequence A:', {
       accession: result.accession,
       id: result.id,
       descriptor,
       sequenceLength: result.sequence.length
     });
     
-    dispatch({ type: 'UPDATE_SEQUENCE_A', payload: result.sequence });
-    dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: descriptor });
-    dispatch({ type: 'UPDATE_ACCESSION_A', payload: result.accession });
-    
-    // Add this to set the structure information
-    dispatch({ 
-      type: 'SET_STRUCTURE_A', 
-      payload: { 
-        uniprotId: result.accession,
-      } 
-    });
-    
-    console.log('Dispatched structure A with UniProt ID:', result.accession);
+    try {
+      dispatch({ type: 'UPDATE_SEQUENCE_A', payload: result.sequence });
+      dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: descriptor });
+      dispatch({ type: 'UPDATE_ACCESSION_A', payload: result.accession });
+      
+      // Add this to set the structure information
+      dispatch({ 
+        type: 'SET_STRUCTURE_A', 
+        payload: { 
+          uniprotId: result.accession,
+        } 
+      });
+      
+      console.log('Successfully dispatched all actions for Sequence A');
+      console.log('Dispatched structure A with UniProt ID:', result.accession);
+      
+      notifySuccess('Sequence A Loaded', `Loaded ${result.proteinName} (${result.sequence.length} amino acids)`);
+    } catch (error) {
+      console.error('Error loading sequence A:', error);
+      notifyError('Load Failed', 'Failed to load sequence A');
+    }
   };
   
   const loadToSequenceB = (result: UniProtResult) => {
@@ -100,19 +120,26 @@ const UniProtSearch: React.FC = () => {
       sequenceLength: result.sequence.length
     });
     
-    dispatch({ type: 'UPDATE_SEQUENCE_B', payload: result.sequence });
-    dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: descriptor });
-    dispatch({ type: 'UPDATE_ACCESSION_B', payload: result.accession });
-    
-    // Add this to set the structure information
-    dispatch({ 
-      type: 'SET_STRUCTURE_B', 
-      payload: { 
-        uniprotId: result.accession,
-      } 
-    });
-    
-    console.log('Dispatched structure B with UniProt ID:', result.accession);
+    try {
+      dispatch({ type: 'UPDATE_SEQUENCE_B', payload: result.sequence });
+      dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: descriptor });
+      dispatch({ type: 'UPDATE_ACCESSION_B', payload: result.accession });
+      
+      // Add this to set the structure information
+      dispatch({ 
+        type: 'SET_STRUCTURE_B', 
+        payload: { 
+          uniprotId: result.accession,
+        } 
+      });
+      
+      console.log('Dispatched structure B with UniProt ID:', result.accession);
+      
+      notifySuccess('Sequence B Loaded', `Loaded ${result.proteinName} (${result.sequence.length} amino acids)`);
+    } catch (error) {
+      console.error('Error loading sequence B:', error);
+      notifyError('Load Failed', 'Failed to load sequence B');
+    }
   };
 
   // Calculate pagination values

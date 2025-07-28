@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { exportCanvasAsPNG, exportCanvasAsJPEG, copyCanvasToClipboard, generateExportFilename } from '../../utils/export/exportUtils';
 import { exportCanvasAsSVG, generateSVGFilename } from '../../utils/export/svgUtils';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import type { PointGridPlotRef } from '../alignment/PointGridPlot';
 import './ExportImagePanel.css';
 
@@ -23,6 +24,9 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
   const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpeg' | 'svg'>('png');
   const [quality, setQuality] = useState(0.9);
   const [canvasIsFullyReady, setCanvasIsFullyReady] = useState(false);
+  
+  // Feedback notifications
+  const { notifySuccess, notifyError, notifyInfo, notifyDownloadStarted, notifyCopySuccess } = useFeedbackNotifications();
 
   // Check if the canvas is fully ready for export
   useEffect(() => {
@@ -93,11 +97,15 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
     const canvasStatus = checkCanvasStatus();
     if (!canvasStatus.ready) {
       showTemporaryMessage(`Graph not ready for export. ${canvasStatus.reason}`, true);
+      notifyError('Export Failed', `Graph not ready for export: ${canvasStatus.reason}`);
       return;
     }
 
     setIsExporting(true);
     clearMessages();
+    
+    // Notify user that export is starting
+    notifyInfo('Starting Export', `Preparing to export graph as ${selectedFormat.toUpperCase()}`);
 
     try {
       // We've already checked that canvas exists and is ready in checkCanvasStatus
@@ -106,7 +114,9 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
       if (selectedFormat === 'svg') {
         // Get export data on-demand from PointGridPlot ref
         if (!pointGridRef?.current) {
-          showTemporaryMessage('SVG export not available: Point grid reference is missing.', true);
+          const errorMsg = 'SVG export not available: Point grid reference is missing.';
+          showTemporaryMessage(errorMsg, true);
+          notifyError('SVG Export Failed', errorMsg);
           return;
         }
 
@@ -124,7 +134,11 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
           exportData.visualizationSettings,
           filename
         );
-        showTemporaryMessage(`Graph exported as ${filename}`);
+        
+        const successMsg = `Graph exported as ${filename}`;
+        showTemporaryMessage(successMsg);
+        notifyDownloadStarted(filename);
+        notifySuccess('SVG Export Complete', 'Vector graphic saved successfully');
       } else {
         // Handle raster export (PNG/JPEG)
         const filename = generateExportFilename(descriptorA, descriptorB, selectedFormat);
@@ -134,14 +148,20 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
         } else {
           exportCanvasAsJPEG(canvas, filename, quality);
         }
-        showTemporaryMessage(`Graph exported as ${filename}`);
+        
+        const successMsg = `Graph exported as ${filename}`;
+        showTemporaryMessage(successMsg);
+        notifyDownloadStarted(filename);
+        notifySuccess(`${selectedFormat.toUpperCase()} Export Complete`, 'Image saved successfully');
       }
     } catch (error) {
       console.error('Export failed:', error);
       
       // Special handling for security error (tainted canvas)
       if (error instanceof DOMException && error.name === 'SecurityError') {
-        showTemporaryMessage('Cannot export image: The canvas contains content from external sources that cannot be exported securely. This is a browser security restriction.', true);
+        const errorMsg = 'Cannot export image: The canvas contains content from external sources that cannot be exported securely. This is a browser security restriction.';
+        showTemporaryMessage(errorMsg, true);
+        notifyError('Export Security Error', 'Canvas security restriction prevents export');
       } else {
         // Provide detailed error message to help debugging
         const errorMessage = error instanceof Error 
@@ -149,6 +169,7 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
           : 'Unknown export error. Check browser console for details.';
           
         showTemporaryMessage(errorMessage, true);
+        notifyError('Export Failed', `Export error: ${errorMessage}`);
       }
     } finally {
       setIsExporting(false);
@@ -158,31 +179,40 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
   const handleCopyToClipboard = async () => {
     // Check if canvas reference exists
     if (!canvasRef.current) {
-      showTemporaryMessage('Graph not ready for copying. The canvas element is not available.', true);
+      const errorMsg = 'Graph not ready for copying. The canvas element is not available.';
+      showTemporaryMessage(errorMsg, true);
+      notifyError('Copy Failed', errorMsg);
       return;
     }
 
     // Check if canvas has valid dimensions
     if (canvasRef.current.width === 0 || canvasRef.current.height === 0) {
-      showTemporaryMessage('Cannot copy image: The graph canvas has zero dimensions.', true);
+      const errorMsg = 'Cannot copy image: The graph canvas has zero dimensions.';
+      showTemporaryMessage(errorMsg, true);
+      notifyError('Copy Failed', errorMsg);
       return;
     }
 
     // Check if the canvas context is available
     const testContext = canvasRef.current.getContext('2d');
     if (!testContext) {
-      showTemporaryMessage('Cannot copy image: Unable to get canvas rendering context.', true);
+      const errorMsg = 'Cannot copy image: Unable to get canvas rendering context.';
+      showTemporaryMessage(errorMsg, true);
+      notifyError('Copy Failed', errorMsg);
       return;
     }
     
     // Check if Clipboard API is supported
     if (!navigator.clipboard) {
-      showTemporaryMessage('Cannot copy image: Your browser does not support the Clipboard API.', true);
+      const errorMsg = 'Cannot copy image: Your browser does not support the Clipboard API.';
+      showTemporaryMessage(errorMsg, true);
+      notifyError('Copy Failed', 'Clipboard API not supported');
       return;
     }
 
     setIsExporting(true);
     clearMessages();
+    notifyInfo('Copying to Clipboard', 'Preparing to copy graph image...');
 
     try {
       // Test that the canvas can be exported by getting a small data URL
@@ -193,7 +223,9 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
         }
         
         await copyCanvasToClipboard(canvasRef.current);
-        showTemporaryMessage("Graph copied to clipboard!");
+        const successMsg = "Graph copied to clipboard!";
+        showTemporaryMessage(successMsg);
+        notifyCopySuccess('Graph image');
       } catch (exportError) {
         // Special handling for security error (tainted canvas)
         if (exportError instanceof DOMException && exportError.name === 'SecurityError') {
@@ -221,6 +253,7 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
       }
       
       showTemporaryMessage(errorMessage, true);
+      notifyError('Copy Failed', errorMessage);
     } finally {
       setIsExporting(false);
     }
