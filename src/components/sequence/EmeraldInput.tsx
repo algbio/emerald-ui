@@ -70,6 +70,25 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     await fetchSequenceB(sequences.accessionB);
   };
 
+  // Load example protein sequences
+  const loadExampleSequences = () => {
+    const exampleSequenceA = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
+    const exampleDescriptorA = "sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens";
+    
+    const exampleSequenceB = "MKWVTFISLLFLFSSAYSRGVFRRDAHKSEVAHRFKDLGEENFKALVLIAFAQYLQQCPFEDHVKLVNEVTEFAKTCVADESAENCDKSLHTLFGDKLCTVATLRETYGEMADCCAKQEPERNECFLQHKDDNPNLPRLVRPEVDVMCTAFHDNEETFLKKYLYEIARRHPYFYAPELLFFAKRYKAAFTECCQAADKAACLLPKLDELRDEGKASSAKQRLKCASLQKFGERAFKAWAVARLSQRFPKAEFAEVSKLVTDLTKVHTECCHGDLLECADDRADLAKYICENQDSISSKLKECCEKPLLEKSHCIAEVENDEMPADLPSLAADFVESKDVCKNYAEAKDVFLGMFLYEYARRHPDYSVVLLLRLAKTYETTLEKCCAAADPHECYAKVFDEFKPLVEEPQNLIKQNCELFEQLGEYKFQNALLVRYTKKVPQVSTPTLVEVSRNLGKVGSKCCKHPEAKRMPCAEDYLSVVLNQLCVLHEKTPVSDRVTKCCTESLVNRRPCFSALEVDETYVPKEFNAETFTFHADICTLSEKERQIKKQTALVELVKHKPKATKEQLKAVMDDFAAFVEKCCKADDKETCFAEEGKKLVAASQAALGL";
+    const exampleDescriptorB = "sp|P02769|ALBU_HUMAN Serum albumin OS=Homo sapiens";
+    
+    dispatch({ 
+      type: 'LOAD_SEQUENCES', 
+      payload: {
+        sequenceA: exampleSequenceA,
+        descriptorA: exampleDescriptorA,
+        sequenceB: exampleSequenceB,
+        descriptorB: exampleDescriptorB
+      } 
+    });
+  };
+
   return (
     <div className="emerald-input-card">
       <h2 className="emerald-title">Protein Sequence Input</h2>
@@ -277,6 +296,17 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           >
             {alignmentStatus === 'loading' ? 'Generating...' : 'Generate Graph'}
           </button>
+          
+          {/* Load Example button */}
+          <div className="load-example-section">
+            <button 
+              onClick={loadExampleSequences}
+              className="load-example-button-small"
+              title="Load example protein sequences (Human p53 and Serum albumin)"
+            >
+              Load Example Data
+            </button>
+          </div>
           
           {state.alignmentError && (
             <div className="error-message">
