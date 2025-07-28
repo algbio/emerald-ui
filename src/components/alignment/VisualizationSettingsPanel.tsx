@@ -10,6 +10,8 @@ export interface VisualizationSettings {
   showAlignmentEdges: boolean;
   showAlignmentDots: boolean;
   showOptimalPath: boolean;
+  enableSafetyWindowHighlighting: boolean;
+  enableGapHighlighting: boolean;
 }
 
 interface VisualizationSettingsPanelProps {
@@ -37,7 +39,9 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
       showSafetyWindows: true,
       showAlignmentEdges: true,
       showAlignmentDots: true,
-      showOptimalPath: true
+      showOptimalPath: true,
+      enableSafetyWindowHighlighting: true,
+      enableGapHighlighting: true
     });
   };
 
@@ -169,6 +173,37 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
             </div>
           </div>
         </div>
+
+        <div className="settings-section">
+          <h4>Interactive Highlighting</h4>
+          <div className="setting-group">
+            <div className="setting-item">
+              <label className="setting-label">
+                <input
+                  type="checkbox"
+                  checked={settings.enableSafetyWindowHighlighting}
+                  onChange={() => handleToggle('enableSafetyWindowHighlighting')}
+                />
+                <span className="checkmark"></span>
+                Enable Safety Window Highlighting
+              </label>
+              <p className="setting-description">Allow safety windows to be highlighted when selected or hovered</p>
+            </div>
+
+            <div className="setting-item">
+              <label className="setting-label">
+                <input
+                  type="checkbox"
+                  checked={settings.enableGapHighlighting}
+                  onChange={() => handleToggle('enableGapHighlighting')}
+                />
+                <span className="checkmark"></span>
+                Enable Gap Highlighting
+              </label>
+              <p className="setting-description">Allow gap regions to be highlighted during gap analysis</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="settings-actions">
@@ -183,7 +218,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
 
       <div className="panel-footer">
         <div className="help-text">
-          Toggle individual elements to customize the visualization. Changes are applied immediately to the graph.
+          Toggle individual elements to customize the visualization. Use highlighting controls to enable/disable interactive selections. Changes are applied immediately to the graph.
         </div>
       </div>
     </div>

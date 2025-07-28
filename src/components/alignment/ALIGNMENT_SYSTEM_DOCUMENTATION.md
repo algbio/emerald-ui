@@ -1,7 +1,10 @@
 # Emerald UI Alignment Graph and Safety Windows Side Panel - System Documentation
 
+> **Last Updated**: July 28, 2025  
+> **Status**: Current - reflects latest codebase including `showOptimalPath` feature and new General Info tab
+
 ## Overview
-The Emerald UI alignment visualization system consists of three main coordinated components: a **PointGridPlot** (the main canvas-based alignment graph), a **SafetyWindowsInfoPanel** (the interactive side panel for safety window navigation), and a **VisualizationSettingsPanel** (the customization panel for graph display options). Together they provide an interactive visualization system for exploring sequence alignments and "safety windows" - regions of confident alignment identified by the EMERALD algorithm.
+The Emerald UI alignment visualization system consists of four main coordinated components: a **PointGridPlot** (the main canvas-based alignment graph), a **SafetyWindowsInfoPanel** (the interactive side panel with general information, safety window navigation, and visualization settings), a **VisualizationSettingsPanel** (the customization panel for graph display options), and a **SequenceAlignmentViewer** (text-based sequence alignment display). Together they provide a comprehensive interactive visualization system for exploring sequence alignments and "safety windows" - regions of confident alignment identified by the EMERALD algorithm.
 
 ## Core Architecture
 
@@ -26,16 +29,17 @@ The Emerald UI alignment visualization system consists of three main coordinated
 
 ### 3. Information Panel: SafetyWindowsInfoPanel  
 - **Location**: `SafetyWindowsInfoPanel.tsx`
-- **Purpose**: Tabbed interface providing detailed view and navigation for safety windows, plus visualization customization
+- **Purpose**: Tabbed interface providing detailed view and navigation for safety windows, plus general alignment information and visualization customization
 - **Key Features**:
-  - **Tab Navigation**: Switch between "Safety Windows" and "Visualization" panels
+  - **Tab Navigation**: Switch between "General Info", "Safety Windows", "Visualization", and "Gap Analysis" panels
+  - **General Statistics**: Safety percentages and overview information (General Info tab)
   - **Window Navigation**: Previous/Next buttons and keyboard shortcuts (Safety Windows tab)
   - **Coordinate Display**: Shows X/Y axis ranges for each window (Safety Windows tab)
   - **Sequence Extraction**: Displays actual sequence segments within windows (Safety Windows tab)
   - **Copy Functionality**: One-click copying of sequence segments (Safety Windows tab)
   - **Window Counter**: Shows current window number and total count (Safety Windows tab)
   - **Visualization Controls**: Toggle display of graph elements (Visualization tab)
-  - **Auto-Selection Clearing**: Deselects safety windows when on Visualization tab
+  - **Auto-Selection Clearing**: Deselects safety windows when on General Info or Visualization tabs
 
 ### 4. Visualization Settings Panel: VisualizationSettingsPanel
 - **Location**: `VisualizationSettingsPanel.tsx`
@@ -56,6 +60,7 @@ The Emerald UI alignment visualization system consists of three main coordinated
   - **Conservation Analysis**: Similarity scoring and visual indicators
   - **Position Markers**: Every 10th position marked for reference
   - **Scrollable Display**: Handles long alignments efficiently
+- **Integration**: Automatically displayed when alignment data includes text alignment information
 
 ## Visualization Settings
 
@@ -69,6 +74,7 @@ interface VisualizationSettings {
   showSafetyWindows: boolean;  // Display safety window brackets and highlights
   showAlignmentEdges: boolean; // Display probability-weighted connection lines
   showAlignmentDots: boolean;  // Display start and end point markers
+  showOptimalPath: boolean;    // Display the blue optimal alignment path
 }
 ```
 
@@ -81,6 +87,7 @@ All visualization elements are enabled by default:
 - **Safety Windows**: Visible (green bracket indicators)
 - **Alignment Edges**: Visible (probability connections)
 - **Alignment Dots**: Visible (start/end markers)
+- **Optimal Path**: Visible (blue optimal alignment path)
 
 ## Data Model
 
@@ -157,6 +164,7 @@ The visualization uses modular canvas drawing functions with conditional renderi
    - `drawAlignmentEdges()`: Probability-weighted connection lines (controlled by `showAlignmentEdges`)
    - `drawAlignmentDots()`: Start/end point markers (controlled by `showAlignmentDots`)
    - **Color Coding**: Uses alignment color property
+   - **Optimal Path Filtering**: Blue optimal path can be toggled separately (controlled by `showOptimalPath`)
 
 4. **Interactive Elements** (`interactions.tsx`):
    - `drawHoverHighlight()`: Cross-hair highlighting on mouse hover
@@ -192,26 +200,49 @@ The visualization uses modular canvas drawing functions with conditional renderi
 - **Coordinated Updates**: Selection changes update both graph and panel
 
 ### Tab Navigation
-- **Safety Windows Tab**: Default active tab for window navigation and sequence viewing
+- **General Info Tab**: Default active tab showing alignment overview and statistics
+- **Safety Windows Tab**: Window navigation and sequence viewing
 - **Visualization Tab**: Settings panel for customizing graph display
-- **Auto-Deselection**: Safety window selection is cleared when switching to Visualization tab
-- **Real-time Updates**: Visualization changes apply immediately to the graph
+- **Gap Analysis Tab**: Dedicated interface for exploring non-safe regions between safety windows
+- **Auto-Deselection**: Safety window selection is cleared when switching to General Info, Visualization, or Gap Analysis tabs
+- **Real-time Updates**: Statistics and visualization changes apply immediately
 
 ### State Management
 - **Selected Safety Window**: Currently active window (highlighted in graph, detailed in panel)
 - **Hovered Safety Window**: Temporary preview state with reduced opacity
-- **Active Tab**: Controls which panel content is displayed (safety-windows | visualization)
+- **Active Tab**: Controls which panel content is displayed (general-info | safety-windows | visualization | gap-analysis)
 - **Visualization Settings**: Current display configuration for graph elements
+- **Safety Statistics**: Real-time calculated statistics for alignment overview
 - **ID System**: Windows identified as `"safety-window-{index}"` where index matches array position
 - **Transform State**: D3 zoom transform for pan/zoom persistence
 
 ## Side Panel Features
 
 ### Tab Interface
+- **General Info Tab**: Overview interface showing safety statistics and sequence information
 - **Safety Windows Tab**: Primary interface for window navigation and sequence analysis
 - **Visualization Tab**: Settings panel for customizing graph display
+- **Gap Analysis Tab**: Dedicated interface for exploring gap regions and non-safe areas
 - **Tab Indicators**: Safety Windows tab shows window count badge
-- **Icon Navigation**: Visual icons (🎯 for Safety Windows, ⚙️ for Visualization)
+- **Icon Navigation**: Visual icons (📊 for General Info, 🎯 for Safety Windows, ⚙️ for Visualization, 🔍 for Gap Analysis)
+
+### General Info Tab Features
+
+#### Sequence Information
+- **Sequence Lengths**: Display of representative and member sequence lengths
+- **Descriptors**: Shows sequence names/IDs when available
+- **Position Counts**: Total positions for each sequence
+
+#### Safety Statistics
+- **Safety Window Count**: Total number of detected safety windows
+- **Safe Position Coverage**: Number and percentage of positions covered by safety windows
+- **Visual Progress Bars**: Graphical representation of safety percentages
+- **Separate Tracking**: Independent calculation for representative and member sequences
+
+#### Statistical Calculations
+- **Unique Position Counting**: Avoids double-counting overlapping safety windows
+- **Percentage Precision**: Rounded to one decimal place for clarity
+- **Real-time Updates**: Statistics update automatically when alignment changes
 
 ### Safety Windows Tab Features
 
@@ -232,7 +263,7 @@ The visualization uses modular canvas drawing functions with conditional renderi
 - **Copy to Clipboard**: One-click copying with success/failure feedback
 - **Monospace Display**: Courier New font for proper sequence alignment
 - **Scrollable Segments**: Handles long sequences with horizontal scroll
-- **UniProt Integration**: Planned BLAST search functionality (currently disabled)
+- **UniProt Integration**: BLAST search functionality (currently disabled, buttons present but inactive)
 
 ### Visualization Tab Features
 
@@ -248,11 +279,41 @@ The visualization uses modular canvas drawing functions with conditional renderi
 - **Show Safety Windows**: Toggle green bracket indicators for confident alignment regions
 - **Show Alignment Edges**: Toggle probability-weighted connection lines
 - **Show Alignment Dots**: Toggle start and end point markers
+- **Show Optimal Path**: Toggle the blue optimal alignment path display
 
 #### Settings Management
 - **Real-time Updates**: Changes apply immediately to the graph
 - **Reset to Defaults**: One-click button to restore all default settings
 - **Organized Layout**: Settings grouped by functionality with descriptions
+
+### Gap Analysis Tab Features
+
+#### Sequence Selection
+- **Representative/Member Toggle**: Switch between analyzing gaps in either sequence
+- **Gap Count Display**: Shows number of gap regions per sequence type
+- **Dynamic Labels**: Uses sequence descriptors when available
+
+#### Gap Navigation
+- **Previous/Next Controls**: Navigate through individual gap regions
+- **Gap Counter**: Shows current gap position and total count
+- **Region Information**: Displays position range and length for each gap
+
+#### Gap Details
+- **Position Display**: Shows 1-indexed start and end positions
+- **Sequence Content**: Displays actual amino acid sequences within gap regions
+- **Length Information**: Shows number of positions in each gap
+
+#### Summary Statistics
+- **Total Gap Count**: Number of gap regions in selected sequence
+- **Total Gap Positions**: Sum of all positions not covered by safety windows
+- **Sequence Coverage**: Percentage of sequence covered by safety windows
+- **Real-time Calculations**: Statistics update when switching between sequences
+
+#### Visual Design
+- **Consistent Styling**: Matches overall panel design with card-based layout
+- **Monospace Display**: Proper sequence formatting for biological data
+- **Empty State Handling**: Clear messaging when no gaps are found
+- **Help Documentation**: Contextual explanations of gap analysis concepts
 
 ### Copy Status System
 ```typescript
@@ -290,6 +351,11 @@ interface CopyStatus {
 - **Debounced Redraws**: 16ms timeout prevents excessive redrawing
 - **Memory Management**: Proper canvas context save/restore patterns
 
+### Disabled Features (Implementation Present)
+- **Synchronized Scrolling**: Code present but disabled for sequence alignment display
+- **Full Alignment View**: Alternative display mode with conservation scoring (disabled)
+- **UniProt BLAST Search**: Buttons present but functionality disabled
+
 ## Integration Points
 
 ### Sequence Context
@@ -317,6 +383,7 @@ showMinimap?: boolean;
 showSafetyWindows?: boolean;
 showAlignmentEdges?: boolean;
 showAlignmentDots?: boolean;
+showOptimalPath?: boolean;
 ```
 
 ### Export System
@@ -353,11 +420,14 @@ showAlignmentDots?: boolean;
 
 ### SafetyWindowsInfoPanel.css Structure
 - **Panel Layout**: Flexbox-based responsive design with tab navigation
-- **Tab Interface**: Styled tab buttons with active states and badges
+- **Tab Interface**: Styled tab buttons with active states and badges (four tabs supported)
+- **Responsive Tab Layout**: Tabs arrange in 2x2 grid at moderate widths, full vertical stack at very narrow widths
+- **General Info Styles**: Statistics display with progress bars and visual indicators
+- **Gap Analysis Styles**: Dedicated styling for gap navigation and sequence display
 - **Navigation Controls**: Styled buttons with hover/disabled states
 - **Window Display**: Card-based layout with color indicators
 - **Sequence Display**: Monospace fonts with scrollable containers
-- **Responsive Design**: Breakpoints for mobile/tablet support
+- **Responsive Design**: Breakpoints for mobile/tablet support with optimized tab layouts
 
 ### VisualizationSettingsPanel.css Structure
 - **Panel Layout**: Flexbox-based responsive design with gradient header
@@ -394,7 +464,11 @@ showAlignmentDots?: boolean;
 ## Future Enhancements
 
 ### Planned Features
-- **UniProt BLAST Integration**: Enable sequence searching
+- **Enhanced Statistics**: Additional metrics like average safety window size, coverage gaps analysis
+- **Export Statistics**: Export safety statistics as CSV or JSON
+- **UniProt BLAST Integration**: Complete and enable sequence searching functionality (infrastructure present)
+- **Synchronized Scrolling**: Enable coordinated scrolling for text-based sequence views (implementation exists but disabled)
+- **Full Alignment Display**: Alternative view mode with conservation analysis (code exists but disabled)
 - **Multi-Selection**: Support for selecting multiple safety windows
 - **Export Improvements**: PDF export and high-resolution image generation
 - **Animation System**: Smooth transitions between safety windows
@@ -413,5 +487,6 @@ showAlignmentDots?: boolean;
 - **Virtual Scrolling**: For sequences with thousands of positions
 - **Worker Threads**: Offload computation-heavy operations
 - **Settings Optimization**: Efficient re-rendering based on changed settings only
+- **Conditional Rendering**: Optimal path filtering reduces drawing overhead when disabled
 
-This system provides a sophisticated, interactive environment for exploring sequence alignments with particular focus on safety windows - the high-confidence regions identified by the EMERALD algorithm. The tight coordination between the graph and dual-panel interface (safety windows + visualization settings) creates an intuitive exploration experience for biological sequence analysis with full user control over display elements.
+This system provides a sophisticated, interactive environment for exploring sequence alignments with particular focus on safety windows - the high-confidence regions identified by the EMERALD algorithm. The tight coordination between the graph and dual-panel interface (safety windows + visualization settings) creates an intuitive exploration experience for biological sequence analysis with full user control over display elements, including the ability to toggle the optimal alignment path display.

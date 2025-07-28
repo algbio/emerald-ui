@@ -240,3 +240,64 @@ export function drawSafetyWindowHighlight(
   // Restore context state
   ctx.restore();
 }
+
+/**
+ * Draw gap region highlighting on the graph
+ */
+export function drawGapHighlight(
+  ctx: CanvasRenderingContext2D,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
+  marginTop: number,
+  marginLeft: number,
+  gapInfo: {type: 'representative' | 'member'; start: number; end: number}
+): void {
+  ctx.save();
+  
+  // Set gap highlighting color (using a red/orange tone to differentiate from safety windows)
+  const gapColor = 'rgba(255, 99, 71, 0.3)'; // Semi-transparent tomato red
+  const borderColor = 'rgba(255, 69, 39, 0.8)'; // Darker red-orange for border
+  
+  if (gapInfo.type === 'representative') {
+    // Highlight X-axis gap region
+    const startX = x(gapInfo.start);
+    const endX = x(gapInfo.end);
+    
+    // Highlight the gap region on the X-axis labels area
+    ctx.fillStyle = gapColor;
+    ctx.fillRect(startX, 0, endX - startX, marginTop);
+    
+    // Add border to make it more visible
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 2]);
+    ctx.strokeRect(startX, 0, endX - startX, marginTop);
+    ctx.setLineDash([]);
+    
+    // Highlight columns in the main grid area with lighter color
+    ctx.fillStyle = 'rgba(255, 99, 71, 0.15)';
+    ctx.fillRect(startX, marginTop, endX - startX, y.range()[1] - marginTop);
+    
+  } else {
+    // Highlight Y-axis gap region (member sequence)
+    const startY = y(gapInfo.start);
+    const endY = y(gapInfo.end);
+    
+    // Highlight the gap region on the Y-axis labels area
+    ctx.fillStyle = gapColor;
+    ctx.fillRect(0, startY, marginLeft, endY - startY);
+    
+    // Add border to make it more visible
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 2]);
+    ctx.strokeRect(0, startY, marginLeft, endY - startY);
+    ctx.setLineDash([]);
+    
+    // Highlight rows in the main grid area with lighter color
+    ctx.fillStyle = 'rgba(255, 99, 71, 0.15)';
+    ctx.fillRect(marginLeft, startY, x.range()[1] - marginLeft, endY - startY);
+  }
+  
+  ctx.restore();
+}

@@ -36,6 +36,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
+  const [highlightedGap, setHighlightedGap] = useState<{type: 'representative' | 'member'; start: number; end: number} | null>(null);
+  const [hasManuallyUnselected, setHasManuallyUnselected] = useState(false);
   
   // Create ref for the PointGridPlot component
   const pointGridRef = useRef<PointGridPlotRef>(null);
@@ -49,7 +51,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     showSafetyWindows: true,
     showAlignmentEdges: true,
     showAlignmentDots: true,
-    showOptimalPath: true
+    showOptimalPath: true,
+    enableSafetyWindowHighlighting: true,
+    enableGapHighlighting: true
   });
 
   // Extract safety windows from alignments
@@ -57,37 +61,63 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     alignment.startDot && alignment.endDot
   );
 
-  // Initialize selection to first window if available
+  // Initialize selection to first window if available, but only if user hasn't manually unselected
   React.useEffect(() => {
-    if (safetyWindows.length > 0 && !selectedSafetyWindowId) {
+    if (safetyWindows.length > 0 && !selectedSafetyWindowId && !hasManuallyUnselected) {
       setSelectedSafetyWindowId('safety-window-0');
     }
-  }, [safetyWindows.length, selectedSafetyWindowId]);
+  }, [safetyWindows.length, selectedSafetyWindowId, hasManuallyUnselected]);
 
   const handleSafetyWindowHover = (windowId: string | null) => {
-    setHoveredSafetyWindowId(windowId);
-    // When hovering over a window, make it the selected window
-    if (windowId) {
-      setSelectedSafetyWindowId(windowId);
+    // Only update hover state if highlighting is enabled
+    if (visualizationSettings.enableSafetyWindowHighlighting) {
+      setHoveredSafetyWindowId(windowId);
+      // When hovering over a window, make it the selected window
+      if (windowId) {
+        setSelectedSafetyWindowId(windowId);
+        setHasManuallyUnselected(false);
+      }
     }
   };
 
   const handleSafetyWindowSelect = (windowId: string | null) => {
     setSelectedSafetyWindowId(windowId);
+    if (windowId === null) {
+      // User manually unselected
+      setHasManuallyUnselected(true);
+      setHoveredSafetyWindowId(null);
+    } else {
+      // User selected a window, reset the manual unselection flag
+      setHasManuallyUnselected(false);
+    }
   };
 
   const handleNavigateToPrevious = () => {
     if (safetyWindows.length === 0) return;
     
-    const currentIndex = selectedSafetyWindowId 
-      ? parseInt(selectedSafetyWindowId.split('-')[2]) 
-      : 0;
-    const newIndex = currentIndex > 0 ? currentIndex - 1 : safetyWindows.length - 1;
-    setSelectedSafetyWindowId(`safety-window-${newIndex}`);
+    if (!selectedSafetyWindowId) {
+      // No window selected, go to last window
+      setSelectedSafetyWindowId(`safety-window-${safetyWindows.length - 1}`);
+    } else {
+      const currentIndex = parseInt(selectedSafetyWindowId.split('-')[2]);
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : safetyWindows.length - 1;
+      setSelectedSafetyWindowId(`safety-window-${newIndex}`);
+    }
+    setHasManuallyUnselected(false); // Reset manual unselection when navigating
   };
 
   const handleNavigateToNext = () => {
-    // ... existing code
+    if (safetyWindows.length === 0) return;
+    
+    if (!selectedSafetyWindowId) {
+      // No window selected, go to first window
+      setSelectedSafetyWindowId('safety-window-0');
+    } else {
+      const currentIndex = parseInt(selectedSafetyWindowId.split('-')[2]);
+      const newIndex = currentIndex < safetyWindows.length - 1 ? currentIndex + 1 : 0;
+      setSelectedSafetyWindowId(`safety-window-${newIndex}`);
+    }
+    setHasManuallyUnselected(false); // Reset manual unselection when navigating
   };
 
   return (
@@ -125,6 +155,7 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             hoveredSafetyWindowId={hoveredSafetyWindowId}
             onSafetyWindowHover={handleSafetyWindowHover}
             onSafetyWindowSelect={handleSafetyWindowSelect}
+            highlightedGap={highlightedGap}
             ref={(pointGridElement) => {
               // Store the PointGridPlot ref
               pointGridRef.current = pointGridElement;
@@ -158,6 +189,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             memberDescriptor={memberDescriptor}
             visualizationSettings={visualizationSettings}
             onVisualizationSettingsChange={setVisualizationSettings}
+            onGapHighlight={setHighlightedGap}
+            onWindowSelect={handleSafetyWindowSelect}
           />
         </div>
       </div>

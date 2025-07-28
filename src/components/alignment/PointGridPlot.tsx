@@ -11,6 +11,7 @@ import {
   drawAlignmentDots, 
   drawHoverHighlight,
   drawSafetyWindowHighlight,
+  drawGapHighlight,
   findSafetyWindowsForCell,
   drawMinimap,
   handleMinimapInteraction as handleMinimapInteractionUtil,
@@ -69,6 +70,8 @@ interface PointGridProps {
   hoveredSafetyWindowId?: string | null;
   onSafetyWindowHover?: (windowId: string | null, alignment?: Alignment | null) => void;
   onSafetyWindowSelect?: (windowId: string | null, alignment?: Alignment | null) => void;
+  // Gap highlighting props
+  highlightedGap?: {type: 'representative' | 'member'; start: number; end: number} | null;
   // Zoom transform callback
   onTransformChange?: (transform: any) => void;
 }
@@ -100,6 +103,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   hoveredSafetyWindowId,
   onSafetyWindowHover,
   onSafetyWindowSelect,
+  highlightedGap,
   onTransformChange
 }, ref) => {
 
@@ -258,6 +262,11 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, hoveredWindow);
         ctx.restore();
       }
+    }
+    
+    // Draw gap highlighting if enabled
+    if (highlightedGap) {
+      drawGapHighlight(ctx, x, y, marginTop, marginLeft, highlightedGap);
     }
     
     // Draw axes if enabled
@@ -468,7 +477,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   useEffect(() => {
     const timeoutId = setTimeout(drawCanvas, 16);
     return () => clearTimeout(timeoutId);
-  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath]);
+  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, highlightedGap]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

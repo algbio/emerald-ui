@@ -3,6 +3,7 @@ import type { Alignment } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './SafetyWindowsInfoPanel.css';
+import './SequenceAlignmentViewer.css'; // Import for amino acid coloring classes
 
 interface SafetyWindowInfo {
   id: string;
@@ -29,6 +30,8 @@ interface SafetyWindowsInfoPanelProps {
   memberDescriptor?: string;
   visualizationSettings?: VisualizationSettings;
   onVisualizationSettingsChange?: (settings: VisualizationSettings) => void;
+  onGapHighlight?: (gapInfo: {type: 'representative' | 'member'; start: number; end: number} | null) => void;
+  onWindowSelect?: (windowId: string | null) => void;
 }
 
 export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
@@ -43,10 +46,28 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   representativeDescriptor,
   memberDescriptor,
   visualizationSettings,
-  onVisualizationSettingsChange
+  onVisualizationSettingsChange,
+  onGapHighlight,
+  onWindowSelect
 }) => {
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
-  const [activeTab, setActiveTab] = useState<'safety-windows' | 'visualization'>('safety-windows');
+  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'visualization' | 'gap-analysis'>('general-info');
+  
+  // Default visualization settings if not provided
+  const defaultSettings: VisualizationSettings = {
+    showAxes: true,
+    showAxisLabels: true,
+    showGrid: true,
+    showMinimap: true,
+    showSafetyWindows: true,
+    showAlignmentEdges: true,
+    showAlignmentDots: true,
+    showOptimalPath: true,
+    enableSafetyWindowHighlighting: true,
+    enableGapHighlighting: true
+  };
+
+  const currentSettings = visualizationSettings || defaultSettings;
   
   // Function to copy text to clipboard
   const copyToClipboard = (text: string, id: string) => {
@@ -84,18 +105,177 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
       };
     });
 
+  // Calculate safety statistics for general info
+  const calculateSafetyStats = () => {
+    if (safetyWindowsInfo.length === 0) {
+      return {
+        representativeSafetyPercentage: 0,
+        memberSafetyPercentage: 0,
+        totalSafePositions: 0,
+        representativeSafePositions: 0,
+        memberSafePositions: 0
+      };
+    }
+
+    // Calculate unique safe positions for each sequence
+    const representativeSafePositions = new Set<number>();
+    const memberSafePositions = new Set<number>();
+
+    safetyWindowsInfo.forEach(window => {
+      // Add all positions within the safety window
+      for (let x = window.xStart; x < window.xEnd; x++) {
+        representativeSafePositions.add(x);
+      }
+      for (let y = window.yStart; y < window.yEnd; y++) {
+        memberSafePositions.add(y);
+      }
+    });
+
+    const representativeSafeCount = representativeSafePositions.size;
+    const memberSafeCount = memberSafePositions.size;
+    const representativeSafetyPercentage = representative.length > 0 ? 
+      (representativeSafeCount / representative.length) * 100 : 0;
+    const memberSafetyPercentage = member.length > 0 ? 
+      (memberSafeCount / member.length) * 100 : 0;
+
+    return {
+      representativeSafetyPercentage: Math.round(representativeSafetyPercentage * 10) / 10,
+      memberSafetyPercentage: Math.round(memberSafetyPercentage * 10) / 10,
+      totalSafePositions: representativeSafeCount + memberSafeCount,
+      representativeSafePositions: representativeSafeCount,
+      memberSafePositions: memberSafeCount
+    };
+  };
+
+  const safetyStats = calculateSafetyStats();
+
+  // Calculate gap regions (non-safe areas)
+  const calculateGapRegions = () => {
+    if (safetyWindowsInfo.length === 0) {
+      return {
+        representativeGaps: representative.length > 0 ? [{start: 0, end: representative.length}] : [],
+        memberGaps: member.length > 0 ? [{start: 0, end: member.length}] : []
+      };
+    }
+
+    const representativeSafePositions = new Set<number>();
+    const memberSafePositions = new Set<number>();
+
+    safetyWindowsInfo.forEach(window => {
+      for (let x = window.xStart; x < window.xEnd; x++) {
+        representativeSafePositions.add(x);
+      }
+      for (let y = window.yStart; y < window.yEnd; y++) {
+        memberSafePositions.add(y);
+      }
+    });
+
+    // Find gaps in representative sequence
+    const representativeGaps: {start: number, end: number}[] = [];
+    let gapStart = null;
+    for (let i = 0; i <= representative.length; i++) {
+      const isSafe = representativeSafePositions.has(i);
+      if (!isSafe && gapStart === null) {
+        gapStart = i;
+      } else if (isSafe && gapStart !== null) {
+        representativeGaps.push({start: gapStart, end: i});
+        gapStart = null;
+      }
+    }
+    if (gapStart !== null) {
+      representativeGaps.push({start: gapStart, end: representative.length});
+    }
+
+    // Find gaps in member sequence
+    const memberGaps: {start: number, end: number}[] = [];
+    gapStart = null;
+    for (let i = 0; i <= member.length; i++) {
+      const isSafe = memberSafePositions.has(i);
+      if (!isSafe && gapStart === null) {
+        gapStart = i;
+      } else if (isSafe && gapStart !== null) {
+        memberGaps.push({start: gapStart, end: i});
+        gapStart = null;
+      }
+    }
+    if (gapStart !== null) {
+      memberGaps.push({start: gapStart, end: member.length});
+    }
+
+    return { representativeGaps, memberGaps };
+  };
+
+  const gapRegions = calculateGapRegions();
+
+  // State for gap navigation
+  const [currentGapType, setCurrentGapType] = useState<'representative' | 'member'>('representative');
+  const [currentGapIndex, setCurrentGapIndex] = useState(0);
+
+  const currentGaps = currentGapType === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps;
+  const currentGap = currentGaps[currentGapIndex];
+
+  const handlePreviousGap = () => {
+    if (currentGaps.length === 0) return;
+    const newIndex = currentGapIndex > 0 ? currentGapIndex - 1 : currentGaps.length - 1;
+    setCurrentGapIndex(newIndex);
+    
+    // Trigger gap highlighting only if enabled
+    const newGap = currentGaps[newIndex];
+    if (newGap && onGapHighlight && currentSettings.enableGapHighlighting) {
+      onGapHighlight({
+        type: currentGapType,
+        start: newGap.start,
+        end: newGap.end
+      });
+    }
+  };
+
+  const handleNextGap = () => {
+    if (currentGaps.length === 0) return;
+    const newIndex = currentGapIndex < currentGaps.length - 1 ? currentGapIndex + 1 : 0;
+    setCurrentGapIndex(newIndex);
+    
+    // Trigger gap highlighting only if enabled
+    const newGap = currentGaps[newIndex];
+    if (newGap && onGapHighlight && currentSettings.enableGapHighlighting) {
+      onGapHighlight({
+        type: currentGapType,
+        start: newGap.start,
+        end: newGap.end
+      });
+    }
+  };
+
+  const handleGapTypeChange = (type: 'representative' | 'member') => {
+    setCurrentGapType(type);
+    setCurrentGapIndex(0);
+    
+    // Trigger gap highlighting for the new type's first gap only if enabled
+    const newGaps = type === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps;
+    if (newGaps.length > 0 && onGapHighlight && currentSettings.enableGapHighlighting) {
+      onGapHighlight({
+        type: type,
+        start: newGaps[0].start,
+        end: newGaps[0].end
+      });
+    } else if (onGapHighlight) {
+      // Clear highlighting if no gaps or highlighting disabled
+      onGapHighlight(null);
+    }
+  };
+
   // Refs for synchronized scrolling of alignment sequences (DISABLED)
   // const xSequenceRef = useRef<HTMLSpanElement>(null);
   // const conservationRef = useRef<HTMLSpanElement>(null);
   // const ySequenceRef = useRef<HTMLSpanElement>(null);
 
-  // Get current window index from external selection, default to 0
+  // Get current window index from external selection, return -1 if none selected
   const getCurrentWindowIndex = () => {
     if (selectedWindowId) {
       const index = safetyWindowsInfo.findIndex(window => window.id === selectedWindowId);
-      return index !== -1 ? index : 0;
+      return index !== -1 ? index : -1;
     }
-    return 0;
+    return -1; // No window selected
   };
 
   const currentWindowIndex = getCurrentWindowIndex();
@@ -190,6 +370,31 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     return sequence.slice(start, end);
   };
 
+  /**
+   * Determines the CSS class for highlighting amino acids based on their properties
+   * (Same as SequenceAlignmentViewer for consistency)
+   */
+  const getAminoAcidClass = (char: string): string => {
+    if (char === '-') {
+      return 'aa-gap';
+    }
+    
+    // Define amino acid groups by properties
+    const hydrophobic = ['A', 'V', 'L', 'I', 'M', 'F', 'W', 'Y'];
+    const polar = ['S', 'T', 'N', 'Q'];
+    const acidic = ['D', 'E'];
+    const basic = ['K', 'R', 'H'];
+    const special = ['C', 'P', 'G'];
+    
+    if (hydrophobic.includes(char)) return 'aa-hydrophobic';
+    if (polar.includes(char)) return 'aa-polar';
+    if (acidic.includes(char)) return 'aa-acidic';
+    if (basic.includes(char)) return 'aa-basic';
+    if (special.includes(char)) return 'aa-special';
+    
+    return 'aa-neutral';
+  };
+
   // Function to create full alignment display with highlighted safety window (DISABLED)
   /*
   const createFullAlignmentDisplay = () => {
@@ -234,33 +439,44 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   };
   */
 
-  const currentWindow = safetyWindowsInfo[currentWindowIndex];
+  const currentWindow = currentWindowIndex >= 0 ? safetyWindowsInfo[currentWindowIndex] : null;
 
-  // When visualization tab is active, clear safety window selection
+  // When visualization tab is active, clear safety window selection and gap highlighting
   useEffect(() => {
-    if (activeTab === 'visualization' && selectedWindowId) {
+    if ((activeTab === 'visualization' || activeTab === 'general-info' || activeTab === 'safety-windows') && selectedWindowId && !currentSettings.enableSafetyWindowHighlighting) {
       onWindowHover?.(null);
     }
-  }, [activeTab, selectedWindowId, onWindowHover]);
-
-  // Default visualization settings if not provided
-  const defaultSettings: VisualizationSettings = {
-    showAxes: true,
-    showAxisLabels: true,
-    showGrid: true,
-    showMinimap: true,
-    showSafetyWindows: true,
-    showAlignmentEdges: true,
-    showAlignmentDots: true,
-    showOptimalPath: true
-  };
-
-  const currentSettings = visualizationSettings || defaultSettings;
+    
+    // Clear gap highlighting when not on gap analysis tab or when highlighting is disabled
+    if ((activeTab !== 'gap-analysis' || !currentSettings.enableGapHighlighting) && onGapHighlight) {
+      onGapHighlight(null);
+    }
+    
+    // Set gap highlighting when switching to gap analysis tab and highlighting is enabled
+    if (activeTab === 'gap-analysis' && onGapHighlight && currentSettings.enableGapHighlighting && currentGaps.length > 0) {
+      const currentGap = currentGaps[currentGapIndex];
+      if (currentGap) {
+        onGapHighlight({
+          type: currentGapType,
+          start: currentGap.start,
+          end: currentGap.end
+        });
+      }
+    }
+  }, [activeTab, selectedWindowId, onWindowHover, onGapHighlight, currentGaps, currentGapIndex, currentGapType, currentSettings.enableSafetyWindowHighlighting, currentSettings.enableGapHighlighting]);
 
   return (
     <div className="safety-windows-info-panel">
       {/* Tab Navigation */}
       <div className="tab-navigation">
+        <button 
+          className={`tab-button ${activeTab === 'general-info' ? 'active' : ''}`}
+          onClick={() => setActiveTab('general-info')}
+          title="View general alignment information and statistics"
+        >
+          <span className="tab-icon">📊</span>
+          General Info
+        </button>
         <button 
           className={`tab-button ${activeTab === 'safety-windows' ? 'active' : ''}`}
           onClick={() => setActiveTab('safety-windows')}
@@ -280,10 +496,110 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           <span className="tab-icon">⚙️</span>
           Visualization
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'gap-analysis' ? 'active' : ''}`}
+          onClick={() => setActiveTab('gap-analysis')}
+          title="Analyze gap regions and non-safe areas"
+        >
+          <span className="tab-icon">🔍</span>
+          Gap Analysis
+        </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'safety-windows' ? (
+      {activeTab === 'general-info' ? (
+        <div className="general-info-content">
+          <div className="panel-header">
+            <h3>General Information</h3>
+            <div className="panel-subtitle">
+              Alignment overview and safety statistics
+            </div>
+          </div>
+          
+          <div className="stats-container">
+            {/* Sequence Information */}
+            <div className="stat-section">
+              <h4>Sequence Information</h4>
+              <div className="stat-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Representative ({representativeDescriptor || 'Reference'}):</span>
+                  <span className="stat-value">{representative.length} positions</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Member ({memberDescriptor || 'Member'}):</span>
+                  <span className="stat-value">{member.length} positions</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Safety Window Statistics */}
+            <div className="stat-section">
+              <h4>Safety Window Statistics</h4>
+              <div className="stat-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Total Safety Windows:</span>
+                  <span className="stat-value stat-highlight">{safetyWindowsInfo.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Representative Safe Positions:</span>
+                  <span className="stat-value">{safetyStats.representativeSafePositions} / {representative.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Member Safe Positions:</span>
+                  <span className="stat-value">{safetyStats.memberSafePositions} / {member.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Safety Percentages */}
+            <div className="stat-section">
+              <h4>Safety Percentages</h4>
+              <div className="percentage-container">
+                <div className="percentage-item">
+                  <div className="percentage-header">
+                    <span className="percentage-label">Representative Safety</span>
+                    <span className="percentage-value">{safetyStats.representativeSafetyPercentage}%</span>
+                  </div>
+                  <div className="percentage-bar">
+                    <div 
+                      className="percentage-fill representative-fill" 
+                      style={{ width: `${safetyStats.representativeSafetyPercentage}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="percentage-item">
+                  <div className="percentage-header">
+                    <span className="percentage-label">Member Safety</span>
+                    <span className="percentage-value">{safetyStats.memberSafetyPercentage}%</span>
+                  </div>
+                  <div className="percentage-bar">
+                    <div 
+                      className="percentage-fill member-fill" 
+                      style={{ width: `${safetyStats.memberSafetyPercentage}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Help Text */}
+            <div className="help-section">
+              <div className="help-text">
+                <strong>Safety Windows</strong> are regions where the EMERALD algorithm has high confidence in the alignment. 
+                The safety percentage indicates what portion of each sequence is covered by these confident regions.
+              </div>
+              {safetyWindowsInfo.length > 0 && (
+                <div className="help-text">
+                  Switch to the <strong>Safety Windows</strong> tab to explore individual windows in detail.
+                </div>
+              )}
+              <div className="help-text">
+                Use the <strong>Gap Analysis</strong> tab to examine non-safe regions between safety windows.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'safety-windows' ? (
         <div className="safety-windows-content">
           <div className="panel-header">
             <h3>Safety Windows</h3>
@@ -306,13 +622,15 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                 <button 
                   className="nav-button prev-button"
                   onClick={handlePrevious}
-                  disabled={safetyWindowsInfo.length <= 1}
+                  disabled={safetyWindowsInfo.length === 0}
                 >
                   <span className="nav-arrow">‹</span>
                 </button>
                 
                 <div className="window-counter">
-                  <span className="current-window">{currentWindowIndex + 1}</span>
+                  <span className={`current-window ${currentWindowIndex === -1 ? 'no-selection' : ''}`}>
+                    {currentWindowIndex === -1 ? 'None' : currentWindowIndex + 1}
+                  </span>
                   <span className="window-separator"> / </span>
                   <span className="total-windows">{safetyWindowsInfo.length}</span>
                 </div>
@@ -320,21 +638,32 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                 <button 
                   className="nav-button next-button"
                   onClick={handleNext}
-                  disabled={safetyWindowsInfo.length <= 1}
+                  disabled={safetyWindowsInfo.length === 0}
                 >
                   <span className="nav-arrow">›</span>
+                </button>
+                
+                <button 
+                  className="unselect-button"
+                  onClick={() => {
+                    onWindowHover?.(null);
+                    onWindowSelect?.(null);
+                  }}
+                  title="Clear safety window highlighting"
+                >
+                  ✕ Unselect
                 </button>
               </div>
 
               {/* Current Window Display */}
-              {currentWindow && (
+              {currentWindow ? (
                 <div className="current-window-container">
                   <div
                     className={`safety-window-item current-window ${
                       hoveredWindowId === currentWindow.id ? 'hovered' : ''
                     }`}
-                    onMouseEnter={() => onWindowHover?.(currentWindow.id)}
-                    onMouseLeave={() => onWindowHover?.(null)}
+                    onMouseEnter={() => currentSettings.enableSafetyWindowHighlighting && onWindowHover?.(currentWindow.id)}
+                    onMouseLeave={() => currentSettings.enableSafetyWindowHighlighting && onWindowHover?.(null)}
                   >
                     <div className="window-header">
                       <div 
@@ -432,6 +761,24 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                     </div>
                   </div>
                 </div>
+              ) : (
+                <div className="no-selection-state">
+                  <div className="no-selection-message">
+                    <div className="no-selection-icon">🎯</div>
+                    <h4>No Safety Window Selected</h4>
+                    <p>Use the navigation buttons above to select a safety window to view details, or the visualization will show all windows without highlighting.</p>
+                    <button 
+                      className="select-first-button"
+                      onClick={() => {
+                        if (safetyWindowsInfo.length > 0) {
+                          onWindowSelect?.(safetyWindowsInfo[0].id);
+                        }
+                      }}
+                    >
+                      Select First Window
+                    </button>
+                  </div>
+                </div>
               )}
             </>
           )}
@@ -444,18 +791,218 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
               </div>
             </div>
             <div className="help-text">
-              Use ← → arrow keys or navigation buttons to cycle through safety windows. Full sequences are displayed for each window.
+              Use ← → arrow keys or navigation buttons to cycle through safety windows. Click "Unselect" to clear highlighting and enter an unselected state where no window is highlighted. Full sequences are displayed for each window.
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'visualization' ? (
         <div className="visualization-content">
           <VisualizationSettingsPanel
             settings={currentSettings}
             onSettingsChange={(settings) => onVisualizationSettingsChange?.(settings)}
           />
         </div>
-      )}
+      ) : activeTab === 'gap-analysis' ? (
+        <div className="gap-analysis-content">
+          <div className="panel-header">
+            <h3>Gap Analysis</h3>
+            <div className="panel-subtitle">
+              Explore non-safe regions between safety windows
+            </div>
+          </div>
+          
+          <div className="stats-container">
+            {/* Gap Type Selector */}
+            <div className="stat-section">
+              <h4>Select Sequence</h4>
+              <div className="gap-type-selector">
+                <button 
+                  className={`gap-type-button ${currentGapType === 'representative' ? 'active' : ''}`}
+                  onClick={() => handleGapTypeChange('representative')}
+                  title={`${representativeDescriptor || 'Representative'} (${gapRegions.representativeGaps.length} gaps)`}
+                >
+                  <span className="button-main-text">
+                    {(representativeDescriptor || 'Representative').length > 12 
+                      ? (representativeDescriptor || 'Representative').substring(0, 12) + '...'
+                      : (representativeDescriptor || 'Representative')
+                    }
+                  </span>
+                  <span className="button-gap-count">({gapRegions.representativeGaps.length})</span>
+                </button>
+                <button 
+                  className={`gap-type-button ${currentGapType === 'member' ? 'active' : ''}`}
+                  onClick={() => handleGapTypeChange('member')}
+                  title={`${memberDescriptor || 'Member'} (${gapRegions.memberGaps.length} gaps)`}
+                >
+                  <span className="button-main-text">
+                    {(memberDescriptor || 'Member').length > 12 
+                      ? (memberDescriptor || 'Member').substring(0, 12) + '...'
+                      : (memberDescriptor || 'Member')
+                    }
+                  </span>
+                  <span className="button-gap-count">({gapRegions.memberGaps.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Gap Navigation */}
+            <div className="stat-section">
+              <h4>Gap Regions</h4>
+              {currentGaps.length > 0 ? (
+                <div className="gap-navigation-container">
+                  <div className="gap-nav-controls">
+                    <button 
+                      className="gap-nav-button"
+                      onClick={handlePreviousGap}
+                      disabled={currentGaps.length <= 1}
+                      title="Previous gap"
+                    >
+                      ◀
+                    </button>
+                    <span className="gap-counter">
+                      {currentGaps.length > 0 ? `${currentGapIndex + 1} / ${currentGaps.length}` : '0 / 0'}
+                    </span>
+                    <button 
+                      className="gap-nav-button"
+                      onClick={handleNextGap}
+                      disabled={currentGaps.length <= 1}
+                      title="Next gap"
+                    >
+                      ▶
+                    </button>
+                    
+                    <button 
+                      className="gap-unselect-button"
+                      onClick={() => onGapHighlight?.(null)}
+                      title="Clear gap highlighting"
+                    >
+                      ✕ Unselect
+                    </button>
+                  </div>
+                  
+                  {currentGap && (
+                    <div className="gap-info">
+                      <div className="gap-info-header">
+                        <span className="gap-info-title">
+                          Gap {currentGapIndex + 1}
+                        </span>
+                        <span className="gap-info-position">
+                          Position {currentGap.start + 1}-{currentGap.end} 
+                          (Gap length: {currentGap.end - currentGap.start})
+                        </span>
+                      </div>
+                      
+                      <div className="gap-sequence-display" style={{ 
+                        textAlign: 'center',
+                        padding: '8px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '4px',
+                        border: '1px solid #e9ecef'
+                      }}>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          marginBottom: '6px',
+                          overflowX: 'auto',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {(currentGapType === 'representative' 
+                            ? representative.slice(currentGap.start, currentGap.end)
+                            : member.slice(currentGap.start, currentGap.end)
+                          ).split('').map((char, idx) => (
+                            <span 
+                              key={idx} 
+                              className={getAminoAcidClass(char)}
+                              style={{ 
+                                display: 'inline-block', 
+                                width: '14px',
+                                height: '18px',
+                                lineHeight: '18px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                textAlign: 'center'
+                              }}
+                            >
+                              {char}
+                            </span>
+                          ))}
+                        </div>
+                        <button 
+                          className="copy-button"
+                          onClick={() => {
+                            const sequence = currentGapType === 'representative' 
+                              ? representative.slice(currentGap.start, currentGap.end)
+                              : member.slice(currentGap.start, currentGap.end);
+                            copyToClipboard(sequence, 'gap-sequence');
+                          }}
+                          title="Copy to clipboard"
+                          style={{ 
+                            fontSize: '11px', 
+                            padding: '3px 8px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {copyStatus?.id === 'gap-sequence' ? (
+                            copyStatus.success ? '✓ Copied!' : '❌ Failed'
+                          ) : (
+                            'Copy'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="no-gaps-message">
+                  <p>No gap regions found in {currentGapType === 'representative' ? (representativeDescriptor || 'representative') : (memberDescriptor || 'member')} sequence.</p>
+                  <p>All positions are covered by safety windows.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Summary Statistics */}
+            <div className="stat-section">
+              <h4>Gap Summary</h4>
+              <div className="stat-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Total Gap Regions</span>
+                  <span className="stat-value">{currentGaps.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Total Gap Positions</span>
+                  <span className="stat-value">
+                    {currentGaps.reduce((total, gap) => total + (gap.end - gap.start), 0)}
+                  </span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Sequence Coverage</span>
+                  <span className="stat-value">
+                    {currentGapType === 'representative' 
+                      ? `${Math.round((1 - (currentGaps.reduce((total, gap) => total + (gap.end - gap.start), 0) / representative.length)) * 1000) / 10}%`
+                      : `${Math.round((1 - (currentGaps.reduce((total, gap) => total + (gap.end - gap.start), 0) / member.length)) * 1000) / 10}%`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Help Text */}
+            <div className="help-section">
+              <div className="help-text">
+                <strong>Gap Regions</strong> are areas not covered by safety windows. These represent sections where 
+                the EMERALD algorithm has lower confidence in the alignment quality.
+              </div>
+              <div className="help-text">
+                Use the navigation controls to explore individual gap regions and examine the sequence content 
+                in areas of uncertain alignment. Click "Unselect" to clear gap highlighting.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
