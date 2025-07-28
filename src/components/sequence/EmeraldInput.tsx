@@ -294,7 +294,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
             disabled={!isValid || alignmentStatus === 'loading'}
             className="emerald-button"
           >
-            {alignmentStatus === 'loading' ? 'Generating...' : 'Generate Graph'}
+            {alignmentStatus === 'loading' ? 'Generating...' : 'Generate Suboptimal Alignment Graph'}
           </button>
           
           {/* Load Example button */}
