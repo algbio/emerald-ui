@@ -6,6 +6,7 @@ import { emeraldService } from '../utils/api/EmeraldService';
 import { extractUniProtId } from '../utils/api/uniprotUtils';
 import { fetchUniProtSequence } from '../utils/api/uniprotFetcher';
 import { getShareableDataFromUrl } from '../utils/export/urlSharing';
+import { convertOptimalPathToAlignment } from '../utils/sequence/optimalPathConverter';
 
 // Helper function to validate sequence for asterisks
 const validateSequenceAsterisks = (sequence: string) => {
@@ -527,7 +528,7 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
   }, [state.sequences.descriptorA, state.sequences.descriptorB, state.structureA?.uniprotId, state.structureB?.uniprotId, state.sequences.sequenceA, state.sequences.sequenceB]);
 
   // Process alignment result function from FileUploader.tsx
-  const processAlignmentResult = (result: any): Alignment[] => {
+  const processAlignmentResult = (result: any, originalRefSeq?: string, originalMemSeq?: string): Alignment[] => {
     const alignments: Alignment[] = [];
 
     // Process alignment_graph data
@@ -548,9 +549,49 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       }
     }
     
-    // Process sequence alignment data
-    if (result.alignment_representative && result.alignment_member) {
-      // Store the text-based sequence alignment for display
+    // Process sequence alignment data - use optimal path if available
+    if (result.optimal_path && Array.isArray(result.optimal_path) && 
+        originalRefSeq && originalMemSeq) {
+      
+      // Convert optimal path to sequence alignment
+      const optimalAlignment = convertOptimalPathToAlignment(
+        result.optimal_path,
+        originalRefSeq,
+        originalMemSeq,
+        result.representative_descriptor || 'Reference Sequence',
+        result.mem_descriptor || 'Member Sequence'
+      );
+      
+      if (optimalAlignment) {
+        console.log('Using optimal path for sequence alignment');
+        alignments.push({
+          color: "alignment",
+          edges: [], // Empty edges array to satisfy the type
+          textAlignment: optimalAlignment
+        });
+      } else {
+        console.warn('Failed to convert optimal path to alignment, falling back to default');
+        // Fall back to default alignment if optimal path conversion fails
+        if (result.alignment_representative && result.alignment_member) {
+          alignments.push({
+            color: "alignment",
+            edges: [], // Empty edges array to satisfy the type
+            textAlignment: {
+              representative: {
+                sequence: result.alignment_representative,
+                descriptor: result.representative_descriptor
+              },
+              member: {
+                sequence: result.alignment_member,
+                descriptor: result.mem_descriptor
+              }
+            }
+          });
+        }
+      }
+    } else if (result.alignment_representative && result.alignment_member) {
+      // Fall back to default alignment if no optimal path is available
+      console.log('No optimal path available, using default alignment');
       alignments.push({
         color: "alignment",
         edges: [], // Empty edges array to satisfy the type
@@ -676,7 +717,7 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       );
       
       // Process the results using the function from FileUploader
-      const processedAlignments = processAlignmentResult(result);
+      const processedAlignments = processAlignmentResult(result, cleanSequenceA, cleanSequenceB);
       
       console.log('Alignment generated successfully:', result);
       

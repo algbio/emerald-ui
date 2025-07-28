@@ -1,4 +1,4 @@
-import { type Alignment } from '../components/PointGridPlot'
+import { type Alignment } from '../../types/PointGrid'
 
 interface Edge {
   from: [number, number];

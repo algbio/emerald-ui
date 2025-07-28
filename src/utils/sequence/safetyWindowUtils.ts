@@ -1,6 +1,6 @@
 // Utility functions for converting alignment safety windows to sequence positions
 
-import type { Alignment } from '../types/PointGrid';
+import type { Alignment } from '../../types/PointGrid';
 
 export interface SequenceSafetyWindow {
   startPosition: number;
