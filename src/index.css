@@ -80,6 +80,7 @@
   --text-tertiary: var(--color-gray-600);
   --border-color: #d1fae5;
   --border-color-hover: #a7f3d0;
+  --accent-primary: var(--color-primary);
   
   font-family: var(--font-family-primary);
   line-height: 1.6;
@@ -105,6 +106,7 @@
     --text-tertiary: #a7f3d0;
     --border-color: #065f46;
     --border-color-hover: #047857;
+    --accent-primary: var(--color-primary);
   }
 }
 

@@ -1,12 +1,10 @@
 /* UniProtSearch Component Styles */
 
+/* Main Container */
 .uniprot-search {
-  flex: 0 0 55%; /* Reduced from 60% for better fit with the wider page */
+  flex: 0 0 55%;
   min-width: 320px;
-  max-width: 55%; /* Reduced from 60% for better fit */
-  padding: 1rem;
   background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
 }
 
@@ -17,7 +15,7 @@
   font-weight: 600;
 }
 
-/* Search box container */
+/* Search Box */
 .search-box {
   display: flex;
   gap: 0.5rem;
@@ -68,6 +66,11 @@
   border-color: var(--color-primary-hover);
 }
 
+.search-box button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .search-box button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -75,12 +78,7 @@
   border-color: var(--color-gray-400);
 }
 
-.search-box button:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Error message styling */
+/* Messages */
 .error-message {
   text-align: center;
   padding: 1rem;
@@ -91,7 +89,6 @@
   margin: 1rem 0;
 }
 
-/* No results message styling */
 .no-results {
   text-align: center;
   padding: 2rem;
@@ -101,10 +98,9 @@
   margin: 1rem 0;
 }
 
-/* Search results container for UniProt search */
+/* Search Results */
 .search-results-container {
   border-radius: var(--border-radius-lg);
-
   overflow: hidden;
 }
 
@@ -138,7 +134,7 @@
   background-color: var(--bg-secondary);
 }
 
-/* Pagination styles for UniProt search */
+/* Pagination */
 .pagination-info {
   margin: 1rem 0;
   padding: 1rem;
@@ -189,24 +185,7 @@
   font-weight: 500;
 }
 
-/* Dark mode styles for pagination */
-@media (prefers-color-scheme: dark) {
-  .pagination-info {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-color);
-  }
-  
-  .pagination-info p {
-    color: var(--text-secondary);
-    text-align: center;
-  }
-  
-  .pagination-status {
-    color: var(--text-secondary);
-  }
-}
-
-/* Mobile and tablet responsiveness for UniProt Search */
+/* Responsive Design */
 @media (max-width: 1024px) {
   .uniprot-search {
     flex: none;
@@ -239,5 +218,16 @@
     padding: 14px;
     font-size: 1rem;
     min-height: 48px;
+  }
+  
+  .pagination-info {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+  
+  .pagination-info p,
+  .pagination-status {
+    color: var(--text-secondary);
+    text-align: center;
   }
 }

@@ -39,6 +39,476 @@
   filter: drop-shadow(0 0 2em rgba(16, 185, 129, 0.6));
 }
 
+/* App description and key features styling */
+.app-description {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  border-left: 4px solid var(--accent-primary);
+}
+
+.app-subtitle {
+  margin-bottom: 1rem;
+  color: var(--accent-primary);
+  font-size: 1.2rem;
+}
+
+.key-features {
+  margin-top: 1.5rem;
+}
+
+.key-features h3 {
+  color: var(--accent-primary);
+  margin-bottom: 0.75rem;
+}
+
+.key-features ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.key-features li {
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.key-features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--accent-primary);
+  font-weight: bold;
+}
+
+/* Input section styling */
+.input-section-header {
+  margin-bottom: 1.5rem;
+}
+
+.input-title {
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+.input-description {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.alignment-parameters-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.alignment-parameters-section h3 {
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+.parameters-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Results section styling */
+.results-header {
+  margin-bottom: 1.5rem;
+}
+
+.results-description {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.sequence-info h3 {
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+}
+
+.interpretation-guide {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.export-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.export-section h3 {
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+.export-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Getting started section styling */
+.getting-started-section {
+  margin: 2rem 0;
+  padding: 2rem;
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  border: 2px solid var(--accent-primary);
+}
+
+.getting-started-steps {
+  margin: 2rem 0;
+}
+
+.step {
+  display: flex;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.step-number {
+  background-color: var(--accent-primary);
+  color: white;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-right: 1.5rem;
+  flex-shrink: 0;
+}
+
+.step-content h3 {
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+.step-content p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.example-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.example-section h3 {
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+}
+
+.example-section ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.example-section li {
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.example-section li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent-primary);
+  font-weight: bold;
+}
+
+/* Try example section styling */
+.try-example-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.try-example-section h3 {
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+}
+
+.example-proteins {
+  margin-top: 1rem;
+}
+
+.protein-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.protein-pair strong {
+  color: var(--accent-primary);
+  font-family: var(--font-family-mono, monospace);
+  font-size: 1.1rem;
+}
+
+.example-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Structure section styling */
+.structure-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.structure-section h3 {
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+.structure-description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* Input methods container styling */
+.input-methods-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.input-method {
+  padding: 1.5rem;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow: visible; /* Allow content to overflow */
+}
+
+.input-method h4 {
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+}
+
+.method-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+/* Ensure sequence lists can expand properly */
+.fasta-uploader,
+.uniprot-search {
+  overflow: visible;
+  width: 100%;
+}
+
+/* Sequence lists should work normally within their containers */
+.fasta-uploader .search-results-container,
+.uniprot-search .search-results-container {
+  margin-top: 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+/* FASTA sequence lists that appear as last child */
+.fasta-uploader > *:last-child {
+  margin-top: 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+/* Hide sequence lists from their original locations - REMOVED - not needed anymore */
+
+/* FASTA uploader format info styling */
+.format-info-toggle {
+  margin-bottom: 1rem;
+}
+
+.format-info-button {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.format-info-button:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+  color: var(--accent-primary);
+  transition: transform 0.2s ease;
+}
+
+.format-info-content {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+.format-example {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-primary);
+}
+
+.format-example pre {
+  margin: 0.5rem 0 0 0;
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* UniProt search info styling */
+.search-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.search-description {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.search-examples {
+  color: var(--text-secondary);
+}
+
+.search-examples ul {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.search-examples li {
+  margin-bottom: 0.25rem;
+}
+
+.search-examples code {
+  background-color: var(--bg-primary);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: var(--font-family-mono, monospace);
+  font-size: 0.85rem;
+  color: var(--accent-primary);
+}
+
+.upload-tips {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .input-methods-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .getting-started-section {
+    padding: 1rem;
+  }
+  
+  .step {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .step-number {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  .app-description {
+    padding: 1rem;
+  }
+  
+  .key-features li {
+    padding-left: 1rem;
+  }
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -64,44 +534,33 @@
 
 /* Add to your CSS file */
 .sequence-input-panel {
-  display: flex;
-  gap: 3%; /* Changed from 2rem to 3% for better spacing with new widths */
-  align-items: flex-start;
   margin-bottom: 2rem;
 }
 
-/* Mobile and tablet sequence input panel styling */
+/* Mobile and tablet sequence input panel styling - simplified */
 @media (max-width: 1024px) {
   .sequence-input-panel {
-    flex-direction: column;
-    gap: 1rem;
     margin-bottom: 1.5rem;
   }
 }
 
 .fasta-uploader {
-  flex: 0 0 42%; /* Increased from 40% for better balance with UniProt search */
-  min-width: 320px;
-  max-width: 42%; /* Increased from 40% for better balance */
-  padding: 1rem;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
+  width: 100%;
 }
 
 /* Mobile and tablet fasta uploader styling */
 @media (max-width: 1024px) {
   .fasta-uploader {
-    flex: none;
-    min-width: auto;
-    max-width: 100%;
-    padding: 0.75rem;
+    width: 100%;
   }
 }
 
 /* File upload styles */
 .uploader-input {
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .file-input-label {
@@ -115,6 +574,8 @@
   font-weight: 500;
   text-align: center;
   border: 2px solid var(--color-primary);
+  max-width: 300px;
+  width: fit-content;
 }
 
 .file-input-label:hover {

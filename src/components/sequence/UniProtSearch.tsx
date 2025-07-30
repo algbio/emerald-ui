@@ -25,39 +25,47 @@ const UniProtSearch: React.FC = () => {
   const { notifySuccess, notifyError, notifyInfo } = useFeedbackNotifications();
   
   const searchUniProt = async () => {
+    console.log('searchUniProt called with term:', searchTerm);
+    
     if (!searchTerm.trim()) {
+      console.log('Empty search term, showing error');
       notifyError('Invalid Search', 'Please enter a search term');
       return;
     }
     
+    console.log('Starting search...');
     setIsSearching(true);
     setError(null);
     notifyInfo('Searching UniProt', `Searching for "${searchTerm}"...`);
     
     try {
       // Update the fetch URL to include cross-references
-      const response = await fetch(
-        `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchTerm)}&fields=accession,id,protein_name,organism_name,sequence,xref_pdb&format=json&size=25`
-      );
+      const url = `https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(searchTerm)}&fields=accession,id,protein_name,organism_name,sequence,xref_pdb&format=json&size=25`;
+      console.log('Fetching from URL:', url);
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
+        console.log('Response not ok:', response.status, response.statusText);
         throw new Error(`UniProt API error: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Received data from UniProt:', data);
       
       // Update the mapping to include PDB IDs
       const mappedResults = data.results.map((item: any) => ({
-        accession: item.primaryAccession,
-        id: item.uniProtkbId,
+        accession: item.primaryAccession || 'Unknown',
+        id: item.uniProtkbId || item.primaryAccession || 'Unknown',
         proteinName: item.proteinDescription?.recommendedName?.fullName?.value || 'Unknown protein',
         organismName: item.organism?.scientificName || 'Unknown organism',
         sequence: item.sequence?.value || '',
         pdbIds: item.uniProtKBCrossReferences
           ?.filter((xref: any) => xref.database === 'PDB')
           ?.map((xref: any) => xref.id) || []
-      }));
+      })).filter((result: UniProtResult) => result.sequence.length > 0); // Filter out results without sequences
       
+      console.log('Mapped results:', mappedResults);
       setResults(mappedResults);
       setCurrentPage(0); // Reset to first page when new search is performed
       
@@ -147,6 +155,15 @@ const UniProtSearch: React.FC = () => {
   const startIndex = currentPage * resultsPerPage;
   const endIndex = startIndex + resultsPerPage;
   const currentResults = results.slice(startIndex, endIndex);
+  
+  console.log('Pagination state:', { 
+    totalResults: results.length, 
+    currentPage, 
+    totalPages, 
+    startIndex, 
+    endIndex, 
+    currentResults: currentResults.length 
+  });
 
   const handlePreviousPage = () => {
     setCurrentPage(prev => Math.max(0, prev - 1));
@@ -158,7 +175,21 @@ const UniProtSearch: React.FC = () => {
   
   return (
     <div className="uniprot-search">
-      <h2>Search UniProt Database</h2>
+      <div className="search-info">
+        <p className="search-description">
+          Search the UniProt database for high-quality, annotated protein sequences. 
+          You can search by protein names, gene names, UniProt accession numbers, or organism names.
+        </p>
+        <div className="search-examples">
+          <strong>Example searches:</strong>
+          <ul>
+            <li><code>P53_HUMAN</code> - UniProt ID</li>
+            <li><code>insulin</code> - Protein name</li>
+            <li><code>BRCA1</code> - Gene name</li>
+            <li><code>hemoglobin homo sapiens</code> - Protein + organism</li>
+          </ul>
+        </div>
+      </div>
       
       <div className="search-box">
         <input
@@ -180,6 +211,10 @@ const UniProtSearch: React.FC = () => {
       
       {results.length === 0 && !isSearching && searchTerm && (
         <div className="no-results">No results found. Try a different search term.</div>
+      )}
+      
+      {results.length > 0 && currentResults.length === 0 && (
+        <div className="no-results">No results to display on this page.</div>
       )}
 
       {results.length > 0 && (
