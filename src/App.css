@@ -166,6 +166,7 @@
   background-color: var(--bg-secondary);
   border-radius: 12px;
   border: 2px solid var(--accent-primary);
+  width: 100%;
 }
 
 .getting-started-steps {
@@ -196,11 +197,13 @@
 .step-content h3 {
   color: var(--accent-primary);
   margin-bottom: 0.5rem;
+  text-align: left;
 }
 
 .step-content p {
   color: var(--text-secondary);
   line-height: 1.6;
+  text-align: left;
 }
 
 .example-section {
@@ -209,11 +212,13 @@
   background-color: var(--bg-primary);
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  text-align: left;
 }
 
 .example-section h3 {
   color: var(--accent-primary);
   margin-bottom: 1rem;
+  text-align: left;
 }
 
 .example-section ul {
@@ -242,11 +247,13 @@
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
   border-radius: 8px;
   border: 1px solid rgba(16, 185, 129, 0.2);
+  text-align: left;
 }
 
 .try-example-section h3 {
   color: var(--accent-primary);
   margin-bottom: 1rem;
+  text-align: left;
 }
 
 .example-proteins {
@@ -488,16 +495,29 @@
   
   .getting-started-section {
     padding: 1rem;
+    margin: 1rem auto;
+    max-width: 100%;
   }
   
   .step {
     flex-direction: column;
-    text-align: center;
+    text-align: left;
+    align-items: center;
   }
   
   .step-number {
     margin-right: 0;
     margin-bottom: 1rem;
+  }
+
+  .step-content {
+    text-align: left;
+    width: 100%;
+  }
+
+  .step-content h3,
+  .step-content p {
+    text-align: left;
   }
   
   .app-description {
@@ -896,10 +916,91 @@ input[type="file"] {
   font-size: 1rem;
 }
 
-.no-data-message {
-  text-align: center;
-  color: #666;
+/* New citation and attribution styles integrated into app description */
+.citation-attribution {
   margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--accent-primary);
+}
+
+.citation-attribution h3 {
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.citation-content {
+  margin-bottom: 1.5rem;
+}
+
+.citation-text {
+  background-color: var(--bg-primary);
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid var(--accent-primary);
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.citation-text em {
+  font-style: italic;
+}
+
+.citation-text strong {
+  font-weight: bold;
+}
+
+.citation-text a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.citation-text a:hover {
+  text-decoration: underline;
+}
+
+.project-credits {
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.project-credits p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.project-credits a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.project-credits a:hover {
+  text-decoration: underline;
+}
+
+.no-data-message {
+  text-align: left;
+  color: var(--text-primary);
+  margin-top: 2rem;
+  width: 100%;
+}
+
+.no-data-message h2 {
+  text-align: center;
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+}
+
+.no-data-message > p {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
 }
 
 .input-title {
@@ -912,5 +1013,23 @@ input[type="file"] {
     padding: 0.75rem;
     margin-bottom: 1rem;
     font-size: 0.9rem;
+  }
+
+  .citation-attribution {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+  }
+
+  .citation-text {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .project-credits {
+    padding: 0.75rem;
+  }
+
+  .project-credits p {
+    font-size: 0.85rem;
   }
 }

@@ -93,21 +93,36 @@ function AppContent() {
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
-      </div>
 
-      <div className="citation-section">
-        <p>
-          <strong>Please cite the following reference when using EMERALD for your research:</strong>
-        </p>
-        Grigorjew, A., Gynter, A., Dias, F.H. <i>et al.</i> 
-        <br />
-        Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD.
-        <br /> 
-        <i>Genome Biol</i> <b>24</b>, 168 (2023).
-        <br />
-        <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">
-          https://doi.org/10.1186/s13059-023-03008-6
-        </a>
+        <div className="citation-attribution">
+          <h3>Citation & Credits</h3>
+          <div className="citation-content">
+            <p>
+              <strong>Please cite the following reference when using EMERALD for your research:</strong>
+            </p>
+            <p className="citation-text">
+              Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu.
+              <br />
+              <em>Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD.</em>
+              <br />
+              <strong>Genome Biology</strong> 24, 168 (2023).
+              <br />
+              <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">
+                https://doi.org/10.1186/s13059-023-03008-6
+              </a>
+            </p>
+          </div>
+          
+          <div className="project-credits">
+            <p>
+                  <strong>Emerald UI Development:</strong><br />
+                  • Emerald UI Web Interface: Developed by Andrei Preoteasa<br />
+                  • EMERALD UI repository: <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a><br />
+
+                  • Original EMERALD Algorithm: <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+            </p>
+          </div>
+        </div>
       </div>
       
       {!hasData && (
