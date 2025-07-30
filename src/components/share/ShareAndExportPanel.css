@@ -1,23 +1,34 @@
 .share-and-export-panel {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
-  margin: var(--spacing-lg) 0;
+  display: flex;
+  gap: 2rem;
+  margin: 1rem 0;
   width: 100%;
+  align-items: flex-start; /* Align both sections to the top */
 }
 
-.panel-section {
-  min-height: 0; /* Allow sections to shrink if needed */
-}
-
-.share-section {
+.share-and-export-panel .panel-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  margin: 0; /* Remove any inherited margins */
+  padding: 0; /* Remove any inherited padding */
 }
 
-.export-section {
+.share-and-export-panel .share-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.share-and-export-panel .export-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0; /* Override the App.css margin */
+  padding: 0; /* Override the App.css padding */
+  background: none; /* Override the App.css background */
 }
 
 /* Collapsible section styles */
@@ -28,6 +39,8 @@
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--transition-normal);
   overflow: hidden;
+  height: fit-content;
+  flex: 1;
 }
 
 .collapsible-section:hover {
@@ -47,6 +60,8 @@
   font-weight: 600;
   color: var(--color-primary);
   transition: background-color var(--transition-fast);
+  min-height: 60px;
+  box-sizing: border-box;
 }
 
 .section-header:hover {
@@ -74,13 +89,13 @@
 
 .section-content {
   overflow: hidden;
-  transition: max-height var(--transition-normal), opacity var(--transition-normal);
+  transition: max-height var(--transition-slow), opacity var(--transition-slow);
   max-height: 0;
   opacity: 0;
 }
 
 .section-content.expanded {
-  max-height: 1000px; /* Adjust this value based on your content height needs */
+  max-height: 1000px;
   opacity: 1;
 }
 
@@ -112,13 +127,7 @@
 /* Responsive design - stack vertically on smaller screens */
 @media (max-width: 768px) {
   .share-and-export-panel {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
+    flex-direction: column;
+    gap: 1rem;
   }
-}
-
-/* Ensure children don't have conflicting margins */
-.share-and-export-panel .share-url-panel,
-.share-and-export-panel .export-image-panel {
-  margin: 0;
 }
