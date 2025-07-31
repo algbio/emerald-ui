@@ -57,6 +57,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   const defaultSettings: VisualizationSettings = {
     showAxes: true,
     showAxisLabels: true,
+    showAxisDescriptors: true, // Added missing property
     showGrid: true,
     showMinimap: true,
     showSafetyWindows: true,
