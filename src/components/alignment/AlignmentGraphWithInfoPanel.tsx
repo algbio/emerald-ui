@@ -53,7 +53,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     showAlignmentDots: true,
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
-    enableGapHighlighting: true
+    enableGapHighlighting: true,
+    showAxisDescriptors: true
   });
 
   // Extract safety windows from alignments
@@ -156,6 +157,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             onSafetyWindowHover={handleSafetyWindowHover}
             onSafetyWindowSelect={handleSafetyWindowSelect}
             highlightedGap={highlightedGap}
+            representativeDescriptor={visualizationSettings.showAxisDescriptors ? representativeDescriptor : undefined}
+            memberDescriptor={visualizationSettings.showAxisDescriptors ? memberDescriptor : undefined}
             ref={(pointGridElement) => {
               // Store the PointGridPlot ref
               pointGridRef.current = pointGridElement;

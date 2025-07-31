@@ -261,7 +261,9 @@ export function drawAxisLabels(
   marginTop: number,
   marginLeft: number,
   isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean,
-  selectedSafetyWindow?: SafetyWindowBounds
+  selectedSafetyWindow?: SafetyWindowBounds,
+  representativeDescriptor?: string,
+  memberDescriptor?: string
 ) {
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
@@ -286,6 +288,18 @@ export function drawAxisLabels(
   } else {
     drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
   }
+
+  // Draw X axis descriptor (centered above axis)
+  if (representativeDescriptor) {
+    ctx.save();
+    ctx.font = `bold ${Math.max(13, fontSize * 1.1)}px sans-serif`;
+    ctx.fillStyle = '#333';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const xAxisCenter = marginLeft + (ctx.canvas.width - marginLeft) / 2;
+    ctx.fillText(representativeDescriptor, xAxisCenter, 8);
+    ctx.restore();
+  }
   
   ctx.restore();
   
@@ -299,6 +313,24 @@ export function drawAxisLabels(
     drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
   } else {
     drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
+  }
+
+  // Draw Y axis descriptor (rotated, centered along Y axis)
+  if (memberDescriptor) {
+    ctx.save();
+    ctx.font = `bold ${Math.max(13, fontSize * 1.1)}px sans-serif`;
+    ctx.fillStyle = '#333';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    // Center of Y axis area
+    const yAxisCenter = marginTop + (ctx.canvas.height - marginTop) / 2;
+    // Draw rotated text
+    ctx.save();
+    ctx.translate(18, yAxisCenter);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(memberDescriptor, 0, 0);
+    ctx.restore();
+    ctx.restore();
   }
   
   ctx.restore();

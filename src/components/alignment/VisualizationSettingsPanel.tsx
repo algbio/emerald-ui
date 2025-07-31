@@ -12,6 +12,7 @@ export interface VisualizationSettings {
   showOptimalPath: boolean;
   enableSafetyWindowHighlighting: boolean;
   enableGapHighlighting: boolean;
+  showAxisDescriptors: boolean;
 }
 
 interface VisualizationSettingsPanelProps {
@@ -41,7 +42,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
       showAlignmentDots: true,
       showOptimalPath: true,
       enableSafetyWindowHighlighting: true,
-      enableGapHighlighting: true
+      enableGapHighlighting: true,
+      showAxisDescriptors: true
     });
   };
 
@@ -69,6 +71,18 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
                 Show Axes
               </label>
               <p className="setting-description">Display X and Y axis lines</p>
+            </div>
+            <div className="setting-item">
+              <label className="setting-label">
+                <input
+                  type="checkbox"
+                  checked={settings.showAxisDescriptors}
+                  onChange={() => handleToggle('showAxisDescriptors')}
+                />
+                <span className="checkmark"></span>
+                Show Axis Descriptors
+              </label>
+              <p className="setting-description">Display sequence names/IDs as axis titles for clarity</p>
             </div>
 
             <div className="setting-item">

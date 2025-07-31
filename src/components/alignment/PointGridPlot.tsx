@@ -65,6 +65,9 @@ interface PointGridProps {
   showAlignmentEdges?: boolean;
   showAlignmentDots?: boolean;
   showOptimalPath?: boolean;
+  // Sequence descriptors for axis labeling
+  representativeDescriptor?: string;
+  memberDescriptor?: string;
   // Safety window interaction props
   selectedSafetyWindowId?: string | null;
   hoveredSafetyWindowId?: string | null;
@@ -104,7 +107,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   onSafetyWindowHover,
   onSafetyWindowSelect,
   highlightedGap,
-  onTransformChange
+  onTransformChange,
+  representativeDescriptor,
+  memberDescriptor
 }, ref) => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -286,7 +291,20 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
 
     // Draw axis labels if enabled
     if (showAxisLabels) {
-      drawAxisLabels(ctx, xTicks, yTicks, x, y, fontSize, marginTop, marginLeft, isInSafetyWindow, safetyWindowBounds);
+      drawAxisLabels(
+        ctx,
+        xTicks,
+        yTicks,
+        x,
+        y,
+        fontSize,
+        marginTop,
+        marginLeft,
+        isInSafetyWindow,
+        safetyWindowBounds,
+        representativeDescriptor,
+        memberDescriptor
+      );
     }
 
     // Set up clipping and draw grid/data

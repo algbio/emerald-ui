@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { Alignment } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
@@ -149,8 +149,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
 
   const safetyStats = calculateSafetyStats();
 
-  // Calculate gap regions (non-safe areas)
-  const calculateGapRegions = () => {
+  // Calculate gap regions (non-safe areas) - memoized to prevent unnecessary recalculation
+  const gapRegions = useMemo(() => {
     if (safetyWindowsInfo.length === 0) {
       return {
         representativeGaps: representative.length > 0 ? [{start: 0, end: representative.length}] : [],
@@ -203,21 +203,24 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     }
 
     return { representativeGaps, memberGaps };
-  };
-
-  const gapRegions = calculateGapRegions();
+  }, [safetyWindowsInfo, representative, member]);
 
   // State for gap navigation
   const [currentGapType, setCurrentGapType] = useState<'representative' | 'member'>('representative');
   const [currentGapIndex, setCurrentGapIndex] = useState(0);
+  const [hasManuallyUnselectedGap, setHasManuallyUnselectedGap] = useState(false);
 
-  const currentGaps = currentGapType === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps;
+  const currentGaps = useMemo(() => 
+    currentGapType === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps, 
+    [currentGapType, gapRegions]
+  );
   const currentGap = currentGaps[currentGapIndex];
 
   const handlePreviousGap = () => {
     if (currentGaps.length === 0) return;
     const newIndex = currentGapIndex > 0 ? currentGapIndex - 1 : currentGaps.length - 1;
     setCurrentGapIndex(newIndex);
+    setHasManuallyUnselectedGap(false); // Reset manual unselection when navigating
     
     // Trigger gap highlighting only if enabled
     const newGap = currentGaps[newIndex];
@@ -234,6 +237,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     if (currentGaps.length === 0) return;
     const newIndex = currentGapIndex < currentGaps.length - 1 ? currentGapIndex + 1 : 0;
     setCurrentGapIndex(newIndex);
+    setHasManuallyUnselectedGap(false); // Reset manual unselection when navigating
     
     // Trigger gap highlighting only if enabled
     const newGap = currentGaps[newIndex];
@@ -249,10 +253,11 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   const handleGapTypeChange = (type: 'representative' | 'member') => {
     setCurrentGapType(type);
     setCurrentGapIndex(0);
+    setHasManuallyUnselectedGap(false); // Reset manual unselection when changing type
     
-    // Trigger gap highlighting for the new type's first gap only if enabled
+    // Trigger gap highlighting for the new type's first gap only if enabled and not manually unselected
     const newGaps = type === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps;
-    if (newGaps.length > 0 && onGapHighlight && currentSettings.enableGapHighlighting) {
+    if (newGaps.length > 0 && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
       onGapHighlight({
         type: type,
         start: newGaps[0].start,
@@ -447,23 +452,31 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
       onWindowHover?.(null);
     }
     
+    // Reset manual gap unselection when switching to gap analysis tab
+    if (activeTab === 'gap-analysis') {
+      setHasManuallyUnselectedGap(false);
+    }
+    
     // Clear gap highlighting when not on gap analysis tab or when highlighting is disabled
     if ((activeTab !== 'gap-analysis' || !currentSettings.enableGapHighlighting) && onGapHighlight) {
       onGapHighlight(null);
     }
     
     // Set gap highlighting when switching to gap analysis tab and highlighting is enabled
-    if (activeTab === 'gap-analysis' && onGapHighlight && currentSettings.enableGapHighlighting && currentGaps.length > 0) {
-      const currentGap = currentGaps[currentGapIndex];
-      if (currentGap) {
-        onGapHighlight({
-          type: currentGapType,
-          start: currentGap.start,
-          end: currentGap.end
-        });
+    // Only auto-highlight if user hasn't manually unselected
+    if (activeTab === 'gap-analysis' && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
+      if (currentGaps.length > 0 && currentGapIndex < currentGaps.length) {
+        const currentGap = currentGaps[currentGapIndex];
+        if (currentGap) {
+          onGapHighlight({
+            type: currentGapType,
+            start: currentGap.start,
+            end: currentGap.end
+          });
+        }
       }
     }
-  }, [activeTab, selectedWindowId, onWindowHover, onGapHighlight, currentGaps, currentGapIndex, currentGapType, currentSettings.enableSafetyWindowHighlighting, currentSettings.enableGapHighlighting]);
+  }, [activeTab, selectedWindowId, onWindowHover, onGapHighlight, currentGaps, currentGapIndex, currentGapType, currentSettings.enableSafetyWindowHighlighting, currentSettings.enableGapHighlighting, hasManuallyUnselectedGap]);
 
   return (
     <div className="safety-windows-info-panel">
@@ -522,12 +535,12 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
               <h4>Sequence Information</h4>
               <div className="stat-grid">
                 <div className="stat-item">
-                  <span className="stat-label">Representative ({representativeDescriptor || 'Reference'}):</span>
-                  <span className="stat-value">{representative.length} positions</span>
+                  <span className="stat-label">Representative: <br/> {representativeDescriptor || 'Reference'}:</span>
+                  <span className="stat-value">Length: {representative.length}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Member ({memberDescriptor || 'Member'}):</span>
-                  <span className="stat-value">{member.length} positions</span>
+                  <span className="stat-label">Member: <br/> {memberDescriptor || 'Member'}:</span>
+                  <span className="stat-value">Length: {member.length}</span>
                 </div>
               </div>
             </div>
@@ -873,7 +886,10 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                     
                     <button 
                       className="gap-unselect-button"
-                      onClick={() => onGapHighlight?.(null)}
+                      onClick={() => {
+                        setHasManuallyUnselectedGap(true);
+                        onGapHighlight?.(null);
+                      }}
                       title="Clear gap highlighting"
                     >
                       ✕ Unselect
@@ -972,20 +988,12 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                   <span className="stat-value">{currentGaps.length}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Total Gap Positions</span>
+                  <span className="stat-label">Total Unsafe Amino Acids</span>
                   <span className="stat-value">
                     {currentGaps.reduce((total, gap) => total + (gap.end - gap.start), 0)}
                   </span>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Sequence Coverage</span>
-                  <span className="stat-value">
-                    {currentGapType === 'representative' 
-                      ? `${Math.round((1 - (currentGaps.reduce((total, gap) => total + (gap.end - gap.start), 0) / representative.length)) * 1000) / 10}%`
-                      : `${Math.round((1 - (currentGaps.reduce((total, gap) => total + (gap.end - gap.start), 0) / member.length)) * 1000) / 10}%`
-                    }
-                  </span>
-                </div>
+                
               </div>
             </div>
 
