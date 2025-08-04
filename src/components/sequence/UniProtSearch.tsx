@@ -86,13 +86,22 @@ const UniProtSearch: React.FC = () => {
   };
   
   const loadToSequenceA = (result: UniProtResult) => {
-    const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
+    // Use the UniProt ID and repeat protein name to match sequence list format:
+    // EDC4_HUMAN | Enhancer of mRNA-decapping protein 4 | Enhancer of mRNA-decapping protein 4 | Homo sapiens
+    const descriptor = `${result.id} | ${result.proteinName} | ${result.proteinName} | ${result.organismName}`;
     
     console.log('Load A button clicked! Loading to Sequence A:', {
       accession: result.accession,
       id: result.id,
       descriptor,
       sequenceLength: result.sequence.length
+    });
+    
+    console.log('UniProt search result fields:', {
+      'result.accession': result.accession,
+      'result.id': result.id,
+      'result.proteinName': result.proteinName,
+      'result.organismName': result.organismName
     });
     
     try {
@@ -119,7 +128,9 @@ const UniProtSearch: React.FC = () => {
   };
   
   const loadToSequenceB = (result: UniProtResult) => {
-    const descriptor = `${result.id} | ${result.proteinName} | ${result.organismName}`;
+    // Use the UniProt ID and repeat protein name to match sequence list format:
+    // EDC4_HUMAN | Enhancer of mRNA-decapping protein 4 | Enhancer of mRNA-decapping protein 4 | Homo sapiens  
+    const descriptor = `${result.id} | ${result.proteinName} | ${result.proteinName} | ${result.organismName}`;
     
     console.log('Loading to Sequence B:', {
       accession: result.accession,
@@ -229,22 +240,32 @@ const UniProtSearch: React.FC = () => {
               organismName: result.organismName,
             }))}
             useIdAsProteinName={true}
-            onSelectA={seq => loadToSequenceA({
-              accession: seq.accession || '',
-              id: seq.id,
-              proteinName: seq.proteinName || '',
-              organismName: seq.organismName || '',
-              sequence: seq.sequence,
-              pdbIds: []
-            })}
-            onSelectB={seq => loadToSequenceB({
-              accession: seq.accession || '',
-              id: seq.id,
-              proteinName: seq.proteinName || '',
-              organismName: seq.organismName || '',
-              sequence: seq.sequence,
-              pdbIds: []
-            })}
+            onSelectA={seq => {
+              // Extract the original UniProt ID from the accession field, 
+              // since seq.id might be the compound display string
+              const originalId = seq.accession || seq.id;
+              loadToSequenceA({
+                accession: seq.accession || '',
+                id: originalId,  // Use the actual UniProt ID, not the display string
+                proteinName: seq.proteinName || '',
+                organismName: seq.organismName || '',
+                sequence: seq.sequence,
+                pdbIds: []
+              });
+            }}
+            onSelectB={seq => {
+              // Extract the original UniProt ID from the accession field, 
+              // since seq.id might be the compound display string
+              const originalId = seq.accession || seq.id;
+              loadToSequenceB({
+                accession: seq.accession || '',
+                id: originalId,  // Use the actual UniProt ID, not the display string
+                proteinName: seq.proteinName || '',
+                organismName: seq.organismName || '',
+                sequence: seq.sequence,
+                pdbIds: []
+              });
+            }}
           />
           
           <div className="pagination-info">

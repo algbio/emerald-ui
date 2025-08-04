@@ -29,12 +29,34 @@ export const fetchUniProtSequence = async (accession: string): Promise<{
       throw new Error(`No sequence found for accession: ${cleanAccession}`);
     }
 
+    // Debug: Log the actual API response structure
+    console.log('UniProt API response for accession', cleanAccession, ':', {
+      primaryAccession: data.primaryAccession,
+      uniProtkbId: data.uniProtkbId,
+      proteinDescription: data.proteinDescription?.recommendedName?.fullName?.value,
+      organism: data.organism?.scientificName
+    });
+
     // Build descriptor with available information
     const proteinName = data.proteinDescription?.recommendedName?.fullName?.value || 'Unknown protein';
     const organismName = data.organism?.scientificName || 'Unknown organism';
-    const uniprotId = data.uniProtkbId || cleanAccession;
     
-    const descriptor = `sp|${cleanAccession}|${uniprotId} ${proteinName} OS=${organismName}`;
+    // The 'id' field in the individual fetch API should contain the UniProt ID (like EDC4_HUMAN)
+    // This matches what we get from 'uniProtkbId' in the search API
+    const uniprotId = data.id || data.uniProtkbId || cleanAccession;
+    
+    console.log('Fields used for descriptor:', {
+      uniprotId,
+      proteinName,
+      organismName,
+      'data.id': data.id,
+      'data.uniProtkbId': data.uniProtkbId,
+      'cleanAccession': cleanAccession
+    });
+    
+    // Format descriptor to match UniProt search results format: UniProt_ID | Protein_Name | Protein_Name | Organism_Name
+    // This ensures consistency between accession fetch and search results
+    const descriptor = `${cleanAccession} | ${proteinName} | ${proteinName} | ${organismName}`;
 
     return {
       sequence: data.sequence.value,
