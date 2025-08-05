@@ -85,11 +85,11 @@ function AppContent() {
         <div className="key-features">
           <h3>Key Features:</h3>
           <ul>
-            <li><strong>Interactive Alignment Visualization:</strong> Explore dot plots showing all possible alignments between two sequences</li>
-            <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are consistently reliable</li>
+            <li><strong>Interactive Alignment Visualization:</strong> Explore the suboptimal alignment space between two sequences</li>
+            <li><strong>Safety Window Analysis:</strong> Identify robust regions of the alignments</li>
             <li><strong>Multiple Input Methods:</strong> Upload FASTA files, search UniProt database, or paste sequences directly</li>
-            <li><strong>Customizable Parameters:</strong> Adjust α (alpha) and δ (delta) values to fine-tune alignment sensitivity</li>
-            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>
+            <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space (by changing δ delta) and adjust the measure of safety/robustness (by chaning α alpha)</li>
+            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available and highlight safety windows on the structure</li>
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
@@ -144,7 +144,7 @@ function AppContent() {
                 <div className="step-number">2</div>
                 <div className="step-content">
                   <h3>Set Parameters</h3>
-                  <p>Adjust α (alpha: 0.5-1.0) for alignment stringency and δ (delta: 0-32) for gap penalties. Default values work well for most analyses.</p>
+                  <p>Adjust α (alpha: 0.5-1.0) for the safety/robustness measure and δ (delta: 0-32) for the maximum allowed between suboptimal alignments and an optimal one. Default values work well for most analyses.</p>
                 </div>
               </div>
               
@@ -160,7 +160,7 @@ function AppContent() {
                 <div className="step-number">4</div>
                 <div className="step-content">
                   <h3>Explore Results</h3>
-                  <p>Analyze the interactive dot plot, examine safety windows, and export your findings.</p>
+                  <p>Analyze the interactive suboptimal alignment space, examine safety windows, and export your findings.</p>
                 </div>
               </div>
             </div>
