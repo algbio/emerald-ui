@@ -123,15 +123,6 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
 
   return (
     <div className="alignment-graph-with-info-panel">
-      {/* Display sequence alignment if available */}
-      {alignments.some(a => a.textAlignment) && (
-        <div className="sequence-alignment-viewer-container">
-          <SequenceAlignmentViewer 
-            alignment={alignments.find(a => a.textAlignment)?.textAlignment!} 
-          />
-        </div>
-      )}
-      
       <div className="graph-and-info-container" style={{ display: 'flex', gap: '20px', width: '100%' }}>
         <div className="graph-container">
           <PointGridPlot
@@ -197,6 +188,15 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
           />
         </div>
       </div>
+      
+      {/* Display sequence alignment if available */}
+      {alignments.some(a => a.textAlignment) && (
+        <div className="sequence-alignment-viewer-container">
+          <SequenceAlignmentViewer 
+            alignment={alignments.find(a => a.textAlignment)?.textAlignment!} 
+          />
+        </div>
+      )}
     </div>
   );
 };

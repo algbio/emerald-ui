@@ -23,6 +23,7 @@ function AppContent() {
   const [representativeDescriptor, setRepresentativeDescriptor] = useState("");
   const [memberDescriptor, setMemberDescriptor] = useState("");
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
+  const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointGridRef = useRef<PointGridPlotRef | null>(null);
 
@@ -61,9 +62,6 @@ function AppContent() {
     pointGridRef.current = ref.current;
   };
 
-  // Check if we have data to display
-  const hasData = representative && member && localAlignments.length > 0;
-
   return (
     <div className="app-container">
       {/* Shared URL Notification */}
@@ -84,11 +82,13 @@ function AppContent() {
         <div className="key-features">
           <h3>Key Features:</h3>
           <ul>
+            
+            <li><strong>Interactive Alignment Visualization:</strong> Explore the suboptimal alignment space between two sequences</li>
             <li><strong>Interactive Alignment Visualization:</strong> Explore graph representations of all optimal and suboptimal alignments between two sequences</li>
             <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
             <li><strong>Multiple Input Methods:</strong> Upload FASTA files, search UniProt database, or paste sequences directly</li>
             <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
-            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>
+            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>    
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
@@ -123,10 +123,14 @@ function AppContent() {
         </div>
       </div>
       
-      {!hasData && (
-        <div className="getting-started-section">
+      <div className="getting-started-section">
+        <div className="getting-started-header" onClick={() => setIsGettingStartedExpanded(!isGettingStartedExpanded)}>
+          <h2>Getting Started with Emerald UI</h2>
+          <span className={`expand-icon ${isGettingStartedExpanded ? 'expanded' : ''}`}>▼</span>
+        </div>
+        
+        {isGettingStartedExpanded && (
           <div className="no-data-message">
-            <h2>Getting Started with Emerald UI</h2>
             <p>Welcome! Follow these simple steps to analyze your protein sequences:</p>
             
             <div className="getting-started-steps">
@@ -143,6 +147,7 @@ function AppContent() {
                 <div className="step-content">
                   <h3>Set Parameters</h3>
                   <p>Adjust the safety parameter α (alpha: 0.5-1.0) to increase or decrease how robust the safety windows are and δ (delta: 0-32) for the suboptimality threshold.</p>
+
                 </div>
               </div>
               
@@ -159,6 +164,7 @@ function AppContent() {
                 <div className="step-content">
                   <h3>Explore Results</h3>
                   <p>Analyze the interactive visualization, examine safety windows, and export your findings.</p>
+
                 </div>
               </div>
             </div>
@@ -186,8 +192,8 @@ function AppContent() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       
       <div className="input-methods">
         <div className="input-method-tabs">
@@ -201,10 +207,10 @@ function AppContent() {
       </div>
       
       
-      {hasData && (
+      {representative && member && localAlignments.length > 0 && (
         <div className="results-section">
           <div className="results-header">
-            <h2>Step 3: Explore Your Alignment Results</h2>
+            <h2>Explore Your Alignment Results</h2>
             <p className="results-description">
               The visualization below shows the classical representation of all optimal and suboptimal alignments. The green intervals indicate alignment-safe windows, and the blue line shows one optimal alignment.
             </p>

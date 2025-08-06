@@ -162,11 +162,44 @@
 /* Getting started section styling */
 .getting-started-section {
   margin: 2rem 0;
-  padding: 2rem;
+  padding: 0;
   background-color: var(--bg-secondary);
   border-radius: 12px;
   border: 2px solid var(--accent-primary);
   width: 100%;
+}
+
+.getting-started-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.getting-started-header:hover {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.getting-started-header h2 {
+  margin: 0;
+  color: var(--accent-primary);
+}
+
+.expand-icon {
+  font-size: 1.2rem;
+  color: var(--accent-primary);
+  transition: transform 0.2s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.no-data-message {
+  padding: 0 2rem 2rem 2rem;
 }
 
 .getting-started-steps {
