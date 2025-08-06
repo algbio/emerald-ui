@@ -18,6 +18,7 @@ const UniProtSearch: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<UniProtResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [resultsPerPage] = useState(5);
   
@@ -36,6 +37,7 @@ const UniProtSearch: React.FC = () => {
     console.log('Starting search...');
     setIsSearching(true);
     setError(null);
+    setHasSearched(true);
     notifyInfo('Searching UniProt', `Searching for "${searchTerm}"...`);
     
     try {
@@ -216,11 +218,10 @@ const UniProtSearch: React.FC = () => {
         >
           {isSearching ? 'Searching...' : 'Search'}
         </button>
+        {error && <div className="error-message">{error}</div>}
       </div>
       
-      {error && <div className="error-message">{error}</div>}
-      
-      {results.length === 0 && !isSearching && searchTerm && (
+      {results.length === 0 && !isSearching && hasSearched && (
         <div className="no-results">No results found. Try a different search term.</div>
       )}
       

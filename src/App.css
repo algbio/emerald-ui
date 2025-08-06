@@ -341,6 +341,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-top: 1rem;
+  align-items: start; /* Prevent grid items from stretching to match height */
 }
 
 .input-method {
