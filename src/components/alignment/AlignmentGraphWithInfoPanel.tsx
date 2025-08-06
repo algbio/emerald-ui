@@ -6,6 +6,8 @@ import SequenceAlignmentViewer from './SequenceAlignmentViewer';
 import type { Alignment } from '../../types/PointGrid';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
+import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer'
+
 
 interface AlignmentGraphWithInfoPanelProps {
   representative: string;
@@ -189,7 +191,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
         </div>
       </div>
       
-      {/* Display sequence alignment if available */}
+      <AlignmentStructuresViewer/>
+            {/* Display sequence alignment if available */}
       {alignments.some(a => a.textAlignment) && (
         <div className="sequence-alignment-viewer-container">
           <SequenceAlignmentViewer 

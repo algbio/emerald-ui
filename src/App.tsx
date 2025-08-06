@@ -237,10 +237,8 @@ function AppContent() {
             <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}</p>
             
           </div>
-          
-         
-          
-                    <AlignmentGraphWithInfoPanel
+
+          <AlignmentGraphWithInfoPanel
             key={`${representative}-${member}`}
             representative={representative}
             member={member}
@@ -272,17 +270,6 @@ function AppContent() {
           </div>
         </div>
       )}
-
-      {/* Add the AlignmentStructuresViewer component */}
-      <div className="structure-section">
-        <h3>3D Structure Analysis</h3>
-        <p className="structure-description">
-          Upload PDB structure files to overlay 3D structural information on your sequence alignments. 
-          This helps correlate sequence conservation with structural features like secondary structures, 
-          active sites, and binding domains.
-        </p>
-        <AlignmentStructuresViewer />
-      </div>
     </div>
   );
 }
