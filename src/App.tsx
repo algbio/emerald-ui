@@ -23,6 +23,7 @@ function AppContent() {
   const [representativeDescriptor, setRepresentativeDescriptor] = useState("");
   const [memberDescriptor, setMemberDescriptor] = useState("");
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
+  const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointGridRef = useRef<PointGridPlotRef | null>(null);
 
@@ -60,9 +61,6 @@ function AppContent() {
   const handlePointGridRef = (ref: React.RefObject<PointGridPlotRef>) => {
     pointGridRef.current = ref.current;
   };
-
-  // Check if we have data to display
-  const hasData = representative && member && localAlignments.length > 0;
 
   return (
     <div className="app-container">
@@ -125,10 +123,14 @@ function AppContent() {
         </div>
       </div>
       
-      {!hasData && (
-        <div className="getting-started-section">
+      <div className="getting-started-section">
+        <div className="getting-started-header" onClick={() => setIsGettingStartedExpanded(!isGettingStartedExpanded)}>
+          <h2>Getting Started with Emerald UI</h2>
+          <span className={`expand-icon ${isGettingStartedExpanded ? 'expanded' : ''}`}>▼</span>
+        </div>
+        
+        {isGettingStartedExpanded && (
           <div className="no-data-message">
-            <h2>Getting Started with Emerald UI</h2>
             <p>Welcome! Follow these simple steps to analyze your protein sequences:</p>
             
             <div className="getting-started-steps">
@@ -188,8 +190,8 @@ function AppContent() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       
       <div className="input-methods">
         <div className="input-method-tabs">
@@ -203,10 +205,10 @@ function AppContent() {
       </div>
       
       
-      {hasData && (
+      {representative && member && localAlignments.length > 0 && (
         <div className="results-section">
           <div className="results-header">
-            <h2>Step 3: Explore Your Alignment Results</h2>
+            <h2>Explore Your Alignment Results</h2>
             <p className="results-description">
               The visualization below shows a dot plot where each point represents a possible alignment between 
               the two sequences. The colored regions indicate alignment-safe windows where the algorithm has 
