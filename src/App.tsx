@@ -231,7 +231,7 @@ function AppContent() {
                       <li>α=0.75 means the safety windows are common to at least 75% of all such alignments.</li>
                       <li>α=1 means the safety windows are common to all such alignments.</li>
                     </ul>
-                  If you increase α alpha too much, then the safety windows may become too short and not useful for your analysis. If you decrease it too much, then the safety windows may become too lenient and include uninformative regions. The default value of α is 0.75, which was shown to be effective in several scenarios.</li>
+                  If you increase α alpha too much, then the safety windows may become too short and not useful for your analysis. If you decrease it too much, then the safety windows may become too lenient and include uninformative regions. The default value of α is 0.75, which was shown to be effective in several scenarios.
                 </li>
                 <li>The blue line represents one of the optimal alignments between the two sequences. This is shown for reference only, as there are many optimal alignments.</li>
               </ul>
