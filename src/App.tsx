@@ -76,18 +76,19 @@ function AppContent() {
         </p>
         <p>
           Emerald UI provides advanced visualization of optimal and suboptimal protein sequence alignments, 
-          enabling researchers to explore alignment-safe intervals and identify conserved regions between protein sequences. 
-          This tool implements the EMERALD algorithm for sensitive inference of alignment-safe intervals from 
-          biodiverse protein sequence clusters.
+          enabling researchers to explore conserved / robust regions between these alignments.  
+          These conserved regions are the <i>alignment-safe windows</i> introduced by the <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">EMERALD algorithm</a>.
         </p>
         <div className="key-features">
           <h3>Key Features:</h3>
           <ul>
+            
             <li><strong>Interactive Alignment Visualization:</strong> Explore the suboptimal alignment space between two sequences</li>
-            <li><strong>Safety Window Analysis:</strong> Identify robust regions of the alignments</li>
+            <li><strong>Interactive Alignment Visualization:</strong> Explore graph representations of all optimal and suboptimal alignments between two sequences</li>
+            <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
             <li><strong>Multiple Input Methods:</strong> Upload FASTA files, search UniProt database, or paste sequences directly</li>
-            <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space (by changing δ delta) and adjust the measure of safety/robustness (by chaning α alpha)</li>
-            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available and highlight safety windows on the structure</li>
+            <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
+            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>    
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
@@ -116,7 +117,6 @@ function AppContent() {
                   <strong>Emerald UI Development:</strong><br />
                   • Emerald UI Web Interface: Developed by Andrei Preoteasa<br />
                   • EMERALD UI repository: <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a><br />
-
                   • Original EMERALD Algorithm: <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
             </p>
           </div>
@@ -146,7 +146,8 @@ function AppContent() {
                 <div className="step-number">2</div>
                 <div className="step-content">
                   <h3>Set Parameters</h3>
-                  <p>Adjust α (alpha: 0.5-1.0) for the safety/robustness measure and δ (delta: 0-32) for the maximum allowed between suboptimal alignments and an optimal one. Default values work well for most analyses.</p>
+                  <p>Adjust the safety parameter α (alpha: 0.5-1.0) to increase or decrease how robust the safety windows are and δ (delta: 0-32) for the suboptimality threshold.</p>
+
                 </div>
               </div>
               
@@ -154,7 +155,7 @@ function AppContent() {
                 <div className="step-number">3</div>
                 <div className="step-content">
                   <h3>Run Analysis</h3>
-                  <p>Click "Generate Alignments" to compute all possible alignments and identify alignment-safe regions.</p>
+                  <p>Click "Generate Alignments" to compute and visualize all optimal and suboptimal alignments and identify alignment-safe windows in these alignments.</p>
                 </div>
               </div>
               
@@ -162,7 +163,8 @@ function AppContent() {
                 <div className="step-number">4</div>
                 <div className="step-content">
                   <h3>Explore Results</h3>
-                  <p>Analyze the interactive suboptimal alignment space, examine safety windows, and export your findings.</p>
+                  <p>Analyze the interactive visualization, examine safety windows, and export your findings.</p>
+
                 </div>
               </div>
             </div>
@@ -210,9 +212,7 @@ function AppContent() {
           <div className="results-header">
             <h2>Explore Your Alignment Results</h2>
             <p className="results-description">
-              The visualization below shows a dot plot where each point represents a possible alignment between 
-              the two sequences. The colored regions indicate alignment-safe windows where the algorithm has 
-              high confidence in the alignment quality.
+              The visualization below shows the classical representation of all optimal and suboptimal alignments. The green intervals indicate alignment-safe windows, and the blue line shows one optimal alignment.
             </p>
           </div>
           
@@ -221,8 +221,20 @@ function AppContent() {
             <p><strong>X-axis (Horizontal): </strong> {representativeDescriptor}</p>
             <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}</p>
             <p className="interpretation-guide">
-              <strong>How to interpret the plot:</strong> Diagonal patterns indicate regions of similarity. 
-              Dense clusters of points suggest highly conserved regions, while sparse areas indicate variable regions.
+              <strong>How to interpret the plot:</strong> 
+              <ul>
+                <li>Diagonal black lines represent regions of similarity, while vertical or horizontal black lines indicate insertions or deletions. This is a classical representation of sequence alignments via dynamic programming. Complex regions with black lines diverging diagonally, horizontally or vertically suggest areas of high variability.</li>
+                <li>Green intervals indicate alignment-safe windows. These are defined as those partial alignments that are common to a proportion of at least α alpha of all alignments in the plot 
+                  (i.e. of all optimal and δ delta-suboptimal alignments). 
+                  If you increase α alpha, then safety windows are common to more alignments. For example:
+                    <ul>
+                      <li>α=0.75 means the safety windows are common to at least 75% of all such alignments.</li>
+                      <li>α=1 means the safety windows are common to all such alignments.</li>
+                    </ul>
+                  If you increase α alpha too much, then the safety windows may become too short and not useful for your analysis. If you decrease it too much, then the safety windows may become too lenient and include uninformative regions. The default value of α is 0.75, which was shown to be effective in several scenarios.</li>
+                </li>
+                <li>The blue line represents one of the optimal alignments between the two sequences. This is shown for reference only, as there are many optimal alignments.</li>
+              </ul>
             </p>
           </div>
           
