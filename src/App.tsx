@@ -83,8 +83,7 @@ function AppContent() {
           <h3>Key Features:</h3>
           <ul>
             
-            <li><strong>Interactive Alignment Visualization:</strong> Explore the suboptimal alignment space between two sequences</li>
-            <li><strong>Interactive Alignment Visualization:</strong> Explore graph representations of all optimal and suboptimal alignments between two sequences</li>
+            <li><strong>Interactive Alignment Visualization:</strong> Explore the optimal and suboptimal alignment space between two sequences</li>
             <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
             <li><strong>Multiple Input Methods:</strong> Upload FASTA files, search UniProt database, or paste sequences directly</li>
             <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
@@ -214,12 +213,6 @@ function AppContent() {
             <p className="results-description">
               The visualization below shows the classical representation of all optimal and suboptimal alignments. The green intervals indicate alignment-safe windows, and the blue line shows one optimal alignment.
             </p>
-          </div>
-          
-          <div className="sequence-info">
-            <h3>Sequence Information</h3>
-            <p><strong>X-axis (Horizontal): </strong> {representativeDescriptor}</p>
-            <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}</p>
             <p className="interpretation-guide">
               <strong>How to interpret the plot:</strong> 
               <ul>
@@ -236,6 +229,13 @@ function AppContent() {
                 <li>The blue line represents one of the optimal alignments between the two sequences. This is shown for reference only, as there are many optimal alignments.</li>
               </ul>
             </p>
+          </div>
+          
+          <div className="sequence-info">
+            <h3>Sequence Information</h3>
+            <p><strong>X-axis (Horizontal): </strong> {representativeDescriptor}</p>
+            <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}</p>
+            
           </div>
           
          
@@ -275,7 +275,7 @@ function AppContent() {
 
       {/* Add the AlignmentStructuresViewer component */}
       <div className="structure-section">
-        <h3>Optional: 3D Structure Analysis</h3>
+        <h3>3D Structure Analysis</h3>
         <p className="structure-description">
           Upload PDB structure files to overlay 3D structural information on your sequence alignments. 
           This helps correlate sequence conservation with structural features like secondary structures, 
