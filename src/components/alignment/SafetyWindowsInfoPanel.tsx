@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Alignment } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
@@ -51,7 +51,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   onWindowSelect
 }) => {
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
-  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'visualization' | 'gap-analysis'>('general-info');
+  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'visualization' | 'unsafe-windows'>('general-info');
   
   // Default visualization settings if not provided
   const defaultSettings: VisualizationSettings = {
@@ -106,8 +106,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
       };
     });
 
-  // Calculate safety statistics for general info
-  const calculateSafetyStats = () => {
+  // Calculate safety statistics for general info - memoized for performance
+  const safetyStats = useMemo(() => {
     if (safetyWindowsInfo.length === 0) {
       return {
         representativeSafetyPercentage: 0,
@@ -146,9 +146,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
       representativeSafePositions: representativeSafeCount,
       memberSafePositions: memberSafeCount
     };
-  };
-
-  const safetyStats = calculateSafetyStats();
+  }, [safetyWindowsInfo, representative.length, member.length]);
 
   // Calculate gap regions (non-safe areas) - memoized to prevent unnecessary recalculation
   const gapRegions = useMemo(() => {
@@ -210,65 +208,120 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   const [currentGapType, setCurrentGapType] = useState<'representative' | 'member'>('representative');
   const [currentGapIndex, setCurrentGapIndex] = useState(0);
   const [hasManuallyUnselectedGap, setHasManuallyUnselectedGap] = useState(false);
+  const [isNavigatingGaps, setIsNavigatingGaps] = useState(false); // Track if user is actively navigating
 
   const currentGaps = useMemo(() => 
     currentGapType === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps, 
     [currentGapType, gapRegions]
   );
-  const currentGap = currentGaps[currentGapIndex];
+  const currentGap = useMemo(() => 
+    currentGaps[currentGapIndex], 
+    [currentGaps, currentGapIndex]
+  );
 
-  const handlePreviousGap = () => {
+  // Highly optimized gap highlighting - only highlight after user stops navigating
+  const debouncedGapHighlight = useCallback((gapInfo: {type: 'representative' | 'member'; start: number; end: number} | null) => {
+    // If user is actively navigating, don't highlight to prevent lag
+    if (isNavigatingGaps) {
+      onGapHighlight?.(null);
+      return;
+    }
+    
+    // Longer delay to ensure user has stopped navigating
+    const timeoutId = setTimeout(() => {
+      // Double-check that user isn't navigating before highlighting
+      if (!isNavigatingGaps) {
+        onGapHighlight?.(gapInfo);
+      }
+    }, 300); // Wait 300ms after navigation stops
+    
+    return () => clearTimeout(timeoutId);
+  }, [onGapHighlight, isNavigatingGaps]);
+
+  const handlePreviousGap = useCallback(() => {
     if (currentGaps.length === 0) return;
+    
+    // Mark that user is actively navigating to prevent laggy highlighting
+    setIsNavigatingGaps(true);
+    
     const newIndex = currentGapIndex > 0 ? currentGapIndex - 1 : currentGaps.length - 1;
     setCurrentGapIndex(newIndex);
     setHasManuallyUnselectedGap(false); // Reset manual unselection when navigating
     
-    // Trigger gap highlighting only if enabled
-    const newGap = currentGaps[newIndex];
-    if (newGap && onGapHighlight && currentSettings.enableGapHighlighting) {
-      onGapHighlight({
-        type: currentGapType,
-        start: newGap.start,
-        end: newGap.end
-      });
-    }
-  };
+    // Clear any existing highlighting immediately during navigation
+    onGapHighlight?.(null);
+    
+    // Stop navigation state after a delay
+    setTimeout(() => {
+      setIsNavigatingGaps(false);
+      
+      // Only highlight if enabled and user hasn't manually unselected
+      const newGap = currentGaps[newIndex];
+      if (newGap && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
+        debouncedGapHighlight({
+          type: currentGapType,
+          start: newGap.start,
+          end: newGap.end
+        });
+      }
+    }, 200); // Allow navigation animation to complete
+  }, [currentGaps, currentGapIndex, currentGapType, debouncedGapHighlight, currentSettings.enableGapHighlighting, onGapHighlight, hasManuallyUnselectedGap]);
 
-  const handleNextGap = () => {
+  const handleNextGap = useCallback(() => {
     if (currentGaps.length === 0) return;
+    
+    // Mark that user is actively navigating to prevent laggy highlighting
+    setIsNavigatingGaps(true);
+    
     const newIndex = currentGapIndex < currentGaps.length - 1 ? currentGapIndex + 1 : 0;
     setCurrentGapIndex(newIndex);
     setHasManuallyUnselectedGap(false); // Reset manual unselection when navigating
     
-    // Trigger gap highlighting only if enabled
-    const newGap = currentGaps[newIndex];
-    if (newGap && onGapHighlight && currentSettings.enableGapHighlighting) {
-      onGapHighlight({
-        type: currentGapType,
-        start: newGap.start,
-        end: newGap.end
-      });
-    }
-  };
+    // Clear any existing highlighting immediately during navigation
+    onGapHighlight?.(null);
+    
+    // Stop navigation state after a delay
+    setTimeout(() => {
+      setIsNavigatingGaps(false);
+      
+      // Only highlight if enabled and user hasn't manually unselected
+      const newGap = currentGaps[newIndex];
+      if (newGap && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
+        debouncedGapHighlight({
+          type: currentGapType,
+          start: newGap.start,
+          end: newGap.end
+        });
+      }
+    }, 200); // Allow navigation animation to complete
+  }, [currentGaps, currentGapIndex, currentGapType, debouncedGapHighlight, currentSettings.enableGapHighlighting, onGapHighlight, hasManuallyUnselectedGap]);
 
-  const handleGapTypeChange = (type: 'representative' | 'member') => {
+  const handleGapTypeChange = useCallback((type: 'representative' | 'member') => {
+    // Mark as navigating to prevent highlighting during type change
+    setIsNavigatingGaps(true);
+    
     setCurrentGapType(type);
     setCurrentGapIndex(0);
     setHasManuallyUnselectedGap(false); // Reset manual unselection when changing type
     
-    // Trigger gap highlighting for the new type's first gap only if enabled and not manually unselected
-    const newGaps = type === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps;
-    if (newGaps.length > 0 && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
-      onGapHighlight({
-        type: type,
-        start: newGaps[0].start,
-        end: newGaps[0].end
-      });
-    } else if (onGapHighlight) {
-      // Clear highlighting if no gaps or highlighting disabled
-      onGapHighlight(null);
-    }
-  };
+    // Clear highlighting immediately during type change
+    onGapHighlight?.(null);
+    
+    // Stop navigation state after a delay
+    setTimeout(() => {
+      setIsNavigatingGaps(false);
+      
+      // Trigger gap highlighting for the new type's first gap only if enabled and not manually unselected
+      const newGaps = type === 'representative' ? gapRegions.representativeGaps : gapRegions.memberGaps;
+      if (newGaps.length > 0 && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
+        debouncedGapHighlight({
+          type: type,
+          start: newGaps[0].start,
+          end: newGaps[0].end
+        });
+      }
+    }, 200); // Allow UI to update before highlighting
+  }, [gapRegions.representativeGaps, gapRegions.memberGaps, debouncedGapHighlight, currentSettings.enableGapHighlighting, hasManuallyUnselectedGap, onGapHighlight]);
 
   // Refs for synchronized scrolling of alignment sequences (DISABLED)
   // const xSequenceRef = useRef<HTMLSpanElement>(null);
@@ -376,31 +429,6 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     return sequence.slice(start, end);
   };
 
-  /**
-   * Determines the CSS class for highlighting amino acids based on their properties
-   * (Same as SequenceAlignmentViewer for consistency)
-   */
-  const getAminoAcidClass = (char: string): string => {
-    if (char === '-') {
-      return 'aa-gap';
-    }
-    
-    // Define amino acid groups by properties
-    const hydrophobic = ['A', 'V', 'L', 'I', 'M', 'F', 'W', 'Y'];
-    const polar = ['S', 'T', 'N', 'Q'];
-    const acidic = ['D', 'E'];
-    const basic = ['K', 'R', 'H'];
-    const special = ['C', 'P', 'G'];
-    
-    if (hydrophobic.includes(char)) return 'aa-hydrophobic';
-    if (polar.includes(char)) return 'aa-polar';
-    if (acidic.includes(char)) return 'aa-acidic';
-    if (basic.includes(char)) return 'aa-basic';
-    if (special.includes(char)) return 'aa-special';
-    
-    return 'aa-neutral';
-  };
-
   // Function to create full alignment display with highlighted safety window (DISABLED)
   /*
   const createFullAlignmentDisplay = () => {
@@ -445,31 +473,47 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   };
   */
 
-  const currentWindow = currentWindowIndex >= 0 ? safetyWindowsInfo[currentWindowIndex] : null;
+  // Simple gap sequence text (same as safety windows approach for performance)
+  const gapSequenceText = useMemo(() => {
+    if (!currentGap) return '';
+    
+    const sequence = currentGapType === 'representative' 
+      ? representative.slice(currentGap.start, currentGap.end)
+      : member.slice(currentGap.start, currentGap.end);
+    
+    return sequence;
+  }, [currentGap, currentGapType, representative, member]);
 
-  // When visualization tab is active, clear safety window selection and gap highlighting
+  const currentWindow = currentWindowIndex >= 0 ? safetyWindowsInfo[currentWindowIndex] : null;
   useEffect(() => {
     if ((activeTab === 'visualization' || activeTab === 'general-info' || activeTab === 'safety-windows') && selectedWindowId && !currentSettings.enableSafetyWindowHighlighting) {
       onWindowHover?.(null);
     }
-    
+  }, [activeTab, selectedWindowId, onWindowHover, currentSettings.enableSafetyWindowHighlighting]);
+
+  // Handle gap highlighting state changes
+  useEffect(() => {
     // Reset manual gap unselection when switching to gap analysis tab
-    if (activeTab === 'gap-analysis') {
+    if (activeTab === 'unsafe-windows') {
       setHasManuallyUnselectedGap(false);
     }
-    
+  }, [activeTab]);
+
+  // Handle gap highlighting when tab or settings change
+  useEffect(() => {
     // Clear gap highlighting when not on gap analysis tab or when highlighting is disabled
-    if ((activeTab !== 'gap-analysis' || !currentSettings.enableGapHighlighting) && onGapHighlight) {
-      onGapHighlight(null);
+    if ((activeTab !== 'unsafe-windows' || !currentSettings.enableGapHighlighting) && onGapHighlight) {
+      debouncedGapHighlight(null);
+      return;
     }
     
     // Set gap highlighting when switching to gap analysis tab and highlighting is enabled
     // Only auto-highlight if user hasn't manually unselected
-    if (activeTab === 'gap-analysis' && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
+    if (activeTab === 'unsafe-windows' && onGapHighlight && currentSettings.enableGapHighlighting && !hasManuallyUnselectedGap) {
       if (currentGaps.length > 0 && currentGapIndex < currentGaps.length) {
         const currentGap = currentGaps[currentGapIndex];
         if (currentGap) {
-          onGapHighlight({
+          debouncedGapHighlight({
             type: currentGapType,
             start: currentGap.start,
             end: currentGap.end
@@ -477,7 +521,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
         }
       }
     }
-  }, [activeTab, selectedWindowId, onWindowHover, onGapHighlight, currentGaps, currentGapIndex, currentGapType, currentSettings.enableSafetyWindowHighlighting, currentSettings.enableGapHighlighting, hasManuallyUnselectedGap]);
+  }, [activeTab, debouncedGapHighlight, currentSettings.enableGapHighlighting, hasManuallyUnselectedGap, currentGaps, currentGapIndex, currentGapType, onGapHighlight]);
 
   return (
     <div className="safety-windows-info-panel">
@@ -502,6 +546,14 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
             <span className="tab-badge">{safetyWindowsInfo.length}</span>
           )}
         </button>
+         <button 
+          className={`tab-button ${activeTab === 'unsafe-windows' ? 'active' : ''}`}
+          onClick={() => setActiveTab('unsafe-windows')}
+          title="Analyze gap regions and non-safe areas"
+        >
+          <span className="tab-icon">🔍</span>
+          Unsafe Windows
+        </button>
         <button 
           className={`tab-button ${activeTab === 'visualization' ? 'active' : ''}`}
           onClick={() => setActiveTab('visualization')}
@@ -510,14 +562,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           <span className="tab-icon">⚙️</span>
           Visualization
         </button>
-        <button 
-          className={`tab-button ${activeTab === 'gap-analysis' ? 'active' : ''}`}
-          onClick={() => setActiveTab('gap-analysis')}
-          title="Analyze gap regions and non-safe areas"
-        >
-          <span className="tab-icon">🔍</span>
-          Gap Analysis
-        </button>
+       
       </div>
 
       {/* Tab Content */}
@@ -816,8 +861,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
             onSettingsChange={(settings) => onVisualizationSettingsChange?.(settings)}
           />
         </div>
-      ) : activeTab === 'gap-analysis' ? (
-        <div className="gap-analysis-content">
+      ) : activeTab === 'unsafe-windows' ? (
+        <div className="unsafe-windows-content">
           <div className="panel-header">
             <h3>Gap Analysis</h3>
             <div className="panel-subtitle">
@@ -889,7 +934,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                       className="gap-unselect-button"
                       onClick={() => {
                         setHasManuallyUnselectedGap(true);
-                        onGapHighlight?.(null);
+                        debouncedGapHighlight(null);
                       }}
                       title="Clear gap highlighting"
                     >
@@ -909,65 +954,25 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                         </span>
                       </div>
                       
-                      <div className="gap-sequence-display" style={{ 
-                        textAlign: 'center',
-                        padding: '8px',
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '4px',
-                        border: '1px solid #e9ecef'
-                      }}>
-                        <div style={{ 
-                          fontSize: '13px', 
-                          marginBottom: '6px',
-                          overflowX: 'auto',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {(currentGapType === 'representative' 
-                            ? representative.slice(currentGap.start, currentGap.end)
-                            : member.slice(currentGap.start, currentGap.end)
-                          ).split('').map((char, idx) => (
-                            <span 
-                              key={idx} 
-                              className={getAminoAcidClass(char)}
-                              style={{ 
-                                display: 'inline-block', 
-                                width: '14px',
-                                height: '18px',
-                                lineHeight: '18px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                textAlign: 'center'
-                              }}
-                            >
-                              {char}
-                            </span>
-                          ))}
+                      <div className="gap-sequence-display">
+                        <div className="sequence-container">
+                          <div className="sequence-segment">
+                            {gapSequenceText}
+                          </div>
+                          <button 
+                            className="copy-button"
+                            onClick={() => {
+                              copyToClipboard(gapSequenceText, 'gap-sequence');
+                            }}
+                            title="Copy to clipboard"
+                          >
+                            {copyStatus?.id === 'gap-sequence' ? (
+                              copyStatus.success ? '✓ Copied!' : '❌ Failed'
+                            ) : (
+                              <span className="copy-icon">📋</span>
+                            )}
+                          </button>
                         </div>
-                        <button 
-                          className="copy-button"
-                          onClick={() => {
-                            const sequence = currentGapType === 'representative' 
-                              ? representative.slice(currentGap.start, currentGap.end)
-                              : member.slice(currentGap.start, currentGap.end);
-                            copyToClipboard(sequence, 'gap-sequence');
-                          }}
-                          title="Copy to clipboard"
-                          style={{ 
-                            fontSize: '11px', 
-                            padding: '3px 8px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '3px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {copyStatus?.id === 'gap-sequence' ? (
-                            copyStatus.success ? '✓ Copied!' : '❌ Failed'
-                          ) : (
-                            'Copy'
-                          )}
-                        </button>
                       </div>
                     </div>
                   )}

@@ -242,7 +242,7 @@ export function drawSafetyWindowHighlight(
 }
 
 /**
- * Draw gap region highlighting on the graph
+ * Draw gap region highlighting on the axis and in the grid
  */
 export function drawGapHighlight(
   ctx: CanvasRenderingContext2D,
@@ -252,50 +252,115 @@ export function drawGapHighlight(
   marginLeft: number,
   gapInfo: {type: 'representative' | 'member'; start: number; end: number}
 ): void {
+  // Save current state to restore later
   ctx.save();
   
-  // Set gap highlighting color (using a red/orange tone to differentiate from safety windows)
-  const gapColor = 'rgba(255, 99, 71, 0.3)'; // Semi-transparent tomato red
-  const borderColor = 'rgba(255, 69, 39, 0.8)'; // Darker red-orange for border
-  
   if (gapInfo.type === 'representative') {
-    // Highlight X-axis gap region
+    // For representative gaps (horizontal gaps on x-axis)
     const startX = x(gapInfo.start);
     const endX = x(gapInfo.end);
     
-    // Highlight the gap region on the X-axis labels area
-    ctx.fillStyle = gapColor;
-    ctx.fillRect(startX, 0, endX - startX, marginTop);
+    // First draw the axis indicator
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.4)';
+    const rectHeight = Math.max(8, marginTop * 0.15);
+    ctx.fillRect(startX, marginTop - rectHeight, endX - startX, rectHeight);
     
-    // Add border to make it more visible
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 2]);
-    ctx.strokeRect(startX, 0, endX - startX, marginTop);
-    ctx.setLineDash([]);
+    // Add a border to the axis indicator
+    ctx.strokeStyle = 'rgb(255, 107, 71)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(startX, marginTop - rectHeight, endX - startX, rectHeight);
     
-    // Highlight columns in the main grid area with lighter color
-    ctx.fillStyle = 'rgba(255, 99, 71, 0.15)';
+    // Now add a light highlighting in the grid area
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.1)';
+    // Draw a vertical strip through the grid area for this representative gap
     ctx.fillRect(startX, marginTop, endX - startX, y.range()[1] - marginTop);
-    
   } else {
-    // Highlight Y-axis gap region (member sequence)
+    // For member gaps (vertical gaps on y-axis)
     const startY = y(gapInfo.start);
     const endY = y(gapInfo.end);
     
-    // Highlight the gap region on the Y-axis labels area
-    ctx.fillStyle = gapColor;
-    ctx.fillRect(0, startY, marginLeft, endY - startY);
+    // First draw the axis indicator
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.4)';
+    const rectWidth = Math.max(8, marginLeft * 0.15);
+    ctx.fillRect(marginLeft - rectWidth, startY, rectWidth, endY - startY);
     
-    // Add border to make it more visible
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 2]);
-    ctx.strokeRect(0, startY, marginLeft, endY - startY);
-    ctx.setLineDash([]);
+    // Add a border to the axis indicator
+    ctx.strokeStyle = 'rgb(255, 107, 71)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(marginLeft - rectWidth, startY, rectWidth, endY - startY);
     
-    // Highlight rows in the main grid area with lighter color
-    ctx.fillStyle = 'rgba(255, 99, 71, 0.15)';
+    // Now add a light highlighting in the grid area
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.1)';
+    // Draw a horizontal strip through the grid area for this member gap
+    ctx.fillRect(marginLeft, startY, x.range()[1] - marginLeft, endY - startY);
+  }
+  
+  // Restore context state
+  ctx.restore();
+}
+
+/**
+ * Optimized gap highlighting with axis and grid rendering
+ * Performance-optimized version for larger datasets
+ */
+export function drawGapHighlightOptimized(
+  ctx: CanvasRenderingContext2D,
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
+  marginTop: number,
+  marginLeft: number,
+  gapAlignment: Alignment,
+  gapType: 'representative' | 'member'
+): void {
+  if (!gapAlignment.startDot || !gapAlignment.endDot) return;
+  
+  ctx.save();
+  
+  if (gapType === 'representative') {
+    // For representative gaps (horizontal gaps on x-axis)
+    const startX = x(gapAlignment.startDot.x);
+    const endX = x(gapAlignment.endDot.x);
+    
+    // Calculate rectangle dimensions
+    const rectHeight = Math.max(8, marginTop * 0.15);
+    const top = marginTop - rectHeight;
+    
+    // First draw axis indicator
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.4)';
+    ctx.fillRect(startX, top, endX - startX, rectHeight);
+    
+    // Add efficient borders (filled rectangles instead of strokes)
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.6)';
+    ctx.fillRect(startX, top, endX - startX, 1); // Top border
+    ctx.fillRect(startX, marginTop - 1, endX - startX, 1); // Bottom border
+    ctx.fillRect(startX, top, 1, rectHeight); // Left border
+    ctx.fillRect(endX - 1, top, 1, rectHeight); // Right border
+    
+    // Draw light highlight in grid area
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.1)';
+    ctx.fillRect(startX, marginTop, endX - startX, y.range()[1] - marginTop);
+  } else {
+    // For member gaps (vertical gaps on y-axis)
+    const startY = y(gapAlignment.startDot.y);
+    const endY = y(gapAlignment.endDot.y);
+    
+    // Calculate rectangle dimensions
+    const rectWidth = Math.max(8, marginLeft * 0.15);
+    const left = marginLeft - rectWidth;
+    
+    // First draw axis indicator
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.4)';
+    ctx.fillRect(left, startY, rectWidth, endY - startY);
+    
+    // Add efficient borders (filled rectangles instead of strokes)
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.6)';
+    ctx.fillRect(left, startY, rectWidth, 1); // Top border
+    ctx.fillRect(left, endY - 1, rectWidth, 1); // Bottom border
+    ctx.fillRect(left, startY, 1, endY - startY); // Left border
+    ctx.fillRect(marginLeft - 1, startY, 1, endY - startY); // Right border
+    
+    // Draw light highlight in grid area
+    ctx.fillStyle = 'rgba(255, 107, 71, 0.1)';
     ctx.fillRect(marginLeft, startY, x.range()[1] - marginLeft, endY - startY);
   }
   

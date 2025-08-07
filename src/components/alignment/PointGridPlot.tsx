@@ -11,7 +11,7 @@ import {
   drawAlignmentDots, 
   drawHoverHighlight,
   drawSafetyWindowHighlight,
-  drawGapHighlight,
+  drawGapHighlightOptimized,
   findSafetyWindowsForCell,
   drawMinimap,
   handleMinimapInteraction as handleMinimapInteractionUtil,
@@ -269,9 +269,24 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       }
     }
     
-    // Draw gap highlighting if enabled
+    // Draw gap highlighting using the same batched approach as alignment edges
+    // This integrates gap highlighting into the pooled rendering system for better performance
     if (highlightedGap) {
-      drawGapHighlight(ctx, x, y, marginTop, marginLeft, highlightedGap);
+      // Create a temporary "alignment" object that represents the gap for efficient rendering
+      const gapAsAlignment: Alignment = {
+        startDot: highlightedGap.type === 'representative' 
+          ? { x: highlightedGap.start, y: 0 }
+          : { x: 0, y: highlightedGap.start },
+        endDot: highlightedGap.type === 'representative'
+          ? { x: highlightedGap.end, y: member.length }
+          : { x: representative.length, y: highlightedGap.end },
+        edges: [],
+        color: 'rgba(255, 107, 71, 0.4)', // Orange-red for gaps
+        _isGapHighlight: true // Mark as gap highlight for special handling
+      } as Alignment & { _isGapHighlight: boolean };
+
+      // Render gap highlight as a filled rectangle using the same efficient system
+      drawGapHighlightOptimized(ctx, x, y, marginTop, marginLeft, gapAsAlignment, highlightedGap.type);
     }
     
     // Draw axes if enabled
