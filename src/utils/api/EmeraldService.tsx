@@ -3,6 +3,14 @@
 // Import the type declarations (assumes emerald.d.ts is in the same directory as emerald.js)
 import EmeraldModule from '../../emerald-wasm/emerald';
 
+export const CostMatrixType = {
+  BLOSUM62: 0,
+  PAM250: 1,
+  IDENTITY: 2
+} as const;
+
+export type CostMatrixTypeValue = typeof CostMatrixType[keyof typeof CostMatrixType];
+
 export interface AlignmentResult {
   ref_desc: string;
   mem_desc: string;
@@ -64,28 +72,37 @@ export class EmeraldService {
     alpha = 0.75,
     delta = 8,
     gapCost = -1,
-    startGap = -11
+    startGap = -11,
+    matrixType?: CostMatrixTypeValue,
+    customMatrix?: number[][]
   ): Promise<AlignmentResult> {
     await this.initialize();
     
     const module = await this.modulePromise!;
     
     try {
-      console.log(`Generating alignment with alpha=${alpha}, delta=${delta}, gapCost=${gapCost}, startGap=${startGap}`);
+      const matrixName = matrixType === 0 ? 'BLOSUM62' : 
+                         matrixType === 1 ? 'PAM250' :
+                         matrixType === 2 ? 'IDENTITY' : 'default';
+      console.log(`Generating alignment with alpha=${alpha}, delta=${delta}, gapCost=${gapCost}, startGap=${startGap}, matrix=${matrixName}`);
       
       let jsonResult: string;
       
-      // For very large sequences, use the file-based approach
-      if  (false) {//(refSeq.length > 5000 || memSeq.length > 5000) {
-        // Use the file-based approach for large sequences
-        const filePath = module.generateAlignmentToFile(
-          refSeq, refDesc, memSeq, memDesc, alpha, delta, gapCost, startGap
+      // Use the appropriate function based on parameters
+      if (customMatrix) {
+        // Use custom matrix if provided
+        jsonResult = module.generateAlignmentJsonWithCustomMatrix(
+          refSeq, refDesc, memSeq, memDesc, customMatrix, alpha, delta, gapCost, startGap
         );
-        
-        // Read the result from the virtual filesystem
-        jsonResult = module.FS.readFile(filePath, { encoding: 'utf8' });
+      } else if (matrixType !== undefined) {
+        // Use specified matrix type
+        console.log(`Using matrix type: ${matrixType}`);
+        // The enum in WASM is CostMatrixType, but we need to pass the numeric value
+        jsonResult = module.generateAlignmentJsonWithMatrix(
+          refSeq, refDesc, memSeq, memDesc, matrixType, alpha, delta, gapCost, startGap
+        );
       } else {
-        // For smaller sequences, use the direct approach
+        // For default behavior (BLOSUM62)
         jsonResult = module.generateAlignmentJson(
           refSeq, refDesc, memSeq, memDesc, alpha, delta, gapCost, startGap
         );

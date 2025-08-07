@@ -4195,6 +4195,116 @@ async function createWasm() {
     };
   var __embind_register_emval = (rawType) => registerType(rawType, EmValType);
 
+  var ensureOverloadTable = (proto, methodName, humanName) => {
+      if (undefined === proto[methodName].overloadTable) {
+        var prevFunc = proto[methodName];
+        // Inject an overload resolver function that routes to the appropriate overload based on the number of arguments.
+        proto[methodName] = function(...args) {
+          // TODO This check can be removed in -O3 level "unsafe" optimizations.
+          if (!proto[methodName].overloadTable.hasOwnProperty(args.length)) {
+            throwBindingError(`Function '${humanName}' called with an invalid number of arguments (${args.length}) - expects one of (${proto[methodName].overloadTable})!`);
+          }
+          return proto[methodName].overloadTable[args.length].apply(this, args);
+        };
+        // Move the previous function into the overload table.
+        proto[methodName].overloadTable = [];
+        proto[methodName].overloadTable[prevFunc.argCount] = prevFunc;
+      }
+    };
+  
+  /** @param {number=} numArguments */
+  var exposePublicSymbol = (name, value, numArguments) => {
+      if (Module.hasOwnProperty(name)) {
+        if (undefined === numArguments || (undefined !== Module[name].overloadTable && undefined !== Module[name].overloadTable[numArguments])) {
+          throwBindingError(`Cannot register public name '${name}' twice`);
+        }
+  
+        // We are exposing a function with the same name as an existing function. Create an overload table and a function selector
+        // that routes between the two.
+        ensureOverloadTable(Module, name, name);
+        if (Module[name].overloadTable.hasOwnProperty(numArguments)) {
+          throwBindingError(`Cannot register multiple overloads of a function with the same number of arguments (${numArguments})!`);
+        }
+        // Add the new function into the overload table.
+        Module[name].overloadTable[numArguments] = value;
+      } else {
+        Module[name] = value;
+        Module[name].argCount = numArguments;
+      }
+    };
+  
+  var enumReadValueFromPointer = (name, width, signed) => {
+      switch (width) {
+          case 1: return signed ?
+              function(pointer) { return this['fromWireType'](HEAP8[pointer]) } :
+              function(pointer) { return this['fromWireType'](HEAPU8[pointer]) };
+          case 2: return signed ?
+              function(pointer) { return this['fromWireType'](HEAP16[((pointer)>>1)]) } :
+              function(pointer) { return this['fromWireType'](HEAPU16[((pointer)>>1)]) };
+          case 4: return signed ?
+              function(pointer) { return this['fromWireType'](HEAP32[((pointer)>>2)]) } :
+              function(pointer) { return this['fromWireType'](HEAPU32[((pointer)>>2)]) };
+          default:
+              throw new TypeError(`invalid integer width (${width}): ${name}`);
+      }
+    };
+  
+  
+  /** @suppress {globalThis} */
+  var __embind_register_enum = (rawType, name, size, isSigned) => {
+      name = readLatin1String(name);
+  
+      function ctor() {}
+      ctor.values = {};
+  
+      registerType(rawType, {
+        name,
+        constructor: ctor,
+        'fromWireType': function(c) {
+          return this.constructor.values[c];
+        },
+        'toWireType': (destructors, c) => c.value,
+        argPackAdvance: GenericWireTypeSize,
+        'readValueFromPointer': enumReadValueFromPointer(name, size, isSigned),
+        destructorFunction: null,
+      });
+      exposePublicSymbol(name, ctor);
+    };
+
+  var createNamedFunction = (name, func) => Object.defineProperty(func, 'name', { value: name });
+  
+  
+  
+  
+  
+  var getTypeName = (type) => {
+      var ptr = ___getTypeName(type);
+      var rv = readLatin1String(ptr);
+      _free(ptr);
+      return rv;
+    };
+  
+  var requireRegisteredType = (rawType, humanName) => {
+      var impl = registeredTypes[rawType];
+      if (undefined === impl) {
+        throwBindingError(`${humanName} has unknown type ${getTypeName(rawType)}`);
+      }
+      return impl;
+    };
+  var __embind_register_enum_value = (rawEnumType, name, enumValue) => {
+      var enumType = requireRegisteredType(rawEnumType, 'enum');
+      name = readLatin1String(name);
+  
+      var Enum = enumType.constructor;
+  
+      var Value = Object.create(enumType.constructor.prototype, {
+        value: {value: enumValue},
+        constructor: {value: createNamedFunction(`${enumType.name}_${name}`, function() {})},
+      });
+      Enum.values[enumValue] = Value;
+      Enum[name] = Value;
+    };
+
   var floatReadValueFromPointer = (name, width) => {
       switch (width) {
           case 4: return function(pointer) {
@@ -4229,7 +4339,6 @@ async function createWasm() {
       });
     };
 
-  var createNamedFunction = (name, func) => Object.defineProperty(func, 'name', { value: name });
   
   var runDestructors = (destructors) => {
       while (destructors.length) {
@@ -4387,43 +4496,6 @@ async function createWasm() {
       return createNamedFunction(humanName, invokerFn);
     }
   
-  var ensureOverloadTable = (proto, methodName, humanName) => {
-      if (undefined === proto[methodName].overloadTable) {
-        var prevFunc = proto[methodName];
-        // Inject an overload resolver function that routes to the appropriate overload based on the number of arguments.
-        proto[methodName] = function(...args) {
-          // TODO This check can be removed in -O3 level "unsafe" optimizations.
-          if (!proto[methodName].overloadTable.hasOwnProperty(args.length)) {
-            throwBindingError(`Function '${humanName}' called with an invalid number of arguments (${args.length}) - expects one of (${proto[methodName].overloadTable})!`);
-          }
-          return proto[methodName].overloadTable[args.length].apply(this, args);
-        };
-        // Move the previous function into the overload table.
-        proto[methodName].overloadTable = [];
-        proto[methodName].overloadTable[prevFunc.argCount] = prevFunc;
-      }
-    };
-  
-  /** @param {number=} numArguments */
-  var exposePublicSymbol = (name, value, numArguments) => {
-      if (Module.hasOwnProperty(name)) {
-        if (undefined === numArguments || (undefined !== Module[name].overloadTable && undefined !== Module[name].overloadTable[numArguments])) {
-          throwBindingError(`Cannot register public name '${name}' twice`);
-        }
-  
-        // We are exposing a function with the same name as an existing function. Create an overload table and a function selector
-        // that routes between the two.
-        ensureOverloadTable(Module, name, name);
-        if (Module[name].overloadTable.hasOwnProperty(numArguments)) {
-          throwBindingError(`Cannot register multiple overloads of a function with the same number of arguments (${numArguments})!`);
-        }
-        // Add the new function into the overload table.
-        Module[name].overloadTable[numArguments] = value;
-      } else {
-        Module[name] = value;
-        Module[name].argCount = numArguments;
-      }
-    };
   
   var heap32VectorToArray = (count, firstElement) => {
       var array = [];
@@ -4489,14 +4561,6 @@ async function createWasm() {
   
   class UnboundTypeError extends Error {}
   
-  
-  
-  var getTypeName = (type) => {
-      var ptr = ___getTypeName(type);
-      var rv = readLatin1String(ptr);
-      _free(ptr);
-      return rv;
-    };
   var throwUnboundTypeError = (message, types) => {
       var unboundTypes = [];
       var seen = {};
@@ -6085,7 +6149,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'demangle',
   'stackTrace',
   'getFunctionArgsName',
-  'requireRegisteredType',
   'createJsInvokerSignature',
   'PureVirtualError',
   'getBasestPointer',
@@ -6094,7 +6157,6 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
   'getInheritedInstance',
   'getInheritedInstanceCount',
   'getLiveInheritedInstances',
-  'enumReadValueFromPointer',
   'genericPointerToWireType',
   'constNoSmartPtrRawPointerToWireType',
   'nonConstNoSmartPtrRawPointerToWireType',
@@ -6390,6 +6452,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'getTypeName',
   'getFunctionName',
   'heap32VectorToArray',
+  'requireRegisteredType',
   'usesDestructorStack',
   'checkArgCount',
   'getRequiredArgCount',
@@ -6408,6 +6471,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'registeredPointers',
   'registerType',
   'integerReadValueFromPointer',
+  'enumReadValueFromPointer',
   'floatReadValueFromPointer',
   'assertIntegerRange',
   'readPointer',
@@ -6466,6 +6530,10 @@ var wasmImports = {
   /** @export */
   _embind_register_emval: __embind_register_emval,
   /** @export */
+  _embind_register_enum: __embind_register_enum,
+  /** @export */
+  _embind_register_enum_value: __embind_register_enum_value,
+  /** @export */
   _embind_register_float: __embind_register_float,
   /** @export */
   _embind_register_function: __embind_register_function,
@@ -6505,8 +6573,9 @@ var wasmExports = await createWasm();
 var ___wasm_call_ctors = createExportWrapper('__wasm_call_ctors', 0);
 var ___getTypeName = createExportWrapper('__getTypeName', 1);
 var _main = Module['_main'] = createExportWrapper('__main_argc_argv', 2);
-var _generate_alignment_json_c = Module['_generate_alignment_json_c'] = createExportWrapper('generate_alignment_json_c', 8);
 var _malloc = createExportWrapper('malloc', 1);
+var _generate_alignment_json_c = Module['_generate_alignment_json_c'] = createExportWrapper('generate_alignment_json_c', 8);
+var _generate_alignment_json_with_matrix_c = Module['_generate_alignment_json_with_matrix_c'] = createExportWrapper('generate_alignment_json_with_matrix_c', 9);
 var _free = createExportWrapper('free', 1);
 var _fflush = createExportWrapper('fflush', 1);
 var _emscripten_stack_get_end = wasmExports['emscripten_stack_get_end']

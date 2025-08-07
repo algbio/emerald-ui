@@ -177,6 +177,40 @@
   text-align: center;
 }
 
+/* Styles for the new form elements */
+.setting-select, .setting-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background-color: white;
+  margin-top: 6px;
+}
+
+.setting-select {
+  appearance: menulist;
+  cursor: pointer;
+}
+
+.setting-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: rgba(0, 123, 255, 0.1);
+  border-left: 3px solid #007bff;
+  border-radius: 0 4px 4px 0;
+}
+
+.setting-note p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.setting-note strong {
+  font-weight: 600;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .panel-header {

@@ -1,5 +1,15 @@
 import { useRef } from 'react'
 
+// Define cost matrix types
+export const CostMatrixType = {
+  BLOSUM62: 0,
+  PAM250: 1,
+  IDENTITY: 2
+} as const;
+
+// Define a type for the matrix type values
+export type CostMatrixTypeValue = typeof CostMatrixType[keyof typeof CostMatrixType];
+
 // Define a type for the Emerald module
 interface EmeraldModuleType {
   generateAlignmentJson: (
@@ -12,6 +22,37 @@ interface EmeraldModuleType {
     gapCost?: number,
     startGap?: number
   ) => string;
+  
+  generateAlignmentJsonWithMatrix: (
+    refSeq: string,
+    refDesc: string,
+    memSeq: string, 
+    memDesc: string,
+    matrixType: CostMatrixTypeValue,
+    alpha?: number,
+    delta?: number,
+    gapCost?: number,
+    startGap?: number
+  ) => string;
+  
+  generateAlignmentJsonWithCustomMatrix: (
+    refSeq: string,
+    refDesc: string,
+    memSeq: string, 
+    memDesc: string,
+    customMatrix: number[][],
+    alpha?: number,
+    delta?: number,
+    gapCost?: number,
+    startGap?: number
+  ) => string;
+  
+  // Cost matrix types
+  CostMatrixType: {
+    BLOSUM62: number,
+    PAM250: number,
+    IDENTITY: number
+  };
   
   // Add other exported functions here as needed
   FS: any; // File System API

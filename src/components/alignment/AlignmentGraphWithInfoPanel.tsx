@@ -6,7 +6,7 @@ import SequenceAlignmentViewer from './SequenceAlignmentViewer';
 import type { Alignment } from '../../types/PointGrid';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
-import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer'
+import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer';
 
 
 interface AlignmentGraphWithInfoPanelProps {
@@ -56,7 +56,11 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
     enableGapHighlighting: true,
-    showAxisDescriptors: true
+    showAxisDescriptors: true,
+    // Alignment algorithm settings
+    costMatrixType: 0, // Default to BLOSUM62
+    gapCost: -1,      // Default gap cost
+    startGap: -11     // Default start gap
   });
 
   // Extract safety windows from alignments

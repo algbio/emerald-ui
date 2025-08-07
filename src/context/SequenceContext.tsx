@@ -33,12 +33,15 @@ export interface SequenceData {
   accessionB: string;
 }
 
+import type { CostMatrixTypeValue } from '../utils/api/EmeraldService';
+
 // Parameters for Emerald algorithm
 export interface EmeraldParams {
   alpha: number;
   delta: number;
   gapCost?: number;
   startGap?: number;
+  costMatrixType?: CostMatrixTypeValue; // 0: BLOSUM62, 1: PAM250, 2: IDENTITY
 }
 
 // Complete state shape
@@ -92,7 +95,8 @@ const initialState: SequenceState = {
     alpha: 0.75,
     delta: 8,
     gapCost: -1,
-    startGap: -11
+    startGap: -11,
+    costMatrixType: 0  // Default to BLOSUM62
   },
   alignments: [],
   alignmentStatus: 'idle',
@@ -411,7 +415,7 @@ interface SequenceContextType {
   getValidationWarnings: () => { sequenceA: string[]; sequenceB: string[] };
 }
 
-const SequenceContext = createContext<SequenceContextType | undefined>(undefined);
+export const SequenceContext = createContext<SequenceContextType | undefined>(undefined);
 
 // Provider component
 interface SequenceProviderProps {
@@ -713,7 +717,8 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         params.alpha,
         params.delta,
         params.gapCost,
-        params.startGap
+        params.startGap,
+        params.costMatrixType
       );
       
       // Process the results using the function from FileUploader

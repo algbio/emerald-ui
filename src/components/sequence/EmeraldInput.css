@@ -1,5 +1,4 @@
 .emerald-input-card {
-  background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   padding: 24px;
@@ -380,5 +379,51 @@ h3 {
   .emerald-grid {
     margin: 0;
     padding: 0;
+  }
+}
+
+/* Parameter styling */
+.param-container {
+  margin-bottom: 16px;
+}
+
+.param-container label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.param-description {
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.emerald-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  appearance: menulist;
+  cursor: pointer;
+}
+
+.emerald-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+}
+
+.emerald-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .emerald-row {
+    flex-direction: column;
   }
 }

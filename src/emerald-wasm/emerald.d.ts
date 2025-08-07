@@ -1,4 +1,13 @@
 declare namespace EmeraldModuleType {
+  /**
+   * Available predefined cost matrices
+   */
+  enum CostMatrixType {
+    BLOSUM62 = 0,
+    PAM250 = 1,
+    IDENTITY = 2
+  }
+
   interface EmeraldModuleInstance {
     /**
      * Generate alignment JSON from two sequences
@@ -22,6 +31,45 @@ declare namespace EmeraldModuleType {
       gapCost?: number,
       startGap?: number
     ): string;
+    
+    /**
+     * Generate alignment using a predefined cost matrix
+     */
+    generateAlignmentJsonWithMatrix(
+      refSeq: string, 
+      refDesc: string,
+      memSeq: string, 
+      memDesc: string,
+      matrixType: CostMatrixType,
+      alpha?: number,
+      delta?: number,
+      gapCost?: number,
+      startGap?: number
+    ): string;
+    
+    /**
+     * Generate alignment using a custom cost matrix
+     */
+    generateAlignmentJsonWithCustomMatrix(
+      refSeq: string, 
+      refDesc: string,
+      memSeq: string, 
+      memDesc: string,
+      customMatrix: number[][],  // 21x21 matrix
+      alpha?: number,
+      delta?: number,
+      gapCost?: number,
+      startGap?: number
+    ): string;
+    
+    /**
+     * Cost matrix types
+     */
+    CostMatrixType: {
+      BLOSUM62: number,
+      PAM250: number, 
+      IDENTITY: number
+    };
     
     /**
      * Generate alignment to a virtual file and return the filename

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Alignment } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
+import AlignmentParamsPanel from './AlignmentParamsPanel';
 import './SafetyWindowsInfoPanel.css';
 import './SequenceAlignmentViewer.css'; // Import for amino acid coloring classes
 
@@ -51,7 +52,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   onWindowSelect
 }) => {
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
-  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'visualization' | 'unsafe-windows'>('general-info');
+  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'visualization' | 'unsafe-windows' | 'alignment-params'>('general-info');
   
   // Default visualization settings if not provided
   const defaultSettings: VisualizationSettings = {
@@ -65,7 +66,11 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     showAlignmentDots: true,
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
-    enableGapHighlighting: true
+    enableGapHighlighting: true,
+    // Alignment algorithm settings
+    costMatrixType: 0, // Default to BLOSUM62
+    gapCost: -1,       // Default gap cost
+    startGap: -11      // Default start gap
   };
 
   const currentSettings = visualizationSettings || defaultSettings;
