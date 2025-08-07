@@ -92,6 +92,51 @@
   }
 }
 
+/* Advanced options section */
+.advanced-options-details {
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 0;
+  background-color: var(--bg-secondary);
+  transition: all var(--transition-normal);
+}
+
+.advanced-options-summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 1rem;
+  outline: none;
+  transition: all var(--transition-normal);
+  list-style: none;
+}
+
+/* Remove the default details marker */
+.advanced-options-summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-options-summary::marker {
+  display: none;
+}
+
+.advanced-options-summary:hover {
+  color: var(--color-primary);
+}
+
+.advanced-options-details[open] .advanced-options-summary {
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--color-primary);
+}
+
+.advanced-options-details[open] > :not(summary) {
+  padding: 0 1rem 1rem 1rem;
+}
+
 /* Tablet-specific styling */
 @media (min-width: 1025px) and (max-width: 1400px) {
   .emerald-grid {

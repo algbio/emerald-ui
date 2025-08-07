@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSequence } from '../../context/SequenceContext';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import StructureFileUploader from '../structure/StructureFileUploader';
+import type { CostMatrixTypeValue } from '../../utils/api/EmeraldService';
 // import type { StructureData } from '../../utils/structure/pdbParser';
 import './EmeraldInput.css';
 
@@ -346,80 +347,88 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           </div>
         </div>
         
-        {/* Cost Matrix Selector */}
+        {/* Advanced Options Section */}
         <div className="emerald-full-width">
-          <div className="param-container">
-            <label htmlFor="matrix-select">Cost Matrix Type:</label>
-            <select
-              id="matrix-select"
-              className="emerald-select"
-              value={params.costMatrixType ?? 0}
-              onChange={(e) => dispatch({
-                type: 'UPDATE_PARAMS',
-                payload: { costMatrixType: parseInt(e.target.value, 10) }
-              })}
-            >
-              <option value={0}>BLOSUM62 (Default)</option>
-              <option value={1}>PAM250</option>
-              <option value={2}>IDENTITY</option>
-            </select>
-            <div className="param-description">
-              Substitution matrix used for sequence alignment scoring
-            </div>
-          </div>
-        </div>
-        
-        {/* Gap Cost Parameters */}
-        <div className="emerald-row">
-          <div className="emerald-column">
+          <details className="advanced-options-details">
+            <summary className="advanced-options-summary">Advanced Options</summary>
+            
+            {/* Cost Matrix Selector */}
             <div className="param-container">
-              <label htmlFor="gap-cost">Gap Cost:</label>
-              <input
-                id="gap-cost"
-                type="number"
-                className="emerald-input"
-                value={params.gapCost ?? -1}
-                step="1"
+              <label htmlFor="matrix-select">Cost Matrix Type:</label>
+              <select
+                id="matrix-select"
+                className="emerald-select"
+                value={params.costMatrixType ?? 0}
                 onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  if (!isNaN(value)) {
-                    dispatch({
-                      type: 'UPDATE_PARAMS',
-                      payload: { gapCost: value }
-                    });
-                  }
+                  const value = parseInt(e.target.value, 10);
+                  dispatch({
+                    type: 'UPDATE_PARAMS',
+                    payload: { ...params, costMatrixType: value as CostMatrixTypeValue }
+                  });
                 }}
-              />
+              >
+                <option value={0}>BLOSUM62 (Default)</option>
+                <option value={1}>PAM250</option>
+                <option value={2}>IDENTITY</option>
+              </select>
               <div className="param-description">
-                Cost for extending a gap (default: -1)
+                Substitution matrix used for sequence alignment scoring
               </div>
             </div>
-          </div>
-          
-          <div className="emerald-column">
-            <div className="param-container">
-              <label htmlFor="start-gap">Start Gap Cost:</label>
-              <input
-                id="start-gap"
-                type="number"
-                className="emerald-input"
-                value={params.startGap ?? -11}
-                step="1"
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  if (!isNaN(value)) {
-                    dispatch({
-                      type: 'UPDATE_PARAMS',
-                      payload: { startGap: value }
-                    });
-                  }
-                }}
-              />
-              <div className="param-description">
-                Cost for opening a new gap (default: -11)
+            
+            {/* Gap Cost Parameters */}
+            <div className="emerald-row">
+              <div className="emerald-column">
+                <div className="param-container">
+                  <label htmlFor="gap-cost">Gap Cost:</label>
+                  <input
+                    id="gap-cost"
+                    type="number"
+                    className="emerald-input"
+                    value={params.gapCost ?? -1}
+                    step="1"
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        dispatch({
+                          type: 'UPDATE_PARAMS',
+                          payload: { gapCost: value }
+                        });
+                      }
+                    }}
+                  />
+                  <div className="param-description">
+                    Cost for extending a gap (default: -1)
+                  </div>
+                </div>
+              </div>
+              
+              <div className="emerald-column">
+                <div className="param-container">
+                  <label htmlFor="start-gap">Start Gap Cost:</label>
+                  <input
+                    id="start-gap"
+                    type="number"
+                    className="emerald-input"
+                    value={params.startGap ?? -11}
+                    step="1"
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value)) {
+                        dispatch({
+                          type: 'UPDATE_PARAMS',
+                          payload: { startGap: value }
+                        });
+                      }
+                    }}
+                  />
+                  <div className="param-description">
+                    Cost for opening a new gap (default: -11)
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </details>
         </div>
         
         {/* Submit Button */}
