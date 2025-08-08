@@ -56,11 +56,7 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
     enableGapHighlighting: true,
-    showAxisDescriptors: true,
-    // Alignment algorithm settings
-    costMatrixType: 0, // Default to BLOSUM62
-    gapCost: -1,      // Default gap cost
-    startGap: -11     // Default start gap
+    showAxisDescriptors: true
   });
 
   // Extract safety windows from alignments

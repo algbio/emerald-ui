@@ -1,8 +1,6 @@
 import React from 'react';
 import './VisualizationSettingsPanel.css';
 
-import type { CostMatrixTypeValue } from '../../utils/api/EmeraldService';
-
 export interface VisualizationSettings {
   showAxes: boolean;
   showAxisLabels: boolean;
@@ -15,10 +13,6 @@ export interface VisualizationSettings {
   enableSafetyWindowHighlighting: boolean;
   enableGapHighlighting: boolean;
   showAxisDescriptors: boolean;
-  // Alignment algorithm settings
-  costMatrixType: CostMatrixTypeValue;  // 0: BLOSUM62, 1: PAM250, 2: IDENTITY
-  gapCost: number;
-  startGap: number;
 }
 
 interface VisualizationSettingsPanelProps {
@@ -36,16 +30,6 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
       [key]: !settings[key]
     });
   };
-  
-  const handleNumberChange = (key: keyof VisualizationSettings, value: string) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
-      onSettingsChange({
-        ...settings,
-        [key]: numValue
-      });
-    }
-  };
 
   const resetToDefaults = () => {
     onSettingsChange({
@@ -59,11 +43,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
       showOptimalPath: true,
       enableSafetyWindowHighlighting: true,
       enableGapHighlighting: true,
-      showAxisDescriptors: true,
-      // Default alignment settings
-      costMatrixType: 0, // BLOSUM62
-      gapCost: -1,
-      startGap: -11
+      showAxisDescriptors: true
     });
   };
 
@@ -240,63 +220,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
         </div>
       </div>
 
-      <div className="settings-section">
-        <h4>Alignment Algorithm</h4>
-        <div className="setting-group">
-          <div className="setting-item">
-            <label className="setting-label">Cost Matrix Type</label>
-            <select
-              value={settings.costMatrixType}
-              onChange={(e) => onSettingsChange({
-                ...settings,
-                costMatrixType: parseInt(e.target.value, 10) as CostMatrixTypeValue
-              })}
-              className="setting-select"
-            >
-              <option value={0}>BLOSUM62 (Default)</option>
-              <option value={1}>PAM250</option>
-              <option value={2}>IDENTITY</option>
-            </select>
-            <p className="setting-description">
-              Substitution matrix used for sequence alignment scoring
-            </p>
-          </div>
-          
-          <div className="setting-item">
-            <label className="setting-label">Gap Cost</label>
-            <input
-              type="number"
-              value={settings.gapCost}
-              onChange={(e) => handleNumberChange('gapCost', e.target.value)}
-              className="setting-input"
-              step="0.1"
-            />
-            <p className="setting-description">
-              Cost for inserting a gap in the alignment (default: -1)
-            </p>
-          </div>
-          
-          <div className="setting-item">
-            <label className="setting-label">Start Gap Cost</label>
-            <input
-              type="number"
-              value={settings.startGap}
-              onChange={(e) => handleNumberChange('startGap', e.target.value)}
-              className="setting-input"
-              step="0.1"
-            />
-            <p className="setting-description">
-              Cost for opening a new gap (default: -11)
-            </p>
-          </div>
-          
-          <div className="setting-note">
-            <p>
-              <strong>Note:</strong> Changes to alignment parameters will apply to new alignments only.
-            </p>
-          </div>
-        </div>
-      </div>
+
 
       <div className="settings-actions">
         <button 

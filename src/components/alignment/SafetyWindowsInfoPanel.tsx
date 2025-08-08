@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Alignment } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
-import AlignmentParamsPanel from './AlignmentParamsPanel';
+// import AlignmentParamsPanel from './AlignmentParamsPanel';
 import './SafetyWindowsInfoPanel.css';
 import './SequenceAlignmentViewer.css'; // Import for amino acid coloring classes
 
@@ -66,11 +66,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     showAlignmentDots: true,
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
-    enableGapHighlighting: true,
-    // Alignment algorithm settings
-    costMatrixType: 0, // Default to BLOSUM62
-    gapCost: -1,       // Default gap cost
-    startGap: -11      // Default start gap
+    enableGapHighlighting: true
   };
 
   const currentSettings = visualizationSettings || defaultSettings;
