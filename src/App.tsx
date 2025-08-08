@@ -23,6 +23,7 @@ function AppContent() {
   const [memberDescriptor, setMemberDescriptor] = useState("");
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
   const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
+  const [isInterpretationExpanded, setIsInterpretationExpanded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointGridRef = useRef<PointGridPlotRef | null>(null);
 
@@ -212,22 +213,30 @@ function AppContent() {
             <p className="results-description">
               The visualization below shows the classical representation of all optimal and suboptimal alignments. The green intervals indicate alignment-safe windows, and the blue line shows one optimal alignment.
             </p>
-            <p className="interpretation-guide">
-              <strong>How to interpret the plot:</strong> 
-              <ul>
-                <li>Diagonal black lines represent regions of similarity, while vertical or horizontal black lines indicate insertions or deletions. This is a classical representation of sequence alignments via dynamic programming. Complex regions with black lines diverging diagonally, horizontally or vertically suggest areas of high variability.</li>
-                <li>Green intervals indicate alignment-safe windows. These are defined as those partial alignments that are common to a proportion of at least α alpha of all alignments in the plot 
-                  (i.e. of all optimal and δ delta-suboptimal alignments). 
-                  If you increase α alpha, then safety windows are common to more alignments. For example:
-                    <ul>
-                      <li>α=0.75 means the safety windows are common to at least 75% of all such alignments.</li>
-                      <li>α=1 means the safety windows are common to all such alignments.</li>
-                    </ul>
-                  If you increase α alpha too much, then the safety windows may become too short and not useful for your analysis. If you decrease it too much, then the safety windows may become too lenient and include uninformative regions. The default value of α is 0.75, which was shown to be effective in several scenarios.
-                </li>
-                <li>The blue line represents one of the optimal alignments between the two sequences. This is shown for reference only, as there are many optimal alignments.</li>
-              </ul>
-            </p>
+            <div className="interpretation-section">
+              <div className="interpretation-header" onClick={() => setIsInterpretationExpanded(!isInterpretationExpanded)}>
+                <strong>How to interpret the plot</strong>
+                <span className={`expand-icon ${isInterpretationExpanded ? 'expanded' : ''}`}>▼</span>
+              </div>
+              
+              {isInterpretationExpanded && (
+                <div className="interpretation-content">
+                  <ul>
+                    <li>Diagonal black lines represent regions of similarity, while vertical or horizontal black lines indicate insertions or deletions. This is a classical representation of sequence alignments via dynamic programming. Complex regions with black lines diverging diagonally, horizontally or vertically suggest areas of high variability.</li>
+                    <li>Green intervals indicate alignment-safe windows. These are defined as those partial alignments that are common to a proportion of at least α alpha of all alignments in the plot 
+                      (i.e. of all optimal and δ delta-suboptimal alignments). 
+                      If you increase α alpha, then safety windows are common to more alignments. For example:
+                        <ul>
+                          <li>α=0.75 means the safety windows are common to at least 75% of all such alignments.</li>
+                          <li>α=1 means the safety windows are common to all such alignments.</li>
+                        </ul>
+                      If you increase α alpha too much, then the safety windows may become too short and not useful for your analysis. If you decrease it too much, then the safety windows may become too lenient and include uninformative regions. The default value of α is 0.75, which was shown to be effective in several scenarios.
+                    </li>
+                    <li>The blue line represents one of the optimal alignments between the two sequences. This is shown for reference only, as there are many optimal alignments.</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="sequence-info">
