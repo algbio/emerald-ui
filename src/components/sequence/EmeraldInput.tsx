@@ -367,9 +367,15 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
                   });
                 }}
               >
-                <option value={0}>BLOSUM62 (Default)</option>
-                <option value={1}>PAM250</option>
-                <option value={2}>IDENTITY</option>
+                <option value={0}>BLOSUM45</option>
+                <option value={1}>BLOSUM50</option>
+                <option value={2}>BLOSUM62 (Default)</option>
+                <option value={3}>BLOSUM80</option>
+                <option value={4}>BLOSUM90</option>
+                <option value={5}>PAM30</option>
+                <option value={6}>PAM70</option>
+                <option value={7}>PAM250</option>
+                <option value={8}>IDENTITY</option>
               </select>
               <div className="param-description">
                 Substitution matrix used for sequence alignment scoring

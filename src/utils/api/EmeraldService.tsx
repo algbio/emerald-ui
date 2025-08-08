@@ -4,9 +4,15 @@
 import EmeraldModule from '../../emerald-wasm/emerald';
 
 export const CostMatrixType = {
-  BLOSUM62: 0,
-  PAM250: 1,
-  IDENTITY: 2
+  BLOSUM45: 0,
+  BLOSUM50: 1,
+  BLOSUM62: 2,
+  BLOSUM80: 3,
+  BLOSUM90: 4,
+  PAM30: 5,
+  PAM70: 6,
+  PAM250: 7,
+  IDENTITY: 8
 } as const;
 
 export type CostMatrixTypeValue = typeof CostMatrixType[keyof typeof CostMatrixType];
