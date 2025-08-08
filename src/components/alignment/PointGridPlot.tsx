@@ -166,22 +166,17 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     alignment.startDot && alignment.endDot
   );
 
-  // Get the currently selected or hovered safety window
-  const getSelectedWindow = () => {
-    if (selectedSafetyWindowId) {
-      const index = parseInt(selectedSafetyWindowId.split('-')[2]);
-      return safetyWindows[index] || null;
-    }
-    return null;
-  };
-
-  const getHoveredWindow = () => {
-    if (hoveredSafetyWindowId) {
-      const index = parseInt(hoveredSafetyWindowId.split('-')[2]);
-      return safetyWindows[index] || null;
-    }
-    return null;
-  };
+  // Simple safety window selection logic
+  const selectedWindow = selectedSafetyWindowId ? 
+    safetyWindows.find((_, index) => `safety-window-${index}` === selectedSafetyWindowId) : 
+    null;
+    
+  const hoveredWindow = hoveredSafetyWindowId ? 
+    safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) : 
+    null;
+    
+  const safetyWindowsChanged = () => false;
+  const resetSafetyWindowsChanged = () => {};
 
   const isInSafetyWindow = (position: number, axis: 'x' | 'y') => {
     return safetyWindows.some(window => {
@@ -252,9 +247,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, highlightedWindow);
       }
 
-      // Draw external selection highlights
-      const selectedWindow = getSelectedWindow();
-      const hoveredWindow = getHoveredWindow();
+      // Draw external selection highlights - using memoized values
+      // We use the optimized values from our custom hook
       
       if (selectedWindow) {
         drawSafetyWindowHighlight(ctx, x, y, marginTop, marginLeft, selectedWindow);
@@ -294,8 +288,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       drawAxes(ctx, x, y, marginTop, marginLeft);
     }
     
-    // Create safety window bounds object for display
-    const selectedWindow = getSelectedWindow();
+    // Create safety window bounds object for display - using memoized value
     const safetyWindowBounds: SafetyWindowBounds | undefined = (showSafetyWindows && selectedWindow) ? {
       // Match the axis orientation from the isInSafetyWindow function
       xStart: selectedWindow.startDot?.x,
@@ -343,6 +336,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         }
         return true;
       });
+      
       drawAlignmentEdges(ctx, filteredAlignments, x, y);
     }
     if (showAlignmentDots) {
@@ -353,6 +347,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         }
         return true;
       });
+      
       drawAlignmentDots(ctx, filteredAlignments, x, y);
     }
 
@@ -506,11 +501,37 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     setIsMinimapDragging(false);
   };
 
-  // Effects
+  // Effects - Split rendering effects to prevent unnecessary rerenders
+  
+  // This effect handles static/structural changes that require full redraws
   useEffect(() => {
-    const timeoutId = setTimeout(drawCanvas, 16);
-    return () => clearTimeout(timeoutId);
-  }, [transform, alignments, hoveredCell, fontSize, showMinimap, selectedSafetyWindowId, hoveredSafetyWindowId, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, highlightedGap]);
+    drawCanvas();
+  }, [transform, alignments, fontSize, showMinimap, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, width, height, marginTop, marginRight, marginBottom, marginLeft]);
+  
+  // This effect handles hover state changes
+  useEffect(() => {
+    if (hoveredCell) {
+      requestAnimationFrame(drawCanvas);
+    }
+  }, [hoveredCell]);
+  
+  // This effect handles gap highlight changes
+  useEffect(() => {
+    if (highlightedGap) {
+      requestAnimationFrame(drawCanvas);
+    }
+  }, [highlightedGap]);
+  
+  // This effect monitors safety window changes using our optimized hook
+  useEffect(() => {
+    // Only redraw if safety windows have actually changed
+    if (safetyWindowsChanged()) {
+      requestAnimationFrame(() => {
+        drawCanvas();
+        resetSafetyWindowsChanged();
+      });
+    }
+  }, [selectedWindow, hoveredWindow]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -6,6 +6,7 @@ import { renderReact18 } from 'molstar/lib/mol-plugin-ui/react18';
 import { Asset } from 'molstar/lib/mol-util/assets';
 import { StructureElement } from 'molstar/lib/mol-model/structure';
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
+import { useSafetyWindowsHighlighting } from '../../hooks/useSafetyWindowsHighlighting';
 import './StructureViewer.css';
 
 interface StructureViewerProps {
@@ -70,6 +71,12 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   const [initAttempts, setInitAttempts] = useState<number>(0);
   const [hasAlphaFold, setHasAlphaFold] = useState<boolean>(false);
   const [availablePdbIds, setAvailablePdbIds] = useState<string[]>([]);
+  
+  // Use optimized safety window highlighting with memoization
+  const safetyWindowOptimization = useSafetyWindowsHighlighting(
+    uniprotId || null,
+    safetyWindows || []
+  );
 
   // Custom Mol* plugin configuration for better protein visualization with sequence viewer
   const getPluginSpec = (): PluginUISpec => {
@@ -302,11 +309,12 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
   // Function to apply safety window highlighting to the loaded structure
   const applySafetyWindowHighlighting = async (structure: any) => {
-    if (!pluginRef.current || !enableSafetyWindowHighlighting || safetyWindows.length === 0) {
+    // Get optimized safety windows with change detection
+    const { safetyWindows: optimizedWindows, shouldUpdate, resetChangeFlag } = safetyWindowOptimization;
+    
+    if (!pluginRef.current || !enableSafetyWindowHighlighting || !shouldUpdate) {
       return;
     }
-
-    console.log('Applying safety window highlighting:',uniprotId, safetyWindows);
 
     try {
       const plugin = pluginRef.current;
@@ -320,9 +328,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       // Collect all residues from all safety windows into a single schema
       const allResidues: { label_seq_id: number }[] = [];
       
-      for (let i = 0; i < safetyWindows.length; i++) {
-        const window = safetyWindows[i];
-        // console.log(`Processing safety window ${i + 1}:`, window);
+      for (let i = 0; i < optimizedWindows.length; i++) {
+        const window = optimizedWindows[i];
         
         // Add all residues from this window to the combined list
         for (let residueId = window.startPosition; residueId < window.endPosition; residueId++) {
@@ -359,7 +366,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         plugin.managers.camera.focusLoci(combinedLoci);
       }
       
-      // console.log(`Successfully highlighted all ${safetyWindows.length} safety windows with ${allResidues.length} total residues`);
+      // Reset change flag after successful highlighting to prevent unnecessary rerenders
+      resetChangeFlag();
       
     } catch (err) {
       console.warn('Could not apply safety window highlighting:', err);
