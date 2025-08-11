@@ -33,9 +33,15 @@ interface SafetyWindowsInfoPanelProps {
   onVisualizationSettingsChange?: (settings: VisualizationSettings) => void;
   onGapHighlight?: (gapInfo: {type: 'representative' | 'member'; start: number; end: number} | null) => void;
   onWindowSelect?: (windowId: string | null) => void;
+  // Path selection props
+  pathSelectionResult?: import('../../types/PointGrid').PathSelectionResult | null;
+  onClearPath?: () => void;
+  // Tab state management
+  activeTab?: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection';
+  onActiveTabChange?: (tab: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection') => void;
 }
 
-export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
+export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({ 
   safetyWindows,
   selectedWindowId,
   hoveredWindowId,
@@ -49,10 +55,16 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   visualizationSettings,
   onVisualizationSettingsChange,
   onGapHighlight,
-  onWindowSelect
+  onWindowSelect,
+  pathSelectionResult,
+  onClearPath,
+  activeTab: externalActiveTab,
+  onActiveTabChange
 }) => {
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
-  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'visualization' | 'unsafe-windows' | 'alignment-params'>('general-info');
+  const [internalActiveTab, setInternalActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection'>('general-info');  // Use external active tab if provided, otherwise use internal state
+  const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
+  const setActiveTab = onActiveTabChange || setInternalActiveTab;
   
   // Default visualization settings if not provided
   const defaultSettings: VisualizationSettings = {
@@ -66,7 +78,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     showAlignmentDots: true,
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
-    enableGapHighlighting: true
+    enableGapHighlighting: true,
+    enablePathSelection: true  // Enable by default for better UX
   };
 
   const currentSettings = visualizationSettings || defaultSettings;
@@ -563,6 +576,17 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           <span className="tab-icon">⚙️</span>
           Visualization
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'path-selection' ? 'active' : ''}`}
+          onClick={() => setActiveTab('path-selection')}
+          title="View path selection results and create custom alignments"
+        >
+          <span className="tab-icon">🎯</span>
+          Path Selection
+          {pathSelectionResult && (
+            <span className="tab-badge">1</span>
+          )}
+        </button>
        
       </div>
 
@@ -1015,6 +1039,99 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                 in areas of uncertain alignment. Click "Unselect" to clear gap highlighting.
               </div>
             </div>
+          </div>
+        </div>
+      ) : activeTab === 'path-selection' ? (
+        <div className="path-selection-content">
+          {!pathSelectionResult ? (
+            <div className="panel-header">
+              <h3>Path Selection</h3>
+              <div className="panel-subtitle">
+                Click on edges in the graph to select a custom alignment path
+              </div>
+            </div>
+          ) : (
+            <div className="panel-header">
+              <h3>Path Selection Result</h3>
+              <div className="panel-actions">
+                {onClearPath && (
+                  <button 
+                    className="clear-button" 
+                    onClick={() => {
+                      console.log('Clear path button clicked');
+                      onClearPath();
+                    }}
+                  >
+                    Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="path-selection-body">
+            {!pathSelectionResult ? (
+              <div className="no-selection">
+                <div className="no-selection-message">
+                  <div className="no-selection-icon">🎯</div>
+                  <h4>No Path Selected</h4>
+                  <p>Click on any edge in the alignment graph to start building a custom alignment path.</p>
+                  <div className="help-text">
+                    <strong>How to use:</strong>
+                    <ul>
+                      <li>Path selection is only active when you're on this tab</li>
+                      <li>Click on any edge in the alignment graph</li>
+                      <li>The path will automatically extend following the highest probability connections</li>
+                      <li>The generated alignment will appear below</li>
+                    </ul>
+                    <p><strong>Note:</strong> Path selection is disabled on other tabs to avoid accidental selections.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="path-result-content">
+                <div className="result-stats">
+                  <div className="stat-item">
+                    <label>Path Length:</label>
+                    <span>{pathSelectionResult.pathLength} edges</span>
+                  </div>
+                  <div className="stat-item">
+                    <label>Average Score:</label>
+                    <span>{pathSelectionResult.score.toFixed(3)}</span>
+                  </div>
+                </div>
+
+                <div className="alignment-info">
+                  <h4>Alignment Details</h4>
+                  <p>The custom path alignment is displayed in the main sequence alignment viewer below the graph. You can switch between the optimal alignment and your custom path using the tabs.</p>
+                  
+                  <div className="quick-actions">
+                    <button 
+                      className="copy-path-button"
+                      onClick={() => {
+                        const pathData = `Path Length: ${pathSelectionResult.pathLength}\nScore: ${pathSelectionResult.score.toFixed(3)}\nRepresentative: ${pathSelectionResult.alignedRepresentative}\nMember: ${pathSelectionResult.alignedMember}`;
+                        navigator.clipboard.writeText(pathData).then(() => {
+                          console.log('Path data copied to clipboard');
+                        });
+                      }}
+                    >
+                      📋 Copy Path Data
+                    </button>
+                  </div>
+                </div>
+
+                <div className="usage-info">
+                  <h4>Path Selection Info</h4>
+                  <ul>
+                    <li>The path automatically extends from the clicked edge following the highest probability connections</li>
+                    <li>Only movements to the right and/or down are allowed</li>
+                    <li>Diagonal moves (1,1) represent character alignments</li>
+                    <li>Horizontal moves represent gaps in the member sequence</li>
+                    <li>Vertical moves represent gaps in the representative sequence</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

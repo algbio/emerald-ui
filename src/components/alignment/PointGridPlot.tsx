@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle, useCallback } from 'react'
 import * as d3 from "d3";
 import { usePointGridScales } from '../../hooks/usePointGridScales';
 import { usePointGridTicks } from '../../hooks/usePointGridTicks';
@@ -7,8 +7,6 @@ import {
   drawAxes, 
   drawAxisLabels, 
   drawGridLines, 
-  drawAlignmentEdges, 
-  drawAlignmentDots, 
   drawHoverHighlight,
   drawSafetyWindowHighlight,
   drawGapHighlightOptimized,
@@ -17,12 +15,15 @@ import {
   handleMinimapInteraction as handleMinimapInteractionUtil,
   isMouseInMinimap
 } from '../../utils/canvas';
+import { renderGraph, findClosestEdge, getAllEdges } from '../../utils/canvas/graphRenderer';
+import { buildPathFromEdge, generateAlignmentFromPath, validatePath, type SelectedPath } from '../../utils/canvas/pathSelection';
 import type { SafetyWindowBounds } from '../../utils/canvas';
-import type { PointGridPlotProps, Alignment } from '../../types/PointGrid';
+import type { PointGridPlotProps, Alignment, PathSelectionResult } from '../../types/PointGrid';
 
 // Extended ref interface that includes export functionality
 export interface PointGridPlotRef {
   canvas: HTMLCanvasElement | null;
+  clearSelectedPath: () => void;
   getExportData: () => {
     alignments: Alignment[];
     representative: string;
@@ -77,6 +78,9 @@ interface PointGridProps {
   highlightedGap?: {type: 'representative' | 'member'; start: number; end: number} | null;
   // Zoom transform callback
   onTransformChange?: (transform: any) => void;
+  // NEW: Path selection props
+  enablePathSelection?: boolean;
+  onPathSelected?: (result: PathSelectionResult) => void;
 }
 
 const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
@@ -109,7 +113,10 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   highlightedGap,
   onTransformChange,
   representativeDescriptor,
-  memberDescriptor
+  memberDescriptor,
+  // NEW: Path selection props
+  enablePathSelection = false,
+  onPathSelected
 }, ref) => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -118,6 +125,30 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
   const [highlightedWindow] = useState<Alignment | null>(null);
   const [isMinimapDragging, setIsMinimapDragging] = useState(false);
+  
+  // NEW: Path selection state
+  const [selectedPath, setSelectedPath] = useState<SelectedPath | null>(null);
+  const [hoveredEdge, setHoveredEdge] = useState<import('../../types/PointGrid').Edge | null>(null);
+
+  // Clear path function for better UX
+  const clearSelectedPath = useCallback(() => {
+    setSelectedPath(null);
+  }, []);
+
+  // Keyboard event handling for path selection
+  useEffect(() => {
+    if (!enablePathSelection) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedPath) {
+        clearSelectedPath();
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [enablePathSelection, selectedPath, clearSelectedPath]);
 
   const { x, y, fontSize } = usePointGridScales({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
@@ -141,6 +172,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // Expose canvas and export data through ref
   useImperativeHandle(ref, () => ({
     canvas: canvasRef.current,
+    clearSelectedPath,
     getExportData: () => ({
       alignments,
       representative,
@@ -159,7 +191,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showOptimalPath
       }
     })
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath]);
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath]);
   
   // Extract safety windows and helper function
   const safetyWindows = alignments.filter(alignment => 
@@ -326,30 +358,27 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       drawGridLines(ctx, xTicks, yTicks, x, y);
     }
     
-    // Draw alignment elements if enabled
-    if (showAlignmentEdges) {
-      // Filter alignments based on settings
-      const filteredAlignments = alignments.filter(alignment => {
-        // If showOptimalPath is false, exclude blue (optimal path) alignments
-        if (!showOptimalPath && alignment.color === 'blue') {
-          return false;
-        }
-        return true;
-      });
-      
-      drawAlignmentEdges(ctx, filteredAlignments, x, y);
-    }
-    if (showAlignmentDots) {
-      // Apply same filtering for dots
-      const filteredAlignments = alignments.filter(alignment => {
-        if (!showOptimalPath && alignment.color === 'blue') {
-          return false;
-        }
-        return true;
-      });
-      
-      drawAlignmentDots(ctx, filteredAlignments, x, y);
-    }
+    // Draw alignment elements using new simplified renderer
+    renderGraph(
+      {
+        ctx,
+        x,
+        y,
+        width,
+        height,
+        marginTop,
+        marginLeft
+      },
+      alignments,
+      {
+        showAlignmentEdges,
+        showAlignmentDots,
+        showOptimalPath,
+        showSelectedPath: enablePathSelection && selectedPath !== null,
+        selectedPath: selectedPath || undefined,
+        hoveredEdge: hoveredEdge || undefined
+      }
+    );
 
     // Draw hover highlight (always shown when hovering for usability)
     if (hoveredCell) {
@@ -430,8 +459,25 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     if (mouseX < marginLeft || mouseX > width - marginRight || 
         mouseY < marginTop || mouseY > height - marginBottom) {
       setHoveredCell(null);
+      setHoveredEdge(null);
       onSafetyWindowHover?.(null);
       return;
+    }
+
+    // NEW: Path selection - check for edge hover
+    if (enablePathSelection) {
+      const closestEdge = findClosestEdge(mouseX, mouseY, alignments, x, y, 12);
+      setHoveredEdge(closestEdge);
+      
+      // Enhanced cursor feedback for better UX
+      if (closestEdge) {
+        canvas.style.cursor = 'crosshair'; // More specific cursor for path selection
+      } else {
+        canvas.style.cursor = 'default';
+      }
+    } else {
+      setHoveredEdge(null);
+      canvas.style.cursor = 'default';
     }
 
     const gridX = Math.floor(x.invert(mouseX));
@@ -467,6 +513,50 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       onSafetyWindowHover?.(null);
     }
   };
+
+  // NEW: Handle edge click for path selection
+  const handleEdgeClick = (clickedEdge: import('../../types/PointGrid').Edge) => {
+    if (!enablePathSelection || !onPathSelected) return;
+
+    // Build path from the clicked edge
+    const allEdges = getAllEdges(alignments);
+    const newPath = buildPathFromEdge(clickedEdge, allEdges);
+    
+    // Validate the path
+    if (validatePath(newPath, allEdges)) {
+      setSelectedPath(newPath);
+      
+      // Generate alignment from path
+      const alignmentResult = generateAlignmentFromPath(newPath, representative, member);
+      
+      // Visual feedback - brief cursor change to indicate success
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'wait';
+        setTimeout(() => {
+          canvas.style.cursor = enablePathSelection ? 'crosshair' : 'default';
+        }, 200);
+      }
+      
+      // Call the callback with the result
+      onPathSelected({
+        alignedRepresentative: alignmentResult.alignedRep,
+        alignedMember: alignmentResult.alignedMem,
+        score: alignmentResult.score,
+        pathLength: newPath.edges.length
+      });
+    } else {
+      // Visual feedback for invalid path
+      console.warn('Invalid path selected');
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = 'not-allowed';
+        setTimeout(() => {
+          canvas.style.cursor = enablePathSelection ? 'crosshair' : 'default';
+        }, 300);
+      }
+    }
+  };
   
   const handleMouseDown = (event: React.MouseEvent) => {
     // Check if click is in minimap using utility
@@ -481,7 +571,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       setIsMinimapDragging(true);
       handleMinimapInteraction(event, true);
     } else {
-      // Handle safety window clicking in the main plot area
+      // Handle clicks in the main plot area
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -492,7 +582,14 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       // Only handle clicks within the plot area
       if (mouseX >= marginLeft && mouseX <= width - marginRight && 
           mouseY >= marginTop && mouseY <= height - marginBottom) {
-        handleSafetyWindowClick(mouseX, mouseY);
+        
+        // NEW: Path selection - handle edge clicks
+        if (enablePathSelection && hoveredEdge) {
+          handleEdgeClick(hoveredEdge);
+        } else {
+          // Default behavior: safety window clicking
+          handleSafetyWindowClick(mouseX, mouseY);
+        }
       }
     }
   };

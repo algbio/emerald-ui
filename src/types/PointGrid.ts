@@ -23,6 +23,13 @@ export interface Alignment {
   textAlignment?: TextAlignment;
 }
 
+export interface PathSelectionResult {
+  alignedRepresentative: string;
+  alignedMember: string;
+  score: number;
+  pathLength: number;
+}
+
 export interface PointGridPlotProps {
   width?: number;
   height?: number;
@@ -33,4 +40,7 @@ export interface PointGridPlotProps {
   representative?: string;
   member?: string;
   alignments?: Alignment[];
+  // New path selection props
+  enablePathSelection?: boolean;
+  onPathSelected?: (result: PathSelectionResult) => void;
 }

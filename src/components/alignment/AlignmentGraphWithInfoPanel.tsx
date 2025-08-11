@@ -56,8 +56,15 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     showOptimalPath: true,
     enableSafetyWindowHighlighting: true,
     enableGapHighlighting: true,
-    showAxisDescriptors: true
+    showAxisDescriptors: true,
+    enablePathSelection: true  // Enable by default for better UX
   });
+  
+  // NEW: Path selection state
+  const [pathSelectionResult, setPathSelectionResult] = useState<import('../../types/PointGrid').PathSelectionResult | null>(null);
+  
+  // Active tab state for side panel
+  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection'>('general-info');
 
   // Extract safety windows from alignments
   const safetyWindows = alignments.filter(alignment => 
@@ -123,6 +130,22 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     setHasManuallyUnselected(false); // Reset manual unselection when navigating
   };
 
+  // NEW: Handle path selection
+  const handlePathSelected = (result: import('../../types/PointGrid').PathSelectionResult) => {
+    setPathSelectionResult(result);
+    console.log('Path selected:', result);
+  };
+
+  // Clear path selection
+  const handleClearPath = () => {
+    console.log('handleClearPath called');
+    setPathSelectionResult(null);
+    // Also clear the selected path in the PointGridPlot component
+    if (pointGridRef.current?.clearSelectedPath) {
+      pointGridRef.current.clearSelectedPath();
+    }
+  };
+
   return (
     <div className="alignment-graph-with-info-panel">
       <div className="graph-and-info-container" style={{ display: 'flex', gap: '20px', width: '100%' }}>
@@ -152,6 +175,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             highlightedGap={highlightedGap}
             representativeDescriptor={visualizationSettings.showAxisDescriptors ? representativeDescriptor : undefined}
             memberDescriptor={visualizationSettings.showAxisDescriptors ? memberDescriptor : undefined}
+            enablePathSelection={visualizationSettings.enablePathSelection && activeTab === 'path-selection'}
+            onPathSelected={handlePathSelected}
             ref={(pointGridElement) => {
               // Store the PointGridPlot ref
               pointGridRef.current = pointGridElement;
@@ -187,16 +212,23 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             onVisualizationSettingsChange={setVisualizationSettings}
             onGapHighlight={setHighlightedGap}
             onWindowSelect={handleSafetyWindowSelect}
+            pathSelectionResult={pathSelectionResult}
+            onClearPath={handleClearPath}
+            activeTab={activeTab}
+            onActiveTabChange={setActiveTab}
           />
         </div>
       </div>
       
       <AlignmentStructuresViewer/>
-            {/* Display sequence alignment if available */}
-      {alignments.some(a => a.textAlignment) && (
+      {/* Display sequence alignment if available OR path selection result exists */}
+      {(alignments.some(a => a.textAlignment) || pathSelectionResult) && (
         <div className="sequence-alignment-viewer-container">
           <SequenceAlignmentViewer 
-            alignment={alignments.find(a => a.textAlignment)?.textAlignment!} 
+            alignment={alignments.find(a => a.textAlignment)?.textAlignment} 
+            pathSelectionResult={pathSelectionResult}
+            representativeDescriptor={representativeDescriptor}
+            memberDescriptor={memberDescriptor}
           />
         </div>
       )}

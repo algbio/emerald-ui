@@ -1,9 +1,12 @@
-import React from 'react';
-import type { TextAlignment } from '../../types/PointGrid';
+import React, { useState } from 'react';
+import type { TextAlignment, PathSelectionResult } from '../../types/PointGrid';
 import './SequenceAlignmentViewer.css';
 
 interface SequenceAlignmentViewerProps {
-  alignment: TextAlignment;
+  alignment?: TextAlignment; // Optional optimal alignment
+  pathSelectionResult?: PathSelectionResult | null; // Custom path alignment
+  representativeDescriptor?: string;
+  memberDescriptor?: string;
 }
 
 /**
@@ -69,12 +72,51 @@ const calculateSimilarity = (position: number, sequences: string[]): string => {
 /**
  * Renders sequence alignment with biological highlighting
  */
-const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({ alignment }) => {
-  if (!alignment || !alignment.representative || !alignment.member) {
+const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({ 
+  alignment, 
+  pathSelectionResult,
+  representativeDescriptor,
+  memberDescriptor 
+}) => {
+  const [activeTab, setActiveTab] = useState<'optimal' | 'custom'>('optimal');
+  
+  // Determine what alignments we have
+  const hasOptimalAlignment = alignment && alignment.representative && alignment.member;
+  const hasCustomAlignment = pathSelectionResult && pathSelectionResult.alignedRepresentative && pathSelectionResult.alignedMember;
+  
+  // If we only have one type, don't show tabs
+  const showTabs = hasOptimalAlignment && hasCustomAlignment;
+  
+  // Default to custom if we only have custom, optimal if we only have optimal
+  const effectiveActiveTab = showTabs ? activeTab : (hasCustomAlignment ? 'custom' : 'optimal');
+  
+  // Early return if no alignment data
+  if (!hasOptimalAlignment && !hasCustomAlignment) {
+    return (
+      <div className="sequence-alignment-viewer">
+        <div className="no-alignment">
+          <p>No alignment data available</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Prepare alignment data based on active tab
+  let repSeq: string, memSeq: string, repDesc: string, memDesc: string;
+  
+  if (effectiveActiveTab === 'custom' && hasCustomAlignment) {
+    repSeq = pathSelectionResult.alignedRepresentative;
+    memSeq = pathSelectionResult.alignedMember;
+    repDesc = representativeDescriptor || 'Representative';
+    memDesc = memberDescriptor || 'Member';
+  } else if (effectiveActiveTab === 'optimal' && hasOptimalAlignment) {
+    repSeq = alignment.representative.sequence;
+    memSeq = alignment.member.sequence;
+    repDesc = alignment.representative.descriptor;
+    memDesc = alignment.member.descriptor;
+  } else {
     return null;
   }
-
-  const { representative, member } = alignment;
   
   // Extract sequence name from descriptor (take text before first |)
   const getSequenceName = (descriptor: string): string => {
@@ -82,11 +124,8 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({ align
     return match ? match[1] : 'Sequence';
   };
   
-  const repName = getSequenceName(representative.descriptor);
-  const memName = getSequenceName(member.descriptor);
-  
-  const repSeq = representative.sequence;
-  const memSeq = member.sequence;
+  const repName = getSequenceName(repDesc);
+  const memName = getSequenceName(memDesc);
   
   // Generate position markers (every 10 positions)
   const positionMarkers = [];
@@ -152,7 +191,32 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({ align
 
   return (
     <div className="sequence-alignment-viewer">
-      <h3>Sequence Alignment</h3>
+      <div className="alignment-section-header">
+        <h3>Sequence Alignment</h3>
+        {effectiveActiveTab === 'custom' && pathSelectionResult && (
+          <div className="alignment-stats">
+            <span>Path Length: {pathSelectionResult.pathLength}</span>
+            <span>Score: {pathSelectionResult.score.toFixed(3)}</span>
+          </div>
+        )}
+      </div>
+      
+      {showTabs && (
+        <div className="alignment-tabs">
+          <button 
+            className={`tab-button ${effectiveActiveTab === 'optimal' ? 'active' : ''}`}
+            onClick={() => setActiveTab('optimal')}
+          >
+            Optimal Alignment
+          </button>
+          <button 
+            className={`tab-button ${effectiveActiveTab === 'custom' ? 'active' : ''}`}
+            onClick={() => setActiveTab('custom')}
+          >
+            Custom Path {pathSelectionResult && `(Score: ${pathSelectionResult.score.toFixed(3)})`}
+          </button>
+        </div>
+      )}
       
       <div className="scrollable-alignment">
         <div className="alignment-container">

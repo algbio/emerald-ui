@@ -13,6 +13,8 @@ export interface VisualizationSettings {
   enableSafetyWindowHighlighting: boolean;
   enableGapHighlighting: boolean;
   showAxisDescriptors: boolean;
+  // NEW: Path selection
+  enablePathSelection: boolean;
 }
 
 interface VisualizationSettingsPanelProps {
@@ -43,7 +45,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
       showOptimalPath: true,
       enableSafetyWindowHighlighting: true,
       enableGapHighlighting: true,
-      showAxisDescriptors: true
+      showAxisDescriptors: true,
+      enablePathSelection: true  // Enable by default for better UX
     });
   };
 
@@ -215,6 +218,19 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
                 Enable Gap Highlighting
               </label>
               <p className="setting-description">Allow gap regions to be highlighted during gap analysis</p>
+            </div>
+
+            <div className="setting-item">
+              <label className="setting-label">
+                <input
+                  type="checkbox"
+                  checked={settings.enablePathSelection}
+                  onChange={() => handleToggle('enablePathSelection')}
+                />
+                <span className="checkmark"></span>
+                Enable Path Selection
+              </label>
+              <p className="setting-description">Click on edges to select custom alignment paths and generate alignments</p>
             </div>
           </div>
         </div>
