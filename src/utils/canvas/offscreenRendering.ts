@@ -5,9 +5,9 @@ import type { Alignment } from '../../types/PointGrid';
 
 /**
  * Creates an off-screen canvas for pre-rendering
- * @returns CanvasRenderingContext2D for the off-screen canvas
+ * @returns HTMLCanvasElement or OffscreenCanvas for off-screen rendering
  */
-export function createOffscreenCanvas(width: number, height: number): OffscreenCanvas | null {
+export function createOffscreenCanvas(width: number, height: number): HTMLCanvasElement | OffscreenCanvas | null {
   try {
     // Try to use OffscreenCanvas if available (more performant)
     return new OffscreenCanvas(width, height);
