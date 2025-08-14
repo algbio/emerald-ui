@@ -70,7 +70,8 @@
 /* Content Areas */
 .safety-windows-content,
 .visualization-content,
-.general-info-content {
+.general-info-content,
+.export-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1254,6 +1255,64 @@
 
 .usage-info li:last-child {
   margin-bottom: 0;
+}
+
+/* Export Tab Content */
+.export-content {
+  overflow-y: auto;
+}
+
+.export-panel-container {
+  padding: 0 16px;
+  flex: 1;
+}
+
+.export-panel-container .share-and-export-panel {
+  margin: 0;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.export-panel-container .panel-section {
+  width: 100%;
+}
+
+.export-panel-container .collapsible-section {
+  margin-bottom: 1rem;
+}
+
+.no-export-message {
+  padding: 32px 16px;
+  text-align: center;
+  color: #666;
+}
+
+.no-export-message .no-export-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-export-message h4 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.no-export-message p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.no-export-message .help-text {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+}
+
+.no-export-message .help-text p {
+  margin: 0;
 }
 
 /* Responsive adjustments */

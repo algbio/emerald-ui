@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import type { Alignment } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
+import { ShareAndExportPanel } from '../share';
+import type { PointGridPlotRef } from './PointGridPlot';
 // import AlignmentParamsPanel from './AlignmentParamsPanel';
 import './SafetyWindowsInfoPanel.css';
 import './SequenceAlignmentViewer.css'; // Import for amino acid coloring classes
@@ -20,27 +22,33 @@ interface SafetyWindowInfo {
 
 interface SafetyWindowsInfoPanelProps {
   safetyWindows: Alignment[];
-  selectedWindowId?: string | null;
-  hoveredWindowId?: string | null;
-  onWindowHover?: (windowId: string | null) => void;
-  onNavigateToPrevious?: () => void;
-  onNavigateToNext?: () => void;
+  selectedWindowId: string | null;
+  hoveredWindowId: string | null;
+  onWindowHover: (windowId: string | null) => void;
+  onNavigateToPrevious: () => void;
+  onNavigateToNext: () => void;
   representative: string;
   member: string;
   representativeDescriptor?: string;
   memberDescriptor?: string;
   visualizationSettings?: VisualizationSettings;
   onVisualizationSettingsChange?: (settings: VisualizationSettings) => void;
-  onGapHighlight?: (gapInfo: {type: 'representative' | 'member'; start: number; end: number} | null) => void;
+  onGapHighlight?: (gap: {type: 'representative' | 'member'; start: number; end: number} | null) => void;
   onWindowSelect?: (windowId: string | null) => void;
-  // Path selection props
   pathSelectionResult?: import('../../types/PointGrid').PathSelectionResult | null;
   selectedEdges?: import('../../types/PointGrid').MultipleSelectedEdgesState | null;
   onClearPath?: () => void;
   onGeneratePath?: () => void;
   // Tab state management
-  activeTab?: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection';
-  onActiveTabChange?: (tab: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection') => void;
+  activeTab?: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export';
+  onActiveTabChange?: (tab: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export') => void;
+  // Export functionality props
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  pointGridRef?: React.RefObject<PointGridPlotRef | null>;
+  alpha?: number;
+  delta?: number;
+  accessionA?: string;
+  accessionB?: string;
 }
 
 export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({ 
@@ -63,10 +71,16 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   onClearPath,
   onGeneratePath,
   activeTab: externalActiveTab,
-  onActiveTabChange
+  onActiveTabChange,
+  canvasRef,
+  pointGridRef,
+  alpha,
+  delta,
+  accessionA,
+  accessionB
 }) => {
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
-  const [internalActiveTab, setInternalActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection'>('general-info');  // Use external active tab if provided, otherwise use internal state
+  const [internalActiveTab, setInternalActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');  // Use external active tab if provided, otherwise use internal state
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
   const setActiveTab = onActiveTabChange || setInternalActiveTab;
   
@@ -590,6 +604,14 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           {pathSelectionResult && (
             <span className="tab-badge">1</span>
           )}
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'export' ? 'active' : ''}`}
+          onClick={() => setActiveTab('export')}
+          title="Export images and share alignment links"
+        >
+          <span className="tab-icon">📤</span>
+          Export
         </button>
        
       </div>
@@ -1166,6 +1188,38 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                 </div>
               </div>
             ) : null}
+          </div>
+        </div>
+      ) : activeTab === 'export' ? (
+        <div className="export-content">
+          <div className="panel-header">
+            <h3>Export & Share</h3>
+            <div className="panel-subtitle">
+              Export high-quality images and share alignment links
+            </div>
+          </div>
+          <div className="export-panel-container">
+            {canvasRef && pointGridRef && alpha !== undefined && delta !== undefined ? (
+              <ShareAndExportPanel
+                descriptorA={representativeDescriptor || 'Representative'}
+                descriptorB={memberDescriptor || 'Member'}
+                alpha={alpha}
+                delta={delta}
+                accessionA={accessionA}
+                accessionB={accessionB}
+                canvasRef={canvasRef}
+                pointGridRef={pointGridRef}
+              />
+            ) : (
+              <div className="no-export-message">
+                <div className="no-export-icon">📤</div>
+                <h4>Export Not Available</h4>
+                <p>Export functionality requires a fully rendered alignment graph.</p>
+                <div className="help-text">
+                  <p>If you're seeing this message, please wait for the alignment to finish loading or try refreshing the page.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

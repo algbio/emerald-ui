@@ -257,6 +257,10 @@ function AppContent() {
             height={GRAPH_HEIGHT}
             onCanvasRef={handleCanvasRef}
             onPointGridRef={handlePointGridRef}
+            alpha={state.params.alpha}
+            delta={state.params.delta}
+            accessionA={state.sequences.accessionA}
+            accessionB={state.sequences.accessionB}
           />
 
            {/* Share URL and Export Image Panel */}

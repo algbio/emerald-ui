@@ -23,6 +23,11 @@ interface AlignmentGraphWithInfoPanelProps {
   minimapPadding?: number;
   onCanvasRef?: (ref: React.RefObject<HTMLCanvasElement | null>) => void;
   onPointGridRef?: (ref: React.RefObject<PointGridPlotRef>) => void;
+  // Export functionality props
+  alpha?: number;
+  delta?: number;
+  accessionA?: string;
+  accessionB?: string;
 }
 
 export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelProps> = ({
@@ -36,7 +41,11 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   minimapSize = 250,
   minimapPadding = 100,
   onCanvasRef,
-  onPointGridRef
+  onPointGridRef,
+  alpha,
+  delta,
+  accessionA,
+  accessionB
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
@@ -48,6 +57,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   
   // Create ref for the PointGridPlot component
   const pointGridRef = useRef<PointGridPlotRef>(null);
+  
+  // Canvas ref for export functionality
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Default visualization settings
   const [visualizationSettings, setVisualizationSettings] = useState<VisualizationSettings>({
@@ -71,7 +83,7 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   const [generatedPath, setGeneratedPath] = useState<import('../../utils/canvas/pathSelection').SelectedPath | null>(null);
   
   // Active tab state for side panel
-  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection'>('general-info');
+  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');
 
   // Extract safety windows from alignments
   const safetyWindows = alignments.filter(alignment => 
@@ -332,6 +344,11 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
               // Store the PointGridPlot ref
               pointGridRef.current = pointGridElement;
               
+              // Store canvas ref for internal use
+              if (pointGridElement) {
+                canvasRef.current = pointGridElement.canvas;
+              }
+              
               // Extract canvas and pass to parent if needed
               if (onCanvasRef && pointGridElement) {
                 const canvasRefObj = { current: pointGridElement.canvas };
@@ -369,6 +386,12 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             onGeneratePath={handleGeneratePath}
             activeTab={activeTab}
             onActiveTabChange={setActiveTab}
+            canvasRef={canvasRef}
+            pointGridRef={pointGridRef}
+            alpha={alpha}
+            delta={delta}
+            accessionA={accessionA}
+            accessionB={accessionB}
           />
         </div>
       </div>
