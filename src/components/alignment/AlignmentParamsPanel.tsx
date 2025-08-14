@@ -51,7 +51,7 @@ const AlignmentParamsPanel: React.FC = () => {
             <div className="param-item">
               <label className="param-label">Cost Matrix Type</label>
               <select
-                value={state.params.costMatrixType ?? 0}
+                value={state.params.costMatrixType ?? 2}
                 onChange={handleMatrixTypeChange}
                 className="param-select"
               >

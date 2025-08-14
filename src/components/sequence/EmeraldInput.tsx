@@ -358,7 +358,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
               <select
                 id="matrix-select"
                 className="emerald-select"
-                value={params.costMatrixType ?? 0}
+                value={params.costMatrixType ?? 2}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
                   dispatch({

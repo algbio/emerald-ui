@@ -96,7 +96,7 @@ const initialState: SequenceState = {
     delta: 8,
     gapCost: -1,
     startGap: -11,
-    costMatrixType: 0  // Default to BLOSUM62
+    costMatrixType: 2  // Default to BLOSUM62
   },
   alignments: [],
   alignmentStatus: 'idle',
