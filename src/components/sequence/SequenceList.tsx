@@ -231,7 +231,6 @@ export const SequenceList: React.FC<SequenceListProps> = ({
             showSequence={true}
             onStructureLoaded={() => console.log(`Structure loaded for ${selectedSequence.id}`)}
             onError={(error) => console.error(`Structure error for ${selectedSequence.id}:`, error)}
-            onPdbStructuresFound={(pdbIds) => console.log(`Found PDB structures for ${selectedSequence.id}:`, pdbIds)}
           />
         </div>
       )}

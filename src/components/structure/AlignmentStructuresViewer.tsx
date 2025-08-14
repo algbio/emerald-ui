@@ -90,7 +90,6 @@ export const AlignmentStructuresViewer: React.FC = () => {
               enableSafetyWindowHighlighting={safetyWindowsA.length > 0}
               onStructureLoaded={() => console.log(`Structure A loaded`)}
               onError={(error) => console.error(`Structure A error:`, error)}
-              onPdbStructuresFound={(pdbIds) => console.log(`Found PDB structures for sequence A:`, pdbIds)}
             />
           </div>
         )}
@@ -134,7 +133,6 @@ export const AlignmentStructuresViewer: React.FC = () => {
               enableSafetyWindowHighlighting={safetyWindowsB.length > 0}
               onStructureLoaded={() => console.log(`Structure B loaded`)}
               onError={(error) => console.error(`Structure B error:`, error)}
-              onPdbStructuresFound={(pdbIds) => console.log(`Found PDB structures for sequence B:`, pdbIds)}
             />
           </div>
         )}
@@ -150,7 +148,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
             <br />
             <code>sp|P01308|INS_HUMAN</code> or <code>P01308</code> (Human Insulin)
           </div>
-          <p>Structures are automatically loaded from PDB or AlphaFold databases.</p>
+          <p>Structures are automatically loaded from the AlphaFold database for complete protein models.</p>
         </div>
       )}
     </div>

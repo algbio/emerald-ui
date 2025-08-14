@@ -35,8 +35,6 @@ interface StructureViewerProps {
   onStructureLoaded?: () => void;
   /** Callback when error occurs */
   onError?: (error: string) => void;
-  /** Callback when PDB structures are found for UniProt ID */
-  onPdbStructuresFound?: (pdbIds: string[]) => void;
   /** Safety windows for sequence highlighting in 3D structure */
   safetyWindows?: Array<{
     startPosition: number;
@@ -58,7 +56,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   showLoading = true,
   onStructureLoaded,
   onError,
-  onPdbStructuresFound,
   safetyWindows = [],
   enableSafetyWindowHighlighting = false
 }) => {
@@ -66,12 +63,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   const pluginRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [selectedPdbId, setSelectedPdbId] = useState<string>('');
-  const [useAlphaFold, setUseAlphaFold] = useState<boolean>(false);
   const [isPluginReady, setIsPluginReady] = useState<boolean>(false);
   const [initAttempts, setInitAttempts] = useState<number>(0);
-  const [hasAlphaFold, setHasAlphaFold] = useState<boolean>(false);
-  const [availablePdbIds, setAvailablePdbIds] = useState<string[]>([]);
   const [keggMappingLoading, setKeggMappingLoading] = useState<boolean>(false);
   
   // Use optimized safety window highlighting with memoization
@@ -171,7 +164,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       return;
     }
 
-    // console.log('Starting structure loading...', { uniprotId, pdbId, useAlphaFold });
+    // console.log('Starting structure loading...', { uniprotId, pdbId });
 
     setIsLoading(true);
     setError('');
@@ -184,34 +177,12 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       let isBinary = false;
       let finalPdbId = pdbId;
 
-      // Handle UniProt ID by fetching PDB IDs first
+      // Handle UniProt ID by loading AlphaFold structure directly
       if (uniprotId && !pdbId) {
-        const { pdbIds, hasAlphaFold } = await fetchDataFromUniProt(uniprotId);
-        
-        setHasAlphaFold(hasAlphaFold || false);
-        setAvailablePdbIds(pdbIds);
-        
-        if (hasAlphaFold) {
-          // Prioritize AlphaFold structure as it represents the complete sequence
-          setUseAlphaFold(true);
-          // console.log(`AlphaFold structure available for UniProt ${uniprotId}, using as primary structure`);
-          if (pdbIds.length > 0) {
-            setSelectedPdbId(pdbIds[0]);
-            onPdbStructuresFound?.(pdbIds);
-            // console.log(`${pdbIds.length} PDB structures also available as alternatives:`, pdbIds);
-          }
-        } else if (pdbIds.length > 0) {
-          // No AlphaFold, but PDB structures available
-          finalPdbId = pdbIds[0];
-          setSelectedPdbId(finalPdbId || '');
-          onPdbStructuresFound?.(pdbIds);
-          // console.log(`Found ${pdbIds.length} PDB structures for UniProt ${uniprotId}:`, pdbIds);
-        } else {
-          throw new Error(`No PDB or AlphaFold structures found for UniProt ID: ${uniprotId}`);
-        }
-      }
-
-      if (pdbContent) {
+        // For UniProt IDs, we'll use AlphaFold exclusively for complete structures
+        url = `https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v4.cif`;
+        isBinary = true; // AlphaFold uses mmCIF format
+      } else if (pdbContent) {
         // Load from content string
         const blob = new Blob([pdbContent], { type: 'text/plain' });
         url = URL.createObjectURL(blob);
@@ -219,10 +190,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         // Load from custom URL
         url = pdbUrl;
         isBinary = pdbUrl.toLowerCase().includes('.cif') || pdbUrl.toLowerCase().includes('.bcif');
-      } else if (useAlphaFold && uniprotId) {
-        // Load from AlphaFold
-        url = `https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v4.cif`;
-        isBinary = true; // AlphaFold uses mmCIF format
       } else if (finalPdbId) {
         // Load from PDB ID via RCSB PDB
         url = `https://files.rcsb.org/download/${finalPdbId.toUpperCase()}.pdb`;
@@ -406,68 +373,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     }
   };
 
-  // Function to fetch PDB structures and sequence from UniProt
-  const fetchDataFromUniProt = async (uniprotAccession: string): Promise<{
-    pdbIds: string[];
-    sequence?: string;
-    hasAlphaFold?: boolean;
-  }> => {
-    try {
-      // Use UniProt REST API to get cross-references to PDB and sequence
-      const response = await fetch(
-        `https://rest.uniprot.org/uniprotkb/${uniprotAccession}.json`
-      );
-      
-      if (!response.ok) {
-        throw new Error(`UniProt API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Extract PDB cross-references
-      const pdbIds: string[] = [];
-      let hasAlphaFoldStructure = false;
-      
-      if (data.uniProtKBCrossReferences) {
-        for (const xref of data.uniProtKBCrossReferences) {
-          if (xref.database === 'PDB') {
-            pdbIds.push(xref.id);
-          } else if (xref.database === 'AlphaFoldDB') {
-            hasAlphaFoldStructure = true;
-          }
-        }
-      }
-      
-      // If no PDB structures found, check AlphaFold availability by attempting to fetch
-      if (pdbIds.length === 0 && !hasAlphaFoldStructure) {
-        hasAlphaFoldStructure = await checkAlphaFoldAvailability(uniprotAccession);
-      }
-      
-      // Extract protein sequence
-      let sequence = '';
-      if (data.sequence && data.sequence.value) {
-        sequence = data.sequence.value;
-      }
-      
-      return { pdbIds, sequence, hasAlphaFold: hasAlphaFoldStructure };
-    } catch (err) {
-      console.error('Error fetching data from UniProt:', err);
-      throw new Error(`Failed to fetch data for UniProt ID ${uniprotAccession}: ${err}`);
-    }
-  };
-
-  // Function to check AlphaFold structure availability
-  const checkAlphaFoldAvailability = async (uniprotAccession: string): Promise<boolean> => {
-    try {
-      const alphaFoldUrl = `https://alphafold.ebi.ac.uk/files/AF-${uniprotAccession}-F1-model_v4.cif`;
-      const response = await fetch(alphaFoldUrl, { method: 'HEAD' });
-      return response.ok;
-    } catch (err) {
-      console.warn('Could not check AlphaFold availability:', err);
-      return false;
-    }
-  };
-
   // Initialize plugin when component mounts
   useEffect(() => {
     // Reset state when component mounts
@@ -512,23 +417,13 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     };
   }, []);
 
-  // Reset AlphaFold preference when uniprotId changes
-  useEffect(() => {
-    // Reset state but prioritize AlphaFold when available
-    setAvailablePdbIds([]);
-    setSelectedPdbId('');
-    // Note: useAlphaFold will be set by loadStructure based on availability
-    setUseAlphaFold(false);
-    setHasAlphaFold(false);
-  }, [uniprotId, pdbId]);
-
   // Load structure when plugin is ready and props change
   useEffect(() => {
     if (isPluginReady && pluginRef.current && (uniprotId || pdbId || pdbUrl || pdbContent)) {
       // console.log('useEffect triggered structure loading', { isPluginReady, uniprotId, pdbId });
       loadStructure();
     }
-  }, [pdbId, uniprotId, pdbUrl, pdbContent, sequence, isPluginReady, useAlphaFold]);
+  }, [pdbId, uniprotId, pdbUrl, pdbContent, sequence, isPluginReady]);
 
   // Apply safety window highlighting when it changes (without reloading structure)
   useEffect(() => {
@@ -609,37 +504,11 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       </div>
       
       {/* External Database Links Footer */}
-      {(uniprotId || pdbId || selectedPdbId) && (
+      {(uniprotId || pdbId) && (
         <div className="external-links-footer">
           <div className="external-links-label">
             External Databases:
           </div>
-          
-          {/* Display structure selector when multiple PDB IDs are available */}
-          {availablePdbIds.length > 1 && hasAlphaFold && (
-            <div className="structure-selector">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={useAlphaFold}
-                  onChange={(e) => setUseAlphaFold(e.target.checked)}
-                />
-                Use AlphaFold
-              </label>
-              {!useAlphaFold && (
-                <select
-                  value={selectedPdbId}
-                  onChange={(e) => setSelectedPdbId(e.target.value)}
-                >
-                  {availablePdbIds.map((id) => (
-                    <option key={id} value={id}>
-                      {id}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
           
           {uniprotId && (
             <button
@@ -677,7 +546,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
                 window.open(`https://cluster.foldseek.com/cluster/${uniprotId}`, '_blank');
               }}
               className="external-link-button external-link-foldseek"
-              title={`Search ${selectedPdbId || pdbId} in Foldseek cluster database`}
+              title={`Search ${pdbId || uniprotId} in Foldseek cluster database`}
             >
               🔍 Foldseek
             </button>
