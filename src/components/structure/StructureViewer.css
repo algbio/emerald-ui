@@ -165,6 +165,12 @@
   background: #f8f9fa;
 }
 
+.external-link-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
 .external-link-uniprot {
   border-color: #28a745;
   color: #28a745;
@@ -183,6 +189,16 @@
 .external-link-foldseek {
   border-color: #B10DC9;
   color: #B10DC9;
+}
+
+.external-link-kegg {
+  border-color: #FF6B35;
+  color: #FF6B35;
+}
+
+.external-link-ligsys {
+  border-color: #6A4C93;
+  color: #6A4C93;
 }
 
 /* Control buttons styling */

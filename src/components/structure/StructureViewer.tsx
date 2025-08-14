@@ -7,6 +7,7 @@ import { Asset } from 'molstar/lib/mol-util/assets';
 import { StructureElement } from 'molstar/lib/mol-model/structure';
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSafetyWindowsHighlighting } from '../../hooks/useSafetyWindowsHighlighting';
+import { mapUniProtToKegg } from '../../utils/api/uniprotUtils';
 import './StructureViewer.css';
 
 interface StructureViewerProps {
@@ -71,6 +72,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   const [initAttempts, setInitAttempts] = useState<number>(0);
   const [hasAlphaFold, setHasAlphaFold] = useState<boolean>(false);
   const [availablePdbIds, setAvailablePdbIds] = useState<string[]>([]);
+  const [keggMappingLoading, setKeggMappingLoading] = useState<boolean>(false);
   
   // Use optimized safety window highlighting with memoization
   const safetyWindowOptimization = useSafetyWindowsHighlighting(
@@ -551,6 +553,27 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     initializePlugin();
   };
 
+  const handleKeggClick = async () => {
+    if (!uniprotId) return;
+    
+    setKeggMappingLoading(true);
+    try {
+      const keggId = await mapUniProtToKegg(uniprotId);
+      if (keggId) {
+        window.open(`https://www.genome.jp/entry/${keggId}`, '_blank');
+      } else {
+        // Fallback: try direct UniProt ID (though it might not work)
+        window.open(`https://www.genome.jp/entry/${uniprotId}`, '_blank');
+      }
+    } catch (error) {
+      console.error('Error mapping to KEGG:', error);
+      // Fallback: try direct UniProt ID
+      window.open(`https://www.genome.jp/entry/${uniprotId}`, '_blank');
+    } finally {
+      setKeggMappingLoading(false);
+    }
+  };
+
   return (
     <div className="structure-viewer" style={{ width, height }}>
       {/* Main viewer container */}
@@ -657,6 +680,27 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
               title={`Search ${selectedPdbId || pdbId} in Foldseek cluster database`}
             >
               🔍 Foldseek
+            </button>
+          )}
+          
+          {uniprotId && (
+            <button
+              onClick={handleKeggClick}
+              className="external-link-button external-link-kegg"
+              title={`View ${uniprotId} in KEGG Database`}
+              disabled={keggMappingLoading}
+            >
+              {keggMappingLoading ? '⏳ Mapping...' : '🧪 KEGG'}
+            </button>
+          )}
+          
+          {uniprotId && (
+            <button
+              onClick={() => window.open(`https://www.compbio.dundee.ac.uk/ligysis/results/${uniprotId}/1`, '_blank')}
+              className="external-link-button external-link-ligsys"
+              title={`View ${uniprotId} in LIGSYS Database`}
+            >
+              💊 LIGSYS
             </button>
           )}
         </div>

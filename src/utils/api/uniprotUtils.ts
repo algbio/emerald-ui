@@ -52,3 +52,98 @@ export const getEffectiveUniProtId = (sequence: { accession?: string; descriptio
   
   return null;
 };
+
+// Map UniProt ID to KEGG ID using UniProt ID mapping API
+export const mapUniProtToKegg = async (uniprotId: string): Promise<string | null> => {
+  try {
+    console.log(`Mapping UniProt ID ${uniprotId} to KEGG ID`);
+    
+    // Step 1: Submit the mapping job
+    const submitResponse = await fetch('https://rest.uniprot.org/idmapping/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        from: 'UniProtKB_AC-ID',
+        to: 'KEGG',
+        ids: uniprotId
+      }).toString()
+    });
+
+    if (!submitResponse.ok) {
+      const errorText = await submitResponse.text();
+      console.error(`Submit request failed: ${submitResponse.status} - ${errorText}`);
+      throw new Error(`Submit request failed: ${submitResponse.status}`);
+    }
+
+    const submitResult = await submitResponse.json();
+    console.log('Submit result:', submitResult);
+    const jobId = submitResult.jobId;
+
+    if (!jobId) {
+      console.warn(`No job ID returned for UniProt ID ${uniprotId}`);
+      return null;
+    }
+
+    // Step 2: Poll for results (with timeout)
+    let attempts = 0;
+    const maxAttempts = 20; // Increased timeout
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Increased wait time to 1 second
+      
+      const statusResponse = await fetch(`https://rest.uniprot.org/idmapping/status/${jobId}`);
+      
+      if (!statusResponse.ok) {
+        const statusError = await statusResponse.text();
+        console.error(`Status request failed: ${statusResponse.status} - ${statusError}`);
+        throw new Error(`Status request failed: ${statusResponse.status}`);
+      }
+
+      const statusResult = await statusResponse.json();
+      console.log(`Status check ${attempts + 1}: ${JSON.stringify(statusResult)}`);
+      
+      // Check if we have results directly in the status response
+      if (statusResult.results && statusResult.results.length > 0) {
+        // Results are available directly in the status response
+        const keggId = statusResult.results[0].to;
+        console.log(`Successfully mapped ${uniprotId} to KEGG ID: ${keggId}`);
+        return keggId;
+      } else if (statusResult.jobStatus === 'FINISHED') {
+        // Step 3: Get the results
+        const resultsResponse = await fetch(`https://rest.uniprot.org/idmapping/results/${jobId}`);
+        
+        if (!resultsResponse.ok) {
+          const resultsError = await resultsResponse.text();
+          console.error(`Results request failed: ${resultsResponse.status} - ${resultsError}`);
+          throw new Error(`Results request failed: ${resultsResponse.status}`);
+        }
+
+        const resultsData = await resultsResponse.json();
+        console.log('Results data:', JSON.stringify(resultsData, null, 2));
+        
+        if (resultsData.results && resultsData.results.length > 0) {
+          // Since we're specifically requesting KEGG, take the first result
+          const keggId = resultsData.results[0].to;
+          console.log(`Successfully mapped ${uniprotId} to KEGG ID: ${keggId}`);
+          return keggId;
+        } else {
+          console.warn(`No KEGG mapping found for UniProt ID ${uniprotId}`);
+          return null;
+        }
+      } else if (statusResult.jobStatus === 'ERROR') {
+        throw new Error(`Mapping job failed for ${uniprotId}`);
+      }
+      
+      attempts++;
+    }
+    
+    console.warn(`Mapping job timed out for UniProt ID ${uniprotId}`);
+    return null;
+    
+  } catch (error) {
+    console.error(`Error mapping UniProt ID ${uniprotId} to KEGG:`, error);
+    return null;
+  }
+};
