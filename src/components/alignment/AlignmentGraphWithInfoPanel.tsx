@@ -3,10 +3,12 @@ import PointGridPlot from './PointGridPlot';
 import type { PointGridPlotRef } from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
 import SequenceAlignmentViewer from './SequenceAlignmentViewer';
-import type { Alignment } from '../../types/PointGrid';
+import type { Alignment, PathSelectionResult, MultipleSelectedEdgesState } from '../../types/PointGrid';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
 import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer';
+import { validatePath, generateAlignmentFromPath, buildPathThroughSelectedEdges, calculateDistanceFromOptimalPath } from '../../utils/canvas/pathSelection';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 
 
 interface AlignmentGraphWithInfoPanelProps {
@@ -41,6 +43,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   const [highlightedGap, setHighlightedGap] = useState<{type: 'representative' | 'member'; start: number; end: number} | null>(null);
   const [hasManuallyUnselected, setHasManuallyUnselected] = useState(false);
   
+  // Feedback notifications hook
+  const { notifySuccess, notifyError } = useFeedbackNotifications();
+  
   // Create ref for the PointGridPlot component
   const pointGridRef = useRef<PointGridPlotRef>(null);
   
@@ -61,7 +66,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   });
   
   // NEW: Path selection state
-  const [pathSelectionResult, setPathSelectionResult] = useState<import('../../types/PointGrid').PathSelectionResult | null>(null);
+  const [pathSelectionResult, setPathSelectionResult] = useState<PathSelectionResult | null>(null);
+  const [selectedEdges, setSelectedEdges] = useState<MultipleSelectedEdgesState | null>(null);
+  const [generatedPath, setGeneratedPath] = useState<import('../../utils/canvas/pathSelection').SelectedPath | null>(null);
   
   // Active tab state for side panel
   const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection'>('general-info');
@@ -130,16 +137,159 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     setHasManuallyUnselected(false); // Reset manual unselection when navigating
   };
 
-  // NEW: Handle path selection
-  const handlePathSelected = (result: import('../../types/PointGrid').PathSelectionResult) => {
-    setPathSelectionResult(result);
-    console.log('Path selected:', result);
+  // NEW: Handle edge selection (without immediate path generation)
+  const handleEdgeSelected = (selectedEdgeState: MultipleSelectedEdgesState) => {
+    console.log('handleEdgeSelected called with:', selectedEdgeState);
+    console.log('New selected edges count:', selectedEdgeState.selectedEdges.length);
+    console.log('New selected edges:', selectedEdgeState.selectedEdges);
+    
+    setSelectedEdges(selectedEdgeState);
+    console.log('Updated selectedEdges state');
+  };
+
+  // NEW: Generate path from selected edges
+  const handleGeneratePath = () => {
+    console.log('handleGeneratePath called');
+    console.log('selectedEdges state:', selectedEdges);
+    console.log('selectedEdges.selectedEdges array:', selectedEdges?.selectedEdges);
+    console.log('selectedEdges.selectedEdges.length:', selectedEdges?.selectedEdges?.length);
+    
+    if (!selectedEdges || selectedEdges.selectedEdges.length === 0) {
+      console.log('No selected edges, returning early');
+      notifyError(
+        'No Edges Selected', 
+        'Please select at least one edge in the alignment graph before generating a path'
+      );
+      return;
+    }
+    
+    console.log('Building path through', selectedEdges.selectedEdges.length, 'selected edges');
+    
+    // Build path that goes through all selected edges
+    const allEdges = alignments.flatMap(alignment => alignment.edges);
+    console.log('Total available edges:', allEdges.length);
+    
+    const path = buildPathThroughSelectedEdges(
+      selectedEdges.selectedEdges, 
+      allEdges, 
+      representative.length, 
+      member.length
+    );
+    console.log('Generated path:', path);
+    console.log('Generated path edge count:', path.edges.length);
+    console.log('Selected edges passed to buildPathThroughSelectedEdges:', selectedEdges.selectedEdges);
+    
+    // Debug: Let's validate the path step by step to see what fails
+    console.log('=== PATH VALIDATION DEBUG ===');
+    console.log('path.isValid:', path.isValid);
+    console.log('path.edges.length:', path.edges.length);
+    
+    let validationFailureReason = '';
+    
+    if (!path.isValid || path.edges.length === 0) {
+      validationFailureReason = `Path is marked invalid or has no edges (isValid: ${path.isValid}, length: ${path.edges.length})`;
+    } else {
+      // Check each edge exists
+      for (let i = 0; i < path.edges.length; i++) {
+        const pathEdge = path.edges[i];
+        const edgeExists = allEdges.some(edge =>
+          edge.from[0] === pathEdge.from[0] &&
+          edge.from[1] === pathEdge.from[1] &&
+          edge.to[0] === pathEdge.to[0] &&
+          edge.to[1] === pathEdge.to[1]
+        );
+        
+        if (!edgeExists) {
+          validationFailureReason = `Edge ${i} doesn't exist in available edges: from (${pathEdge.from[0]}, ${pathEdge.from[1]}) to (${pathEdge.to[0]}, ${pathEdge.to[1]})`;
+          break;
+        }
+        
+        // Check direction
+        if (pathEdge.to[0] < pathEdge.from[0] || pathEdge.to[1] < pathEdge.from[1]) {
+          validationFailureReason = `Edge ${i} has invalid direction: from (${pathEdge.from[0]}, ${pathEdge.from[1]}) to (${pathEdge.to[0]}, ${pathEdge.to[1]}) - only right/down movement allowed`;
+          break;
+        }
+      }
+      
+      // Check continuity if no other issues found
+      if (!validationFailureReason) {
+        for (let i = 0; i < path.edges.length - 1; i++) {
+          const currentEdge = path.edges[i];
+          const nextEdge = path.edges[i + 1];
+          
+          if (currentEdge.to[0] !== nextEdge.from[0] || currentEdge.to[1] !== nextEdge.from[1]) {
+            validationFailureReason = `Path discontinuity between edge ${i} ending at (${currentEdge.to[0]}, ${currentEdge.to[1]}) and edge ${i+1} starting at (${nextEdge.from[0]}, ${nextEdge.from[1]})`;
+            break;
+          }
+        }
+      }
+    }
+    
+    console.log('Validation failure reason:', validationFailureReason);
+    console.log('=== END DEBUG ===');
+    
+    // Validate the path
+    if (validatePath(path, allEdges)) {
+      console.log('Path is valid, generating alignment');
+      
+      // Set the generated path for visualization
+      setGeneratedPath(path);
+      
+      // Generate alignment from path
+      const alignmentResult = generateAlignmentFromPath(path, representative, member);
+      console.log('Alignment result:', alignmentResult);
+      
+      // Calculate distance from optimal path
+      const distanceFromOptimal = calculateDistanceFromOptimalPath(path, alignments);
+      console.log('Distance from optimal:', distanceFromOptimal + '%');
+      
+      // Create path selection result
+      const result: PathSelectionResult = {
+        alignedRepresentative: alignmentResult.alignedRep,
+        alignedMember: alignmentResult.alignedMem,
+        score: alignmentResult.score,
+        pathLength: path.edges.length,
+        distanceFromOptimal: distanceFromOptimal
+      };
+      
+      setPathSelectionResult(result);
+      console.log('Path generated and state updated:', result);
+      
+      // Show success feedback notification
+      notifySuccess(
+        'Path Generated Successfully!', 
+        `Generated path with ${path.edges.length} edges (${distanceFromOptimal.toFixed(1)}% from optimal)`
+      );
+    } else {
+      console.warn('Invalid path generated from selected edges');
+      console.warn('Path details:', { isValid: path.isValid, edgeCount: path.edges.length });
+      
+      const selectedEdgeCount = selectedEdges.selectedEdges.length;
+      const generatedPathLength = path.edges.length;
+      
+      // Create a more informative error message
+      let errorMessage: string;
+      if (generatedPathLength === 0) {
+        errorMessage = `Failed to generate any path from your ${selectedEdgeCount} selected edge${selectedEdgeCount === 1 ? '' : 's'}. This likely means the selected edges cannot be connected due to missing intermediate edges in the graph.`;
+      } else if (!path.isValid) {
+        errorMessage = `The path construction failed during validation. Generated ${generatedPathLength} edges but the path contains invalid moves or discontinuities. Check the browser console for detailed error information.`;
+      } else {
+        errorMessage = `Path generation failed for unknown reasons. Generated ${generatedPathLength} edges from ${selectedEdgeCount} selected edge${selectedEdgeCount === 1 ? '' : 's'} but validation failed.`;
+      }
+      
+      notifyError(
+        'Path Generation Failed', 
+        errorMessage
+      );
+    }
   };
 
   // Clear path selection
   const handleClearPath = () => {
     console.log('handleClearPath called');
     setPathSelectionResult(null);
+    setSelectedEdges(null);
+    setGeneratedPath(null);
     // Also clear the selected path in the PointGridPlot component
     if (pointGridRef.current?.clearSelectedPath) {
       pointGridRef.current.clearSelectedPath();
@@ -176,7 +326,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             representativeDescriptor={visualizationSettings.showAxisDescriptors ? representativeDescriptor : undefined}
             memberDescriptor={visualizationSettings.showAxisDescriptors ? memberDescriptor : undefined}
             enablePathSelection={visualizationSettings.enablePathSelection && activeTab === 'path-selection'}
-            onPathSelected={handlePathSelected}
+            onEdgeSelected={handleEdgeSelected}
+            generatedPath={generatedPath}
             ref={(pointGridElement) => {
               // Store the PointGridPlot ref
               pointGridRef.current = pointGridElement;
@@ -213,7 +364,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             onGapHighlight={setHighlightedGap}
             onWindowSelect={handleSafetyWindowSelect}
             pathSelectionResult={pathSelectionResult}
+            selectedEdges={selectedEdges}
             onClearPath={handleClearPath}
+            onGeneratePath={handleGeneratePath}
             activeTab={activeTab}
             onActiveTabChange={setActiveTab}
           />

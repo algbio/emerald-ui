@@ -35,7 +35,9 @@ interface SafetyWindowsInfoPanelProps {
   onWindowSelect?: (windowId: string | null) => void;
   // Path selection props
   pathSelectionResult?: import('../../types/PointGrid').PathSelectionResult | null;
+  selectedEdges?: import('../../types/PointGrid').MultipleSelectedEdgesState | null;
   onClearPath?: () => void;
+  onGeneratePath?: () => void;
   // Tab state management
   activeTab?: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection';
   onActiveTabChange?: (tab: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection') => void;
@@ -57,7 +59,9 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   onGapHighlight,
   onWindowSelect,
   pathSelectionResult,
+  selectedEdges,
   onClearPath,
+  onGeneratePath,
   activeTab: externalActiveTab,
   onActiveTabChange
 }) => {
@@ -1070,7 +1074,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           )}
 
           <div className="path-selection-body">
-            {!pathSelectionResult ? (
+            {!selectedEdges && !pathSelectionResult ? (
               <div className="no-selection">
                 <div className="no-selection-message">
                   <div className="no-selection-icon">🎯</div>
@@ -1081,14 +1085,43 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                     <ul>
                       <li>Path selection is only active when you're on this tab</li>
                       <li>Click on any edge in the alignment graph</li>
-                      <li>The path will automatically extend following the highest probability connections</li>
-                      <li>The generated alignment will appear below</li>
+                      <li>The path will be selected (highlighted in orange)</li>
+                      <li>Press the "Generate Alignment" button to create the alignment</li>
                     </ul>
                     <p><strong>Note:</strong> Path selection is disabled on other tabs to avoid accidental selections.</p>
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : selectedEdges && !pathSelectionResult ? (
+              <div className="edges-selected-content">
+                <div className="selected-edges-info">
+                  <div className="selected-edges-icon">🔗</div>
+                  <h4>Path Selected</h4>
+                  <p>You have selected {selectedEdges.selectedEdges.length} edges. Click the button below to generate a complete alignment path.</p>
+                  
+                  <div className="generate-alignment-section">
+                    <button 
+                      className="generate-alignment-button"
+                      onClick={() => {
+                        console.log('Generate alignment button clicked');
+                        if (onGeneratePath) {
+                          console.log('Calling onGeneratePath');
+                          onGeneratePath();
+                        } else {
+                          console.log('onGeneratePath is not defined');
+                        }
+                      }}
+                      disabled={!selectedEdges.isValid}
+                    >
+                      Generate Complete Path
+                    </button>
+                    <p className="generate-help-text">
+                      This will create a complete alignment path from (0,0) to the end that goes through your selected edges.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : pathSelectionResult ? (
               <div className="path-result-content">
                 <div className="result-stats">
                   <div className="stat-item">
@@ -1096,8 +1129,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                     <span>{pathSelectionResult.pathLength} edges</span>
                   </div>
                   <div className="stat-item">
-                    <label>Average Score:</label>
-                    <span>{pathSelectionResult.score.toFixed(3)}</span>
+                    <label>Distance from Optimal:</label>
+                    <span>{pathSelectionResult.distanceFromOptimal}%</span>
                   </div>
                 </div>
 
@@ -1109,7 +1142,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                     <button 
                       className="copy-path-button"
                       onClick={() => {
-                        const pathData = `Path Length: ${pathSelectionResult.pathLength}\nScore: ${pathSelectionResult.score.toFixed(3)}\nRepresentative: ${pathSelectionResult.alignedRepresentative}\nMember: ${pathSelectionResult.alignedMember}`;
+                        const pathData = `Path Length: ${pathSelectionResult.pathLength}\nDistance from Optimal: ${pathSelectionResult.distanceFromOptimal}%\nRepresentative: ${pathSelectionResult.alignedRepresentative}\nMember: ${pathSelectionResult.alignedMember}`;
                         navigator.clipboard.writeText(pathData).then(() => {
                           console.log('Path data copied to clipboard');
                         });
@@ -1123,15 +1156,16 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                 <div className="usage-info">
                   <h4>Path Selection Info</h4>
                   <ul>
-                    <li>The path automatically extends from the clicked edge following the highest probability connections</li>
-                    <li>Only movements to the right and/or down are allowed</li>
+                    <li>The path starts from (0,0) and ends at the bottom-right corner</li>
+                    <li>The path goes through all your selected edges in optimal order</li>
+                    <li>Distance from Optimal shows how much your path differs from the optimal alignment (0% = identical, 100% = completely different)</li>
                     <li>Diagonal moves (1,1) represent character alignments</li>
                     <li>Horizontal moves represent gaps in the member sequence</li>
                     <li>Vertical moves represent gaps in the representative sequence</li>
                   </ul>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       ) : null}

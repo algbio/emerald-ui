@@ -28,6 +28,17 @@ export interface PathSelectionResult {
   alignedMember: string;
   score: number;
   pathLength: number;
+  distanceFromOptimal: number; // Distance percentage from optimal path
+}
+
+export interface SelectedEdgeState {
+  edges: Edge[];
+  isValid: boolean;
+}
+
+export interface MultipleSelectedEdgesState {
+  selectedEdges: Edge[];
+  isValid: boolean;
 }
 
 export interface PointGridPlotProps {

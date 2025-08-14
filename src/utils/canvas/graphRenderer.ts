@@ -20,6 +20,7 @@ export interface GraphRenderingOptions {
   showSelectedPath: boolean;
   selectedPath?: SelectedPath;
   hoveredEdge?: Edge;
+  selectedIndividualEdges?: Edge[];
 }
 
 /**
@@ -59,12 +60,17 @@ export function renderGraph(
     renderSelectedPath(context, options.selectedPath);
   }
 
-  // 4. Hovered edge highlighting (top layer)
+  // 4. Individual selected edges (red highlighting)
+  if (options.selectedIndividualEdges && options.selectedIndividualEdges.length > 0) {
+    renderSelectedIndividualEdges(context, options.selectedIndividualEdges);
+  }
+
+  // 5. Hovered edge highlighting (top layer)
   if (options.hoveredEdge) {
     renderHoveredEdge(context, options.hoveredEdge);
   }
 
-  // 5. Alignment dots (always on top)
+  // 6. Alignment dots (always on top)
   if (options.showAlignmentDots) {
     renderAlignmentDots(context, alignments, options);
   }
@@ -183,6 +189,37 @@ function renderSelectedPath(
   });
 
   ctx.stroke();
+
+  // Clear shadow for subsequent drawing
+  ctx.shadowBlur = 0;
+}
+
+/**
+ * Render individual selected edges with red highlighting
+ */
+function renderSelectedIndividualEdges(
+  context: RenderingContext,
+  selectedEdges: Edge[]
+): void {
+  const { ctx, x, y } = context;
+
+  // Draw each selected edge individually in red
+  ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)'; // Bright red
+  ctx.lineWidth = 3;
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Add a subtle glow effect
+  ctx.shadowColor = 'rgba(255, 0, 0, 0.4)';
+  ctx.shadowBlur = 6;
+
+  selectedEdges.forEach(edge => {
+    ctx.beginPath();
+    ctx.moveTo(x(edge.from[0]), y(edge.from[1]));
+    ctx.lineTo(x(edge.to[0]), y(edge.to[1]));
+    ctx.stroke();
+  });
 
   // Clear shadow for subsequent drawing
   ctx.shadowBlur = 0;

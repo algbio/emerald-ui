@@ -196,7 +196,7 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
         {effectiveActiveTab === 'custom' && pathSelectionResult && (
           <div className="alignment-stats">
             <span>Path Length: {pathSelectionResult.pathLength}</span>
-            <span>Score: {pathSelectionResult.score.toFixed(3)}</span>
+            <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
           </div>
         )}
       </div>
@@ -213,7 +213,7 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
             className={`tab-button ${effectiveActiveTab === 'custom' ? 'active' : ''}`}
             onClick={() => setActiveTab('custom')}
           >
-            Custom Path {pathSelectionResult && `(Score: ${pathSelectionResult.score.toFixed(3)})`}
+            Custom Path {pathSelectionResult && `(Distance: ${pathSelectionResult.distanceFromOptimal}%)`}
           </button>
         </div>
       )}

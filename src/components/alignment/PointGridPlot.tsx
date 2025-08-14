@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, forwardRef, useImperativeHandle, useCallba
 import * as d3 from "d3";
 import { usePointGridScales } from '../../hooks/usePointGridScales';
 import { usePointGridTicks } from '../../hooks/usePointGridTicks';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { 
   drawSafetyWindows, 
   drawAxes, 
@@ -16,7 +17,7 @@ import {
   isMouseInMinimap
 } from '../../utils/canvas';
 import { renderGraph, findClosestEdge, getAllEdges } from '../../utils/canvas/graphRenderer';
-import { buildPathFromEdge, generateAlignmentFromPath, validatePath, type SelectedPath } from '../../utils/canvas/pathSelection';
+import { buildPathFromEdge, generateAlignmentFromPath, validatePath, calculateDistanceFromOptimalPath, type SelectedPath } from '../../utils/canvas/pathSelection';
 import type { SafetyWindowBounds } from '../../utils/canvas';
 import type { PointGridPlotProps, Alignment, PathSelectionResult } from '../../types/PointGrid';
 
@@ -81,6 +82,8 @@ interface PointGridProps {
   // NEW: Path selection props
   enablePathSelection?: boolean;
   onPathSelected?: (result: PathSelectionResult) => void;
+  onEdgeSelected?: (selectedEdges: import('../../types/PointGrid').MultipleSelectedEdgesState) => void;
+  generatedPath?: import('../../utils/canvas/pathSelection').SelectedPath | null;
 }
 
 const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
@@ -116,10 +119,15 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   memberDescriptor,
   // NEW: Path selection props
   enablePathSelection = false,
-  onPathSelected
+  onPathSelected,
+  onEdgeSelected,
+  generatedPath
 }, ref) => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Feedback notifications hook
+  const { notifySuccess, notifyError } = useFeedbackNotifications();
   
   const [transform, setTransform] = useState(d3.zoomIdentity);
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
@@ -129,10 +137,19 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // NEW: Path selection state
   const [selectedPath, setSelectedPath] = useState<SelectedPath | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<import('../../types/PointGrid').Edge | null>(null);
+  const [selectedIndividualEdges, setSelectedIndividualEdges] = useState<import('../../types/PointGrid').Edge[]>([]);
+
+  // Update selectedPath when generatedPath changes
+  useEffect(() => {
+    if (generatedPath) {
+      setSelectedPath(generatedPath);
+    }
+  }, [generatedPath]);
 
   // Clear path function for better UX
   const clearSelectedPath = useCallback(() => {
     setSelectedPath(null);
+    setSelectedIndividualEdges([]);
   }, []);
 
   // Keyboard event handling for path selection
@@ -376,7 +393,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showOptimalPath,
         showSelectedPath: enablePathSelection && selectedPath !== null,
         selectedPath: selectedPath || undefined,
-        hoveredEdge: hoveredEdge || undefined
+        hoveredEdge: hoveredEdge || undefined,
+        selectedIndividualEdges: enablePathSelection ? selectedIndividualEdges : undefined
       }
     );
 
@@ -514,46 +532,101 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     }
   };
 
-  // NEW: Handle edge click for path selection
+  // NEW: Handle edge click for individual edge selection
   const handleEdgeClick = (clickedEdge: import('../../types/PointGrid').Edge) => {
-    if (!enablePathSelection || !onPathSelected) return;
+    if (!enablePathSelection) return;
 
-    // Build path from the clicked edge
-    const allEdges = getAllEdges(alignments);
-    const newPath = buildPathFromEdge(clickedEdge, allEdges);
-    
-    // Validate the path
-    if (validatePath(newPath, allEdges)) {
-      setSelectedPath(newPath);
+    if (onEdgeSelected) {
+      // Check if edge is already selected
+      const edgeIndex = selectedIndividualEdges.findIndex(edge => 
+        edge.from[0] === clickedEdge.from[0] && 
+        edge.from[1] === clickedEdge.from[1] &&
+        edge.to[0] === clickedEdge.to[0] && 
+        edge.to[1] === clickedEdge.to[1]
+      );
+
+      let newSelectedEdges: import('../../types/PointGrid').Edge[];
       
-      // Generate alignment from path
-      const alignmentResult = generateAlignmentFromPath(newPath, representative, member);
+      if (edgeIndex >= 0) {
+        // Edge is already selected, remove it
+        newSelectedEdges = selectedIndividualEdges.filter((_, index) => index !== edgeIndex);
+      } else {
+        // Edge is not selected, add it
+        newSelectedEdges = [...selectedIndividualEdges, clickedEdge];
+      }
+
+      setSelectedIndividualEdges(newSelectedEdges);
       
-      // Visual feedback - brief cursor change to indicate success
+      // Visual feedback
       const canvas = canvasRef.current;
       if (canvas) {
         canvas.style.cursor = 'wait';
         setTimeout(() => {
           canvas.style.cursor = enablePathSelection ? 'crosshair' : 'default';
-        }, 200);
+        }, 100);
       }
-      
-      // Call the callback with the result
-      onPathSelected({
-        alignedRepresentative: alignmentResult.alignedRep,
-        alignedMember: alignmentResult.alignedMem,
-        score: alignmentResult.score,
-        pathLength: newPath.edges.length
+
+      // Call the edge selection callback with individual edges
+      onEdgeSelected({
+        selectedEdges: newSelectedEdges,
+        isValid: newSelectedEdges.length > 0
       });
-    } else {
-      // Visual feedback for invalid path
-      console.warn('Invalid path selected');
-      const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.style.cursor = 'not-allowed';
-        setTimeout(() => {
-          canvas.style.cursor = enablePathSelection ? 'crosshair' : 'default';
-        }, 300);
+    } 
+    // Fall back to old behavior for compatibility
+    else if (onPathSelected) {
+      // Build path from the clicked edge
+      const allEdges = getAllEdges(alignments);
+      const newPath = buildPathFromEdge(clickedEdge, allEdges);
+      
+      // Validate the path
+      if (validatePath(newPath, allEdges)) {
+        setSelectedPath(newPath);
+        
+        // Generate alignment from path
+        const alignmentResult = generateAlignmentFromPath(newPath, representative, member);
+        
+        // Calculate distance from optimal path
+        const distanceFromOptimal = calculateDistanceFromOptimalPath(newPath, alignments);
+        
+        // Visual feedback - brief cursor change to indicate success
+        const canvas = canvasRef.current;
+        if (canvas) {
+          canvas.style.cursor = 'wait';
+          setTimeout(() => {
+            canvas.style.cursor = enablePathSelection ? 'crosshair' : 'default';
+          }, 200);
+        }
+        
+        // Call the callback with the result
+        onPathSelected({
+          alignedRepresentative: alignmentResult.alignedRep,
+          alignedMember: alignmentResult.alignedMem,
+          score: alignmentResult.score,
+          pathLength: newPath.edges.length,
+          distanceFromOptimal: distanceFromOptimal
+        });
+        
+        // Show success feedback notification
+        notifySuccess(
+          'Path Generated Successfully!', 
+          `Selected path with ${newPath.edges.length} edges (${distanceFromOptimal.toFixed(1)}% from optimal)`
+        );
+      } else {
+        // Visual feedback for invalid path
+        console.warn('Invalid path selected');
+        const canvas = canvasRef.current;
+        if (canvas) {
+          canvas.style.cursor = 'not-allowed';
+          setTimeout(() => {
+            canvas.style.cursor = enablePathSelection ? 'crosshair' : 'default';
+          }, 300);
+        }
+        
+        // Show error feedback notification
+        notifyError(
+          'Invalid Path Selected', 
+          'The selected edge cannot form a valid alignment path. Please select an edge that allows movement only to the right and/or down'
+        );
       }
     }
   };

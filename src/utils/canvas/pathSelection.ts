@@ -256,11 +256,14 @@ export function generateAlignmentFromPath(
  */
 export function validatePath(path: SelectedPath, availableEdges: Edge[]): boolean {
   if (!path.isValid || path.edges.length === 0) {
+    console.warn('Path validation failed: path.isValid =', path.isValid, 'path.edges.length =', path.edges.length);
     return false;
   }
 
   // Check each edge in the path
-  for (const pathEdge of path.edges) {
+  for (let i = 0; i < path.edges.length; i++) {
+    const pathEdge = path.edges[i];
+    
     // Verify edge exists in available edges
     const edgeExists = availableEdges.some(edge =>
       edge.from[0] === pathEdge.from[0] &&
@@ -270,6 +273,7 @@ export function validatePath(path: SelectedPath, availableEdges: Edge[]): boolea
     );
 
     if (!edgeExists) {
+      console.warn(`Path validation failed: Edge ${i} from (${pathEdge.from[0]}, ${pathEdge.from[1]}) to (${pathEdge.to[0]}, ${pathEdge.to[1]}) does not exist in available edges`);
       return false;
     }
 
@@ -278,6 +282,7 @@ export function validatePath(path: SelectedPath, availableEdges: Edge[]): boolea
       { x: pathEdge.from[0], y: pathEdge.from[1] },
       { x: pathEdge.to[0], y: pathEdge.to[1] }
     )) {
+      console.warn(`Path validation failed: Edge ${i} from (${pathEdge.from[0]}, ${pathEdge.from[1]}) to (${pathEdge.to[0]}, ${pathEdge.to[1]}) violates direction constraint (must be right/down only)`);
       return false;
     }
   }
@@ -289,9 +294,503 @@ export function validatePath(path: SelectedPath, availableEdges: Edge[]): boolea
 
     if (currentEdge.to[0] !== nextEdge.from[0] || 
         currentEdge.to[1] !== nextEdge.from[1]) {
+      console.warn(`Path validation failed: Path is not continuous between edge ${i} ending at (${currentEdge.to[0]}, ${currentEdge.to[1]}) and edge ${i + 1} starting at (${nextEdge.from[0]}, ${nextEdge.from[1]})`);
       return false; // Path is not continuous
     }
   }
 
+  console.log('Path validation passed for path with', path.edges.length, 'edges');
   return true;
+}
+
+/**
+ * Builds a complete path that goes through all selected edges
+ * This creates a full path from (0,0) to the bottom-right corner that passes through selected edges
+ * @param selectedEdges Array of individual edges to connect
+ * @param allEdges All available edges in the graph
+ * @param graphWidth Width of the graph (representative sequence length)
+ * @param graphHeight Height of the graph (member sequence length)
+ * @returns Selected path object that connects all selected edges in a complete path
+ */
+export function buildPathThroughSelectedEdges(
+  selectedEdges: Edge[],
+  allEdges: Edge[],
+  graphWidth?: number,
+  graphHeight?: number
+): SelectedPath {
+  console.log('buildPathThroughSelectedEdges called with:');
+  console.log('- selectedEdges count:', selectedEdges.length);
+  console.log('- selectedEdges:', selectedEdges);
+  console.log('- graphWidth:', graphWidth, 'graphHeight:', graphHeight);
+
+  // CRITICAL FIX: Filter out self-loop edges before processing
+  const validAllEdges = allEdges.filter(edge => 
+    !(edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1])
+  );
+  
+  console.log(`Filtered out ${allEdges.length - validAllEdges.length} self-loop edges from available edges`);
+
+  if (selectedEdges.length === 0) {
+    console.log('No selected edges, returning invalid path');
+    return { points: [], edges: [], isValid: false };
+  }
+
+  // If only one edge selected, build a complete path that goes through it
+  if (selectedEdges.length === 1) {
+    console.log('Single edge selected, building complete path through it');
+    const result = buildCompletePathThroughEdge(selectedEdges[0], validAllEdges, graphWidth, graphHeight);
+    console.log('Single edge path result:', result);
+    return result;
+  }
+
+  // Sort selected edges to find a logical order (from top-left to bottom-right)
+  const sortedEdges = [...selectedEdges].sort((a, b) => {
+    // Primary sort: by start position (top-left first)
+    const aStart = a.from[0] + a.from[1];
+    const bStart = b.from[0] + b.from[1];
+    return aStart - bStart;
+  });
+
+  console.log('Sorted edges for path building:', sortedEdges);
+
+  // Build complete path from (0,0) to end that goes through all selected edges
+  const pathPoints: PathPoint[] = [];
+  const pathEdges: Edge[] = [];
+  let pathIsValid = true;
+
+  // Start from (0,0)
+  let currentPoint = { x: 0, y: 0 };
+  pathPoints.push(currentPoint);
+  console.log('Starting path construction from (0,0)');
+  
+  // Connect to each selected edge in order
+  for (let i = 0; i < sortedEdges.length; i++) {
+    const targetEdge = sortedEdges[i];
+    const targetStart = { x: targetEdge.from[0], y: targetEdge.from[1] };
+    
+    console.log(`Processing edge ${i}: from (${targetEdge.from[0]}, ${targetEdge.from[1]}) to (${targetEdge.to[0]}, ${targetEdge.to[1]})`);
+    console.log(`Current point: (${currentPoint.x}, ${currentPoint.y}), Target start: (${targetStart.x}, ${targetStart.y})`);
+    
+    // If we're not already at the target edge start, find path to it
+    if (currentPoint.x !== targetStart.x || currentPoint.y !== targetStart.y) {
+      console.log('Need to find intermediate path from current point to target edge start');
+      const intermediatePath = findPathBetweenPoints(currentPoint, targetStart, validAllEdges);
+      console.log('Intermediate path found:', intermediatePath.length, 'edges');
+      
+      if (intermediatePath.length > 0) {
+        // Validate each intermediate edge before adding
+        for (const edge of intermediatePath) {
+          if (!isValidPathDirection({ x: edge.from[0], y: edge.from[1] }, { x: edge.to[0], y: edge.to[1] })) {
+            console.error(`Invalid intermediate edge direction: from (${edge.from[0]}, ${edge.from[1]}) to (${edge.to[0]}, ${edge.to[1]})`);
+            pathIsValid = false;
+            break;
+          }
+        }
+        
+        if (pathIsValid) {
+          pathEdges.push(...intermediatePath);
+          pathPoints.push(...intermediatePath.map(edge => ({ x: edge.to[0], y: edge.to[1] })));
+          currentPoint = { x: intermediatePath[intermediatePath.length - 1].to[0], y: intermediatePath[intermediatePath.length - 1].to[1] };
+          console.log('After intermediate path, current point:', currentPoint);
+        } else {
+          break;
+        }
+      } else {
+        console.error('Could not find intermediate path from', currentPoint, 'to', targetStart);
+        pathIsValid = false;
+        break;
+      }
+    } else {
+      console.log('Already at target edge start, no intermediate path needed');
+    }
+    
+    // Validate the target edge direction
+    if (!isValidPathDirection({ x: targetEdge.from[0], y: targetEdge.from[1] }, { x: targetEdge.to[0], y: targetEdge.to[1] })) {
+      console.error(`Invalid target edge direction: from (${targetEdge.from[0]}, ${targetEdge.from[1]}) to (${targetEdge.to[0]}, ${targetEdge.to[1]})`);
+      pathIsValid = false;
+      break;
+    }
+    
+    // Add the selected edge itself
+    pathEdges.push(targetEdge);
+    currentPoint = { x: targetEdge.to[0], y: targetEdge.to[1] };
+    pathPoints.push(currentPoint);
+    console.log('Added target edge, current point now:', currentPoint);
+  }  
+  // Complete the path to the bottom-right corner if we know the dimensions
+  if (pathIsValid && graphWidth && graphHeight) {
+    const finalTarget = { x: graphWidth - 1, y: graphHeight - 1 };
+    console.log(`Completing path to final target: (${finalTarget.x}, ${finalTarget.y})`);
+    
+    if (currentPoint.x !== finalTarget.x || currentPoint.y !== finalTarget.y) {
+      const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validAllEdges);
+      console.log('Final path found:', finalPath.length, 'edges');
+      
+      if (finalPath.length > 0) {
+        // Validate final path edges
+        for (const edge of finalPath) {
+          if (!isValidPathDirection({ x: edge.from[0], y: edge.from[1] }, { x: edge.to[0], y: edge.to[1] })) {
+            console.error(`Invalid final path edge direction: from (${edge.from[0]}, ${edge.from[1]}) to (${edge.to[0]}, ${edge.to[1]})`);
+            pathIsValid = false;
+            break;
+          }
+        }
+        
+        if (pathIsValid) {
+          pathEdges.push(...finalPath);
+          pathPoints.push(...finalPath.map(edge => ({ x: edge.to[0], y: edge.to[1] })));
+        }
+      } else {
+        console.warn('Could not find final path to complete the alignment');
+        // Don't mark as invalid if we can't complete to the end - partial paths are ok
+      }
+    }
+  }
+
+  // Validate path continuity if we have a valid path so far
+  if (pathIsValid && pathEdges.length > 1) {
+    console.log('Validating path continuity...');
+    for (let i = 0; i < pathEdges.length - 1; i++) {
+      const currentEdge = pathEdges[i];
+      const nextEdge = pathEdges[i + 1];
+      
+      if (currentEdge.to[0] !== nextEdge.from[0] || currentEdge.to[1] !== nextEdge.from[1]) {
+        console.error(`Path discontinuity at edge ${i}: current edge ends at (${currentEdge.to[0]}, ${currentEdge.to[1]}) but next edge starts at (${nextEdge.from[0]}, ${nextEdge.from[1]})`);
+        pathIsValid = false;
+        break;
+      }
+    }
+  }
+
+  const result = {
+    points: pathPoints,
+    edges: pathEdges,
+    isValid: pathIsValid && pathEdges.length > 0
+  };
+  
+  console.log('buildPathThroughSelectedEdges final result:');
+  console.log('- Total edges:', pathEdges.length);
+  console.log('- Points count:', pathPoints.length);
+  console.log('- isValid:', result.isValid);
+  console.log('- Full result:', result);
+  
+  return result;
+}
+
+/**
+ * Builds a complete path from (0,0) to bottom-right that goes through a single edge
+ */
+function buildCompletePathThroughEdge(
+  selectedEdge: Edge,
+  allEdges: Edge[],
+  graphWidth?: number,
+  graphHeight?: number
+): SelectedPath {
+  // Filter out self-loop edges
+  const validEdges = allEdges.filter(edge => 
+    !(edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1])
+  );
+  
+  const pathPoints: PathPoint[] = [];
+  const pathEdges: Edge[] = [];
+  
+  // Start from (0,0)
+  let currentPoint = { x: 0, y: 0 };
+  pathPoints.push(currentPoint);
+  
+  // Find path to the selected edge
+  const edgeStart = { x: selectedEdge.from[0], y: selectedEdge.from[1] };
+  if (currentPoint.x !== edgeStart.x || currentPoint.y !== edgeStart.y) {
+    const pathToEdge = findPathBetweenPoints(currentPoint, edgeStart, validEdges);
+    if (pathToEdge.length > 0) {
+      pathEdges.push(...pathToEdge);
+      pathPoints.push(...pathToEdge.map(edge => ({ x: edge.to[0], y: edge.to[1] })));
+      currentPoint = { x: pathToEdge[pathToEdge.length - 1].to[0], y: pathToEdge[pathToEdge.length - 1].to[1] };
+    }
+  }
+  
+  // Add the selected edge
+  pathEdges.push(selectedEdge);
+  currentPoint = { x: selectedEdge.to[0], y: selectedEdge.to[1] };
+  pathPoints.push(currentPoint);
+  
+  // Complete path to bottom-right if dimensions are known
+  if (graphWidth && graphHeight) {
+    const finalTarget = { x: graphWidth - 1, y: graphHeight - 1 };
+    if (currentPoint.x !== finalTarget.x || currentPoint.y !== finalTarget.y) {
+      const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validEdges);
+      if (finalPath.length > 0) {
+        pathEdges.push(...finalPath);
+        pathPoints.push(...finalPath.map(edge => ({ x: edge.to[0], y: edge.to[1] })));
+      }
+    }
+  }
+  
+  const result = {
+    points: pathPoints,
+    edges: pathEdges,
+    isValid: pathEdges.length > 0
+  };
+  
+  // Validate the generated single-edge path
+  if (result.isValid && pathEdges.length > 0) {
+    for (let i = 0; i < pathEdges.length - 1; i++) {
+      const currentEdge = pathEdges[i];
+      const nextEdge = pathEdges[i + 1];
+      
+      // Check continuity
+      if (currentEdge.to[0] !== nextEdge.from[0] || currentEdge.to[1] !== nextEdge.from[1]) {
+        console.warn('Single-edge path has discontinuity at edge', i);
+        result.isValid = false;
+        break;
+      }
+      
+      // Check direction constraints
+      if (currentEdge.to[0] < currentEdge.from[0] || currentEdge.to[1] < currentEdge.from[1]) {
+        console.warn('Single-edge path has invalid direction at edge', i);
+        result.isValid = false;
+        break;
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Quick pathfinding algorithm that follows the "right and/or down" rule
+ * Uses BFS approach for optimal path finding
+ */
+function findQuickPath(
+  start: PathPoint,
+  target: PathPoint,
+  validEdges: Edge[]
+): Edge[] {
+  console.log(`findQuickPath: from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
+  
+  // If we're already at the target, no path needed
+  if (start.x === target.x && start.y === target.y) {
+    console.log('  Already at target, no path needed');
+    return [];
+  }
+  
+  // Validate that the target is reachable (must be to the right and/or down)
+  if (target.x < start.x || target.y < start.y) {
+    console.error(`  Invalid target: cannot move backwards from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
+    return [];
+  }
+  
+  // Create a map of available edges for quick lookup
+  const edgeMap = new Map<string, Edge[]>();
+  for (const edge of validEdges) {
+    const key = `${edge.from[0]},${edge.from[1]}`;
+    if (!edgeMap.has(key)) {
+      edgeMap.set(key, []);
+    }
+    edgeMap.get(key)!.push(edge);
+  }
+  
+  // Use BFS to find the shortest path that only moves right/down
+  const queue: Array<{point: PathPoint, path: Edge[]}> = [
+    {point: start, path: []}
+  ];
+  const visited = new Set<string>();
+  
+  while (queue.length > 0) {
+    const {point, path} = queue.shift()!;
+    const pointKey = `${point.x},${point.y}`;
+    
+    // Skip if we've already visited this point
+    if (visited.has(pointKey)) {
+      continue;
+    }
+    visited.add(pointKey);
+    
+    // Check if we've reached the target
+    if (point.x === target.x && point.y === target.y) {
+      console.log(`  Found path with ${path.length} edges`);
+      return path;
+    }
+    
+    // Get all valid edges from current point
+    const availableEdges = edgeMap.get(pointKey) || [];
+    
+    for (const edge of availableEdges) {
+      const nextPoint = {x: edge.to[0], y: edge.to[1]};
+      const nextKey = `${nextPoint.x},${nextPoint.y}`;
+      
+      // Only consider moves that go right and/or down
+      if (nextPoint.x >= point.x && nextPoint.y >= point.y && 
+          !visited.has(nextKey) &&
+          // Must not overshoot the target
+          nextPoint.x <= target.x && nextPoint.y <= target.y) {
+        
+        queue.push({
+          point: nextPoint,
+          path: [...path, edge]
+        });
+      }
+    }
+  }
+  
+  console.log(`  No path found from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
+  return [];
+}
+
+/**
+ * Finds a path between two points using available edges
+ * Uses a simple greedy approach to find edges that move from start toward target
+ */
+function findPathBetweenPoints(
+  start: PathPoint,
+  target: PathPoint,
+  allEdges: Edge[]
+): Edge[] {
+  console.log(`findPathBetweenPoints: from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
+  
+  // CRITICAL FIX: Filter out self-loop edges that don't actually move anywhere
+  const validEdges = allEdges.filter(edge => 
+    !(edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1])
+  );
+  
+  console.log(`Filtered out ${allEdges.length - validEdges.length} self-loop edges`);
+  
+  // Use the new quick pathfinding algorithm
+  return findQuickPath(start, target, validEdges);
+}
+
+/**
+ * Calculates the distance between a custom path and the optimal alignment path
+ * @param customPath The user-selected custom path
+ * @param alignments All alignments (to find the optimal one)
+ * @returns Distance metric indicating how far the custom path deviates from optimal
+ */
+export function calculateDistanceFromOptimalPath(
+  customPath: SelectedPath,
+  alignments: Alignment[]
+): number {
+  if (!customPath.isValid || customPath.edges.length === 0) {
+    return Infinity;
+  }
+
+  // Find the optimal alignment (typically colored blue)
+  const optimalAlignment = alignments.find(alignment => alignment.color === 'blue');
+  if (!optimalAlignment || optimalAlignment.edges.length === 0) {
+    return 0; // No optimal path to compare against
+  }
+
+  // Create sets of edge coordinates for faster lookup
+  const optimalEdgeSet = new Set(
+    optimalAlignment.edges.map(edge => 
+      `${edge.from[0]},${edge.from[1]}->${edge.to[0]},${edge.to[1]}`
+    )
+  );
+
+  const customEdgeSet = new Set(
+    customPath.edges.map(edge => 
+      `${edge.from[0]},${edge.from[1]}->${edge.to[0]},${edge.to[1]}`
+    )
+  );
+
+  // Calculate overlap (edges that are in both paths)
+  let sharedEdges = 0;
+  for (const edge of customEdgeSet) {
+    if (optimalEdgeSet.has(edge)) {
+      sharedEdges++;
+    }
+  }
+
+  // Calculate different distance metrics
+  const totalOptimalEdges = optimalAlignment.edges.length;
+  const totalCustomEdges = customPath.edges.length;
+  
+  // Jaccard distance: 1 - (intersection / union)
+  const union = totalOptimalEdges + totalCustomEdges - sharedEdges;
+  const jaccardSimilarity = union > 0 ? sharedEdges / union : 0;
+  const jaccardDistance = 1 - jaccardSimilarity;
+
+  // Convert to percentage and round
+  return Math.round(jaccardDistance * 100);
+}
+
+/**
+ * Calculates a more detailed distance analysis between custom and optimal paths
+ * @param customPath The user-selected custom path
+ * @param alignments All alignments (to find the optimal one)
+ * @returns Detailed distance information
+ */
+export function calculateDetailedPathComparison(
+  customPath: SelectedPath,
+  alignments: Alignment[]
+): {
+  distancePercentage: number;
+  sharedEdges: number;
+  totalOptimalEdges: number;
+  totalCustomEdges: number;
+  uniqueToOptimal: number;
+  uniqueToCustom: number;
+} {
+  if (!customPath.isValid || customPath.edges.length === 0) {
+    return {
+      distancePercentage: 100,
+      sharedEdges: 0,
+      totalOptimalEdges: 0,
+      totalCustomEdges: 0,
+      uniqueToOptimal: 0,
+      uniqueToCustom: 0
+    };
+  }
+
+  // Find the optimal alignment (typically colored blue)
+  const optimalAlignment = alignments.find(alignment => alignment.color === 'blue');
+  if (!optimalAlignment || optimalAlignment.edges.length === 0) {
+    return {
+      distancePercentage: 0,
+      sharedEdges: 0,
+      totalOptimalEdges: 0,
+      totalCustomEdges: customPath.edges.length,
+      uniqueToOptimal: 0,
+      uniqueToCustom: customPath.edges.length
+    };
+  }
+
+  // Create sets of edge coordinates for comparison
+  const optimalEdgeSet = new Set(
+    optimalAlignment.edges.map(edge => 
+      `${edge.from[0]},${edge.from[1]}->${edge.to[0]},${edge.to[1]}`
+    )
+  );
+
+  const customEdgeSet = new Set(
+    customPath.edges.map(edge => 
+      `${edge.from[0]},${edge.from[1]}->${edge.to[0]},${edge.to[1]}`
+    )
+  );
+
+  // Calculate shared edges
+  let sharedEdges = 0;
+  for (const edge of customEdgeSet) {
+    if (optimalEdgeSet.has(edge)) {
+      sharedEdges++;
+    }
+  }
+
+  const totalOptimalEdges = optimalAlignment.edges.length;
+  const totalCustomEdges = customPath.edges.length;
+  const uniqueToOptimal = totalOptimalEdges - sharedEdges;
+  const uniqueToCustom = totalCustomEdges - sharedEdges;
+
+  // Jaccard distance as percentage
+  const union = totalOptimalEdges + totalCustomEdges - sharedEdges;
+  const jaccardSimilarity = union > 0 ? sharedEdges / union : 0;
+  const distancePercentage = Math.round((1 - jaccardSimilarity) * 100);
+
+  return {
+    distancePercentage,
+    sharedEdges,
+    totalOptimalEdges,
+    totalCustomEdges,
+    uniqueToOptimal,
+    uniqueToCustom
+  };
 }
