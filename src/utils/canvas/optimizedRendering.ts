@@ -66,8 +66,8 @@ export function drawAlignmentEdgesOptimized(
     // Draw edges in batches
     for (let i = 0; i < edges.length; i += skipFactor) {
       const edge = edges[i];
-      const opacity = Math.max(0.5, edge.probability);
-      const strokeWidth = Math.max(2, edge.probability * 4);
+      const opacity = Math.max(0.5, Math.min(0.7, edge.probability));
+      const strokeWidth = Math.max(0.8, Math.min(2.2, edge.probability * 2.5));
       
       if (!isOptimalPath) {
         ctx.lineWidth = strokeWidth;

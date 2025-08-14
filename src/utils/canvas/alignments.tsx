@@ -19,9 +19,9 @@ export function drawAlignmentEdges(
         ctx.lineWidth = 2.5; // Slightly thicker but still thin
         ctx.globalAlpha = 0.85; // Higher opacity for visibility
       } else {
-        // Default styling for other alignments
-        const opacity = Math.max(0.5, edge.probability);
-        const strokeWidth = Math.max(2, edge.probability * 4);
+        // Default styling for other alignments with subtle variations
+        const opacity = Math.max(0.5, Math.min(0.7, edge.probability));
+        const strokeWidth = Math.max(0.8, Math.min(2.2, edge.probability * 2.5));
         
         ctx.strokeStyle = alignment.color;
         ctx.lineWidth = strokeWidth;

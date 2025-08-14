@@ -80,7 +80,7 @@ export function renderGraph(
 }
 
 /**
- * Render regular alignment edges with clean, efficient drawing
+ * Render regular alignment edges with weight-based thickness
  */
 function renderAlignmentEdges(
   context: RenderingContext,
@@ -88,36 +88,33 @@ function renderAlignmentEdges(
 ): void {
   const { ctx, x, y } = context;
 
-  // Group edges by color for efficient batch rendering
-  const edgesByColor: { [color: string]: Edge[] } = {};
-
   alignments.forEach(alignment => {
     // Skip optimal path edges - they'll be rendered separately
     if (alignment.color === 'blue') return;
     
-    if (!edgesByColor[alignment.color]) {
-      edgesByColor[alignment.color] = [];
-    }
-    
     alignment.edges.forEach(edge => {
-      edgesByColor[alignment.color].push(edge);
+      const [fromX, fromY] = edge.from;
+      const [toX, toY] = edge.to;
+      
+      // Weight-based styling for edges with subtle variations
+      const opacity = Math.max(0.5, Math.min(0.7, edge.probability));
+      const strokeWidth = Math.max(0.8, Math.min(2.2, edge.probability * 2.5));
+      
+      ctx.strokeStyle = alignment.color;
+      ctx.lineWidth = strokeWidth;
+      ctx.globalAlpha = opacity;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      ctx.beginPath();
+      ctx.moveTo(x(fromX), y(fromY));
+      ctx.lineTo(x(toX), y(toY));
+      ctx.stroke();
     });
   });
-
-  // Render each color group in a single batch
-  Object.entries(edgesByColor).forEach(([color, edges]) => {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.4; // Subtle background edges
-
-    // Use a single path for all edges of the same color
-    ctx.beginPath();
-    edges.forEach(edge => {
-      ctx.moveTo(x(edge.from[0]), y(edge.from[1]));
-      ctx.lineTo(x(edge.to[0]), y(edge.to[1]));
-    });
-    ctx.stroke();
-  });
+  
+  // Reset alpha for subsequent drawing
+  ctx.globalAlpha = 1;
 }
 
 /**

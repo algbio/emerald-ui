@@ -44,17 +44,23 @@ export function drawHoverHighlight(
       edge.from[0] === hoveredCell.x &&
       edge.from[1] === hoveredCell.y &&
       !(edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1]) // skip self-edges
-    )
+    ).map(edge => ({ ...edge, alignmentColor: alignment.color }))
   );
   
   // Prepare text lines
   const baseText = `${representative[hoveredCell.x]} → ${member[hoveredCell.y]}, (${hoveredCell.x}, ${hoveredCell.y})`;
   const textLines = [baseText];
   
+  // Separate optimal path edges from regular edges
+  const optimalEdges = matchingEdges.filter(edge => edge.alignmentColor === 'blue');
+  const regularEdges = matchingEdges.filter(edge => edge.alignmentColor !== 'blue');
+  
   // Add weight information as additional lines if available
-  if (matchingEdges.length > 0) {
+  if (regularEdges.length > 0 || optimalEdges.length > 0) {
     textLines.push('Weights:');
-    matchingEdges.forEach(edge => {
+    
+    // Show regular edges with their probabilities
+    regularEdges.forEach(edge => {
       let fromChar = '_';
       let toChar = '_';
       // If edge is diagonal (1,1), it's an alignment: show both chars
@@ -74,8 +80,12 @@ export function drawHoverHighlight(
         toChar = member[edge.from[1]] ?? '_';
       }
       textLines.push(`  ${fromChar} → ${toChar} : (${edge.probability.toFixed(2)})`);
-      
     });
+    
+    // Show optimal alignment indication if present
+    if (optimalEdges.length > 0) {
+      textLines.push('  ★ Optimal Alignment Path');
+    }
   }
   
   // Set up text rendering

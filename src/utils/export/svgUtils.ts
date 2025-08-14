@@ -323,9 +323,9 @@ function drawSVGAlignmentEdges(
         strokeWidth = 1.5; // Slightly thicker but still thin
         opacity = 0.85; // Higher opacity for visibility
       } else {
-        // Default styling for other alignments
-        opacity = Math.max(0.5, edge.probability);
-        strokeWidth = Math.max(2, edge.probability * 4);
+        // Default styling for other alignments with subtle variations
+        opacity = Math.max(0.5, Math.min(0.7, edge.probability));
+        strokeWidth = Math.max(0.8, Math.min(2.2, edge.probability * 2.5));
         strokeColor = alignment.color || '#666';
       }
       

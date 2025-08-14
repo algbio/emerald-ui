@@ -632,6 +632,20 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
     // Process optimal path data
     if (result.optimal_path && Array.isArray(result.optimal_path)) {
       console.log('Processing optimal path with', result.optimal_path.length, 'points');
+      
+      // Create a map of edge coordinates to their probabilities from alignment_graph
+      const edgeMap = new Map<string, number>();
+      if (result.alignment_graph && Array.isArray(result.alignment_graph)) {
+        for (const node of result.alignment_graph) {
+          if (node && Array.isArray(node.edges)) {
+            for (const edge of node.edges) {
+              const key = `${node.from[0]},${node.from[1]}->${edge[0]},${edge[1]}`;
+              edgeMap.set(key, edge[2]); // edge[2] is the probability
+            }
+          }
+        }
+      }
+      
       // Convert optimal path coordinates to edges connecting consecutive points
       const optimalPathEdges = [];
       for (let i = 0; i < result.optimal_path.length - 1; i++) {
@@ -641,11 +655,20 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         if (currentPoint && nextPoint && 
             Array.isArray(currentPoint) && Array.isArray(nextPoint) &&
             currentPoint.length >= 2 && nextPoint.length >= 2) {
+          
+          // Look up the actual probability for this edge from the alignment graph
+          const edgeKey = `${currentPoint[0]},${currentPoint[1]}->${nextPoint[0]},${nextPoint[1]}`;
+          const actualProbability = edgeMap.get(edgeKey);
+          
           optimalPathEdges.push({
             from: [currentPoint[0], currentPoint[1]] as [number, number],
             to: [nextPoint[0], nextPoint[1]] as [number, number],
-            probability: 1.0 // Use full probability for the optimal path
+            probability: actualProbability ?? 1.0 // Use actual probability if found, fallback to 1.0
           });
+          
+          if (actualProbability !== undefined && actualProbability !== 1.0) {
+            console.log(`Optimal path edge ${edgeKey} using actual probability: ${actualProbability}`);
+          }
         }
       }
       
