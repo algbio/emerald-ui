@@ -18,6 +18,8 @@
   margin-bottom: 16px;
   padding-bottom: 8px;
   border-bottom: 1px solid #444;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .alignment-section-header h3 {
@@ -25,6 +27,62 @@
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
+  flex-shrink: 0;
+}
+
+.alignment-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.copy-fasta-button,
+.export-fasta-button {
+  padding: 6px 12px;
+  border: 1px solid #82AAFF;
+  background: rgba(130, 170, 255, 0.1);
+  color: #82AAFF;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-fasta-button:hover,
+.export-fasta-button:hover {
+  background: rgba(130, 170, 255, 0.2);
+  border-color: #9BB2FF;
+  color: #9BB2FF;
+}
+
+.copy-fasta-button:active,
+.export-fasta-button:active {
+  transform: translateY(1px);
+}
+
+.alignment-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #BBBBBB;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.alignment-stats span {
+  padding: 4px 8px;
+  background-color: rgba(130, 170, 255, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(130, 170, 255, 0.2);
 }
 
 /* Alignment tabs */
@@ -54,20 +112,6 @@
 .alignment-tabs .tab-button.active {
   color: #82AAFF;
   border-bottom-color: #82AAFF;
-}
-
-.alignment-stats {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: #BBBBBB;
-}
-
-.alignment-stats span {
-  padding: 4px 8px;
-  background-color: rgba(130, 170, 255, 0.1);
-  border-radius: 4px;
-  border: 1px solid rgba(130, 170, 255, 0.2);
 }
 
 .no-alignment {
@@ -273,6 +317,46 @@ body:has(:-moz-full-screen) .sequence-name {
 @media (max-width: 768px) {
   .sequence-alignment-viewer {
     padding: 8px;
+  }
+
+  .alignment-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .alignment-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .export-buttons {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .alignment-stats {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .copy-fasta-button,
+  .export-fasta-button {
+    flex: 1;
+    max-width: 150px;
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+
+  .alignment-section-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .alignment-row {
     margin: 8px 0;
     width: 100%;
     box-sizing: border-box;

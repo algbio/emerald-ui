@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { TextAlignment, PathSelectionResult } from '../../types/PointGrid';
+import { exportAlignmentAsFasta, copyAlignmentFastaToClipboard } from '../../utils/export/fastaUtils';
+import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import './SequenceAlignmentViewer.css';
 
 interface SequenceAlignmentViewerProps {
@@ -79,6 +81,7 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   memberDescriptor 
 }) => {
   const [activeTab, setActiveTab] = useState<'optimal' | 'custom'>('optimal');
+  const { notifySuccess, notifyError, notifyCopySuccess } = useFeedbackNotifications();
   
   // Determine what alignments we have
   const hasOptimalAlignment = alignment && alignment.representative && alignment.member;
@@ -189,16 +192,67 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
     similarityClasses.push(calculateSimilarity(i, [repSeq, memSeq]));
   }
 
+  // Export functions
+  const handleExportFasta = () => {
+    try {
+      exportAlignmentAsFasta(
+        repSeq,
+        memSeq,
+        repDesc,
+        memDesc,
+        effectiveActiveTab
+      );
+      notifySuccess('FASTA Exported', `Successfully exported ${effectiveActiveTab} alignment as FASTA file`);
+    } catch (error) {
+      console.error('Failed to export FASTA:', error);
+      notifyError('Export Failed', 'Failed to export FASTA file');
+    }
+  };
+
+  const handleCopyFasta = async () => {
+    try {
+      await copyAlignmentFastaToClipboard(
+        repSeq,
+        memSeq,
+        repDesc,
+        memDesc,
+        effectiveActiveTab
+      );
+      notifyCopySuccess('FASTA copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy FASTA:', error);
+      notifyError('Copy Failed', 'Failed to copy FASTA to clipboard');
+    }
+  };
+
   return (
     <div className="sequence-alignment-viewer">
       <div className="alignment-section-header">
         <h3>Sequence Alignment</h3>
-        {effectiveActiveTab === 'custom' && pathSelectionResult && (
-          <div className="alignment-stats">
-            <span>Path Length: {pathSelectionResult.pathLength}</span>
-            <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
+        <div className="alignment-actions">
+          {effectiveActiveTab === 'custom' && pathSelectionResult && (
+            <div className="alignment-stats">
+              <span>Path Length: {pathSelectionResult.pathLength}</span>
+              <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
+            </div>
+          )}
+          <div className="export-buttons">
+            <button
+              onClick={handleCopyFasta}
+              className="copy-fasta-button"
+              title="Copy alignment to clipboard in FASTA format"
+            >
+              📋 Copy FASTA
+            </button>
+            <button
+              onClick={handleExportFasta}
+              className="export-fasta-button"
+              title="Download alignment as FASTA file"
+            >
+              💾 Export FASTA
+            </button>
           </div>
-        )}
+        </div>
       </div>
       
       {showTabs && (
