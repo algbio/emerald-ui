@@ -1,4 +1,5 @@
 import React from 'react';
+import '../shared/Panel.css';
 import './VisualizationSettingsPanel.css';
 
 export interface VisualizationSettings {
@@ -51,201 +52,235 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
   };
 
   return (
-    <div className="visualization-settings-panel">
-      <div className="panel-header">
+    <div className="panel">
+      <div className="panel-header panel-header--large">
         <h3>Visualization Settings</h3>
         <div className="panel-subtitle">
           Customize what elements are displayed on the alignment graph
         </div>
       </div>
 
-      <div className="settings-sections">
-        <div className="settings-section">
-          <h4>Graph Elements</h4>
-          <div className="setting-group">
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showAxes}
-                  onChange={() => handleToggle('showAxes')}
-                />
-                <span className="checkmark"></span>
-                Show Axes
+      <div className="panel-content">
+        <div className="panel-section">
+          <h4 className="panel-section-title">Graph Elements</h4>
+          <div className="panel-checkbox-group">
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showAxes"
+                checked={settings.showAxes}
+                onChange={() => handleToggle('showAxes')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showAxes" className="panel-checkbox-label">
+                <div>
+                  <div>Show Axes</div>
+                  <div className="panel-description">Display X and Y axis lines</div>
+                </div>
               </label>
-              <p className="setting-description">Display X and Y axis lines</p>
             </div>
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showAxisDescriptors}
-                  onChange={() => handleToggle('showAxisDescriptors')}
-                />
-                <span className="checkmark"></span>
-                Show Axis Descriptors
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showAxisDescriptors"
+                checked={settings.showAxisDescriptors}
+                onChange={() => handleToggle('showAxisDescriptors')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showAxisDescriptors" className="panel-checkbox-label">
+                <div>
+                  <div>Show Axis Descriptors</div>
+                  <div className="panel-description">Display sequence names/IDs as axis titles for clarity</div>
+                </div>
               </label>
-              <p className="setting-description">Display sequence names/IDs as axis titles for clarity</p>
-            </div>
-
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showAxisLabels}
-                  onChange={() => handleToggle('showAxisLabels')}
-                />
-                <span className="checkmark"></span>
-                Show Axis Labels
-              </label>
-              <p className="setting-description">Display sequence characters and position indices</p>
             </div>
 
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showGrid}
-                  onChange={() => handleToggle('showGrid')}
-                />
-                <span className="checkmark"></span>
-                Show Grid
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showAxisLabels"
+                checked={settings.showAxisLabels}
+                onChange={() => handleToggle('showAxisLabels')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showAxisLabels" className="panel-checkbox-label">
+                <div>
+                  <div>Show Axis Labels</div>
+                  <div className="panel-description">Display sequence characters and position indices</div>
+                </div>
               </label>
-              <p className="setting-description">Display background grid lines for easier reading</p>
             </div>
-          </div>
-        </div>
 
-        <div className="settings-section">
-          <h4>Navigation</h4>
-          <div className="setting-group">
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showMinimap}
-                  onChange={() => handleToggle('showMinimap')}
-                />
-                <span className="checkmark"></span>
-                Show Minimap
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showGrid"
+                checked={settings.showGrid}
+                onChange={() => handleToggle('showGrid')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showGrid" className="panel-checkbox-label">
+                <div>
+                  <div>Show Grid</div>
+                  <div className="panel-description">Display background grid lines for easier reading</div>
+                </div>
               </label>
-              <p className="setting-description">Display overview minimap in top-right corner</p>
             </div>
           </div>
         </div>
 
-        <div className="settings-section">
-          <h4>Alignment Data</h4>
-          <div className="setting-group">
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showSafetyWindows}
-                  onChange={() => handleToggle('showSafetyWindows')}
-                />
-                <span className="checkmark"></span>
-                Show Safety Windows
+        <div className="panel-section">
+          <h4 className="panel-section-title">Navigation</h4>
+          <div className="panel-checkbox-group">
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showMinimap"
+                checked={settings.showMinimap}
+                onChange={() => handleToggle('showMinimap')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showMinimap" className="panel-checkbox-label">
+                <div>
+                  <div>Show Minimap</div>
+                  <div className="panel-description">Display overview minimap in top-right corner</div>
+                </div>
               </label>
-              <p className="setting-description">Display green bracket indicators for confident alignment regions</p>
-            </div>
-
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showAlignmentEdges}
-                  onChange={() => handleToggle('showAlignmentEdges')}
-                />
-                <span className="checkmark"></span>
-                Show Alignment Edges
-              </label>
-              <p className="setting-description">Display probability-weighted connection lines</p>
-            </div>
-
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showAlignmentDots}
-                  onChange={() => handleToggle('showAlignmentDots')}
-                />
-                <span className="checkmark"></span>
-                Show Alignment Dots
-              </label>
-              <p className="setting-description">Display start and end point markers</p>
-            </div>
-
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.showOptimalPath}
-                  onChange={() => handleToggle('showOptimalPath')}
-                />
-                <span className="checkmark"></span>
-                Show Optimal Path
-              </label>
-              <p className="setting-description">Display the blue optimal alignment path</p>
             </div>
           </div>
         </div>
 
-        <div className="settings-section">
-          <h4>Interactive Highlighting</h4>
-          <div className="setting-group">
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.enableSafetyWindowHighlighting}
-                  onChange={() => handleToggle('enableSafetyWindowHighlighting')}
-                />
-                <span className="checkmark"></span>
-                Enable Safety Window Highlighting
+        <div className="panel-section">
+          <h4 className="panel-section-title">Alignment Data</h4>
+          <div className="panel-checkbox-group">
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showSafetyWindows"
+                checked={settings.showSafetyWindows}
+                onChange={() => handleToggle('showSafetyWindows')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showSafetyWindows" className="panel-checkbox-label">
+                <div>
+                  <div>Show Safety Windows</div>
+                  <div className="panel-description">Display green bracket indicators for confident alignment regions</div>
+                </div>
               </label>
-              <p className="setting-description">Allow safety windows to be highlighted when selected or hovered</p>
             </div>
 
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.enableGapHighlighting}
-                  onChange={() => handleToggle('enableGapHighlighting')}
-                />
-                <span className="checkmark"></span>
-                Enable Gap Highlighting
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showAlignmentEdges"
+                checked={settings.showAlignmentEdges}
+                onChange={() => handleToggle('showAlignmentEdges')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showAlignmentEdges" className="panel-checkbox-label">
+                <div>
+                  <div>Show Alignment Edges</div>
+                  <div className="panel-description">Display probability-weighted connection lines</div>
+                </div>
               </label>
-              <p className="setting-description">Allow gap regions to be highlighted during gap analysis</p>
             </div>
 
-            <div className="setting-item">
-              <label className="setting-label">
-                <input
-                  type="checkbox"
-                  checked={settings.enablePathSelection}
-                  onChange={() => handleToggle('enablePathSelection')}
-                />
-                <span className="checkmark"></span>
-                Enable Path Selection
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showAlignmentDots"
+                checked={settings.showAlignmentDots}
+                onChange={() => handleToggle('showAlignmentDots')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showAlignmentDots" className="panel-checkbox-label">
+                <div>
+                  <div>Show Alignment Dots</div>
+                  <div className="panel-description">Display start and end point markers</div>
+                </div>
               </label>
-              <p className="setting-description">Click on edges to select custom alignment paths and generate alignments</p>
+            </div>
+
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showOptimalPath"
+                checked={settings.showOptimalPath}
+                onChange={() => handleToggle('showOptimalPath')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showOptimalPath" className="panel-checkbox-label">
+                <div>
+                  <div>Show Optimal Path</div>
+                  <div className="panel-description">Display the blue optimal alignment path</div>
+                </div>
+              </label>
             </div>
           </div>
         </div>
-      </div>
 
+        <div className="panel-section">
+          <h4 className="panel-section-title">Interactive Highlighting</h4>
+          <div className="panel-checkbox-group">
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="enableSafetyWindowHighlighting"
+                checked={settings.enableSafetyWindowHighlighting}
+                onChange={() => handleToggle('enableSafetyWindowHighlighting')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="enableSafetyWindowHighlighting" className="panel-checkbox-label">
+                <div>
+                  <div>Enable Safety Window Highlighting</div>
+                  <div className="panel-description">Allow safety windows to be highlighted when selected or hovered</div>
+                </div>
+              </label>
+            </div>
 
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="enableGapHighlighting"
+                checked={settings.enableGapHighlighting}
+                onChange={() => handleToggle('enableGapHighlighting')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="enableGapHighlighting" className="panel-checkbox-label">
+                <div>
+                  <div>Enable Gap Highlighting</div>
+                  <div className="panel-description">Allow gap regions to be highlighted during gap analysis</div>
+                </div>
+              </label>
+            </div>
 
-      <div className="settings-actions">
-        <button 
-          className="reset-button"
-          onClick={resetToDefaults}
-          title="Reset all settings to default values"
-        >
-          🔄 Reset to Defaults
-        </button>
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="enablePathSelection"
+                checked={settings.enablePathSelection}
+                onChange={() => handleToggle('enablePathSelection')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="enablePathSelection" className="panel-checkbox-label">
+                <div>
+                  <div>Enable Path Selection</div>
+                  <div className="panel-description">Click on edges to select custom alignment paths and generate alignments</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="panel-section">
+          <button 
+            className="panel-button panel-button--secondary"
+            onClick={resetToDefaults}
+            title="Reset all settings to default values"
+          >
+            🔄 Reset to Defaults
+          </button>
+        </div>
       </div>
 
       <div className="panel-footer">

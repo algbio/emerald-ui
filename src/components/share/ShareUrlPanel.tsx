@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateShareableUrl, isAlignmentShareable, checkBrowserCompatibility } from '../../utils/export/urlSharing';
+import '../shared/Panel.css';
 import './ShareUrlPanel.css';
 
 interface ShareUrlPanelProps {
@@ -86,24 +87,24 @@ const ShareUrlPanel: React.FC<ShareUrlPanelProps> = ({
   };
   
   return (
-    <div className="share-url-panel">
-      <div className="share-url-header">
+    <div className="panel panel--compact">
+      <div className="panel-header panel-header--compact">
         <h3>🔗 Share This Alignment</h3>
-        <p>This alignment uses UniProt sequences and can be shared with a URL</p>
+        <p className="panel-subtitle">This alignment uses UniProt sequences and can be shared with a URL</p>
       </div>
       
-      <div className="share-url-content">
-        <div className="url-display">
+      <div className="panel-form-group">
+        <div className="panel-display-group">
           <input
             type="text"
             value={shareUrl}
             readOnly
-            className="share-url-input"
+            className="panel-display-input"
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <button
             onClick={handleCopyUrl}
-            className={`copy-button ${isCopied ? 'copied' : ''}`}
+            className={`panel-button ${isCopied ? 'panel-button--success' : ''}`}
             title="Copy URL to clipboard"
           >
             {isCopied ? '✓ Copied!' : '📋 Copy'}
@@ -111,12 +112,12 @@ const ShareUrlPanel: React.FC<ShareUrlPanelProps> = ({
         </div>
         
         {copyError && (
-          <div className="copy-error">
+          <div className="panel-error">
             ⚠️ {copyError}
           </div>
         )}
         
-        <div className="share-url-info">
+        <div className="panel-info">
           <p>Share this URL to let others reproduce this exact alignment with:</p>
           <ul>
             <li>UniProt sequences A & B</li>

@@ -3,6 +3,7 @@ import { exportCanvasAsPNG, exportCanvasAsJPEG, copyCanvasToClipboard, generateE
 import { exportCanvasAsSVG, generateSVGFilename } from '../../utils/export/svgUtils';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import type { PointGridPlotRef } from '../alignment/PointGridPlot';
+import '../shared/Panel.css';
 import './ExportImagePanel.css';
 
 interface ExportImagePanelProps {
@@ -275,104 +276,95 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
                              "Canvas is ready");
 
   return (
-    <div className="export-image-panel">
-      <div className="export-image-header">
+    <div className="panel panel--compact panel--wide">
+      <div className="panel-header panel-header--compact">
         <h3>📷 Export Image</h3>
-        <p>Download the alignment graph as an image file</p>
+        <p className="panel-subtitle">Download the alignment graph as an image file</p>
       </div>
       
-      <div className="export-image-content">
-        {!canvasIsFullyReady ? (
-          <div className="loading-export-panel">
-            <p style={{ textAlign: 'left' }}>⏳ Preparing export controls...</p>
-            <p className="loading-message" style={{ textAlign: 'left' }}>The graph is being prepared for export. This will be available shortly.</p>
+      {!canvasIsFullyReady ? (
+        <div className="panel-loading">
+          <p>⏳ Preparing export controls...</p>
+          <p className="panel-loading-message">The graph is being prepared for export. This will be available shortly.</p>
+        </div>
+      ) : (
+        <div className="panel-form-group">
+          <div className="panel-form-item">
+            <label htmlFor="format-select" className="panel-label">Format:</label>
+            <select 
+              id="format-select"
+              value={selectedFormat} 
+              onChange={(e) => setSelectedFormat(e.target.value as 'png' | 'jpeg' | 'svg')}
+              className="panel-select"
+            >
+              <option value="png">PNG (Lossless)</option>
+              <option value="jpeg">JPEG (Smaller file)</option>
+              <option value="svg">SVG (Vector - Scalable)</option>
+            </select>
           </div>
-        ) : (
-          <>
-            <div className="export-options">
-              <div className="format-selection">
-                <label htmlFor="format-select">Format:</label>
-                <select 
-                  id="format-select"
-                  value={selectedFormat} 
-                  onChange={(e) => setSelectedFormat(e.target.value as 'png' | 'jpeg' | 'svg')}
-                  className="format-select"
-                >
-                  <option value="png">PNG (Lossless)</option>
-                  <option value="jpeg">JPEG (Smaller file)</option>
-                  <option value="svg">SVG (Vector - Scalable)</option>
-                </select>
-              </div>
 
-              {selectedFormat === 'jpeg' && (
-                <div className="quality-selection">
-                  <label htmlFor="quality-range">Quality: {Math.round(quality * 100)}%</label>
-                  <input
-                    id="quality-range"
-                    type="range"
-                    min="0.1"
-                    max="1"
-                    step="0.1"
-                    value={quality}
-                    onChange={(e) => setQuality(parseFloat(e.target.value))}
-                    className="quality-slider"
-                  />
-                </div>
-              )}
-              
-              {/* No zoom view option */}
+          {selectedFormat === 'jpeg' && (
+            <div className="panel-form-item">
+              <label htmlFor="quality-range" className="panel-label">Quality: {Math.round(quality * 100)}%</label>
+              <input
+                id="quality-range"
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.1"
+                value={quality}
+                onChange={(e) => setQuality(parseFloat(e.target.value))}
+                className="panel-input"
+              />
             </div>
+          )}
 
-            <div className="export-actions">
-              <button
-                onClick={handleExportImage}
-                disabled={isExporting}
-                className={`export-button primary ${isExporting ? 'disabled' : ''}`}
-                title="Download image file"
-              >
-                {isExporting ? '⏳ Exporting...' : '💾 Download'}
-              </button>
+          <div className="panel-display-group">
+            <button
+              onClick={handleExportImage}
+              disabled={isExporting}
+              className={`panel-button ${isExporting ? '' : ''}`}
+              title="Download image file"
+            >
+              {isExporting ? '⏳ Exporting...' : '💾 Download'}
+            </button>
 
-              <button
-                onClick={handleCopyToClipboard}
-                disabled={isExporting}
-                className={`export-button secondary ${isExporting ? 'disabled' : ''}`}
-                title="Copy to clipboard"
-              >
-                {isExporting ? '⏳ Copying...' : '📋 Copy'}
-              </button>
+            <button
+              onClick={handleCopyToClipboard}
+              disabled={isExporting}
+              className={`panel-button panel-button--secondary ${isExporting ? '' : ''}`}
+              title="Copy to clipboard"
+            >
+              {isExporting ? '⏳ Copying...' : '📋 Copy'}
+            </button>
+          </div>
+
+          {exportSuccess && (
+            <div className="panel-info">
+              ✅ {exportSuccess}
             </div>
-          </>
-        )}
-        
+          )}
 
-        {exportSuccess && (
-          <div className="export-success">
-            ✅ {exportSuccess}
-          </div>
-        )}
+          {exportError && (
+            <div className="panel-error">
+              ⚠️ {exportError}
+            </div>
+          )}
 
-        {exportError && (
-          <div className="export-error">
-            ⚠️ {exportError}
-          </div>
-        )}
-
-        <div className="export-info">
-          <p>Export options:</p>
-          <ul>
-            <li><strong>PNG:</strong> High quality raster image, larger file size</li>
-            <li><strong>JPEG:</strong> Compressed raster image, smaller file size, adjustable quality</li>
-            <li><strong>SVG:</strong> Vector image that scales perfectly at any zoom level</li>
-            <li><strong>Copy:</strong> Copy image directly to clipboard (PNG format)</li>
-            <li><strong>Highlighted Windows:</strong> Safety window highlights are included in exports</li>
-          </ul>
-          
-          {/* Canvas status information */}
-          <div className="canvas-status">
+          <div className="panel-info">
+            <p>Export options:</p>
+            <ul>
+              <li><strong>PNG:</strong> High quality raster image, larger file size</li>
+              <li><strong>JPEG:</strong> Compressed raster image, smaller file size, adjustable quality</li>
+              <li><strong>SVG:</strong> Vector image that scales perfectly at any zoom level</li>
+              <li><strong>Copy:</strong> Copy image directly to clipboard (PNG format)</li>
+              <li><strong>Highlighted Windows:</strong> Safety window highlights are included in exports</li>
+            </ul>
+            
+            {/* Canvas status information */}
             <details>
               <summary>Export Diagnostics</summary>
-              <div className="diagnostics-content">
+              <div style={{ marginTop: 'var(--spacing-sm)' }}>
                 <p><strong>Canvas Reference:</strong> {canvasRef.current ? '✅ Available' : '❌ Missing'}</p>
                 <p><strong>Canvas Status:</strong> {isCanvasReady ? '✅ Ready' : '❌ Not Ready'}</p>
                 <p><strong>Export Ready:</strong> {canvasIsFullyReady ? '✅ Yes' : '❌ No'}</p>
@@ -388,7 +380,7 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
                 <p><strong>Canvas Status Details:</strong> {JSON.stringify(checkCanvasStatus())}</p>
                 
                 {/* Emergency troubleshooting button that bypasses normal checks */}
-                <div className="emergency-export">
+                <div style={{ marginTop: 'var(--spacing-md)' }}>
                   <p><strong>Troubleshooting:</strong></p>
                   <button
                     onClick={() => {
@@ -409,18 +401,18 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
                         showTemporaryMessage('No canvas reference available for emergency export', true);
                       }
                     }}
-                    className="emergency-button"
+                    className="panel-button panel-button--secondary"
                     title="Attempt emergency export bypassing normal checks"
                   >
                     Force Export (Troubleshooting)
                   </button>
                 </div>
-                <p className="note">If you're having issues exporting, try reloading the page or using a different browser.</p>
+                <p><em>If you're having issues exporting, try reloading the page or using a different browser.</em></p>
               </div>
             </details>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

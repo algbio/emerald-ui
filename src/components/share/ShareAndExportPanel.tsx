@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ShareUrlPanel from './ShareUrlPanel';
 import ExportImagePanel from './ExportImagePanel';
 import type { PointGridPlotRef } from '../alignment/PointGridPlot';
@@ -27,65 +27,22 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
   canvasRef,
   pointGridRef
 }) => {
-  const [isExportExpanded, setIsExportExpanded] = useState(false);
-  const [isShareExpanded, setIsShareExpanded] = useState(false);
-
-  const handleExportToggle = () => {
-    setIsExportExpanded(!isExportExpanded);
-  };
-
-  const handleShareToggle = () => {
-    setIsShareExpanded(!isShareExpanded);
-  };
-
   return (
     <div className="share-and-export-panel">
-      <div className="panel-section export-section">
-        <div className="collapsible-section">
-          <button 
-            className="section-header"
-            onClick={handleExportToggle}
-            aria-expanded={isExportExpanded}
-          >
-            <span className="section-title">📷 Export Image</span>
-            <span className={`section-toggle ${isExportExpanded ? 'expanded' : ''}`}>
-              ▼
-            </span>
-          </button>
-          <div className={`section-content ${isExportExpanded ? 'expanded' : 'collapsed'}`}>
-            <ExportImagePanel
-              canvasRef={canvasRef}
-              pointGridRef={pointGridRef}
-              descriptorA={descriptorA}
-              descriptorB={descriptorB}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="panel-section share-section">
-        <div className="collapsible-section">
-          <button 
-            className="section-header"
-            onClick={handleShareToggle}
-            aria-expanded={isShareExpanded}
-          >
-            <span className="section-title">🔗 Share This Alignment</span>
-            <span className={`section-toggle ${isShareExpanded ? 'expanded' : ''}`}>
-              ▼
-            </span>
-          </button>
-          <div className={`section-content ${isShareExpanded ? 'expanded' : 'collapsed'}`}>
-            <ShareUrlPanel
-              descriptorA={descriptorA}
-              descriptorB={descriptorB}
-              alpha={alpha}
-              delta={delta}
-              accessionA={accessionA}
-              accessionB={accessionB}
-            />
-          </div>
-        </div>
-      </div>
+      <ExportImagePanel
+        canvasRef={canvasRef}
+        pointGridRef={pointGridRef}
+        descriptorA={descriptorA}
+        descriptorB={descriptorB}
+      />
+      <ShareUrlPanel
+        descriptorA={descriptorA}
+        descriptorB={descriptorB}
+        alpha={alpha}
+        delta={delta}
+        accessionA={accessionA}
+        accessionB={accessionB}
+      />
     </div>
   );
 };

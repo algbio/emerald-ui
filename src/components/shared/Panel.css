@@ -1,0 +1,445 @@
+/**
+ * Shared Panel Theme System
+ * 
+ * This file contains the standardized styles for all side panels in the application.
+ * It ensures consistency across all panels while maintaining the emerald theme.
+ */
+
+/* Base Panel Structure */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: var(--font-family-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel--compact {
+  padding: var(--spacing-lg);
+  height: fit-content;
+  border-radius: var(--border-radius-md);
+  min-width: 280px; /* Ensure minimum width for content */
+}
+
+.panel--compact.panel--wide {
+  min-width: 320px; /* Wider variant for panels with more content */
+}
+
+/* Panel Header */
+.panel-header {
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+}
+
+.panel-header--compact {
+  background: none;
+  color: var(--text-primary);
+  padding: 0 0 var(--spacing-lg) 0;
+  border-radius: 0;
+}
+
+.panel-header h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.panel-header--large h3 {
+  font-size: 1.5rem;
+}
+
+.panel-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.9;
+  line-height: 1.4;
+  color: inherit;
+}
+
+.panel-header--compact .panel-subtitle {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+/* Panel Content */
+.panel-content {
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+}
+
+.panel-content--no-padding {
+  padding: 0;
+}
+
+/* Panel Sections */
+.panel-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.panel-section:last-child {
+  margin-bottom: 0;
+}
+
+.panel-section-title {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: var(--spacing-xs);
+}
+
+/* Form Elements */
+.panel-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.panel-form-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.panel-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.panel-description {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.panel-input,
+.panel-select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-normal);
+}
+
+.panel-input:focus,
+.panel-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.panel-input:hover,
+.panel-select:hover {
+  border-color: var(--border-color-hover);
+}
+
+.panel-select {
+  cursor: pointer;
+  appearance: menulist;
+}
+
+/* Checkbox Styling */
+.panel-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.panel-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.panel-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary);
+  position: relative;
+  user-select: none;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.panel-checkbox-input {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0 0;
+  cursor: pointer;
+  appearance: none;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.panel-checkbox-input:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.panel-checkbox-input:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.panel-checkbox-input:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.panel-checkbox-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
+}
+
+/* Button Styling */
+.panel-button {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.panel-button:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.panel-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.panel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.panel-button--secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.panel-button--secondary:hover {
+  background: var(--bg-secondary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: none;
+  box-shadow: none;
+}
+
+.panel-button--success {
+  background: var(--color-success);
+}
+
+.panel-button--success:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Panel Footer */
+.panel-footer {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+/* Display Components */
+.panel-display-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.panel-display-group .panel-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.panel-display-input {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  font-family: var(--font-family-mono);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  user-select: all;
+}
+
+.panel-display-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.panel-display-input:hover {
+  border-color: var(--border-color-hover);
+}
+
+.panel-display-input::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* Error and Info Messages */
+.panel-error {
+  padding: var(--spacing-sm);
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  margin-top: var(--spacing-sm);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.panel-info {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.panel-info ul {
+  margin: var(--spacing-sm) 0 0 0;
+  padding-left: var(--spacing-lg);
+}
+
+.panel-info li {
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.4;
+}
+
+.panel-warning {
+  padding: var(--spacing-sm);
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--border-radius-md);
+  font-size: 0.875rem;
+}
+
+/* Loading States */
+.panel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  min-height: 120px;
+}
+
+.panel-loading p {
+  margin: 0;
+  text-align: left;
+}
+
+.panel-loading p:first-child {
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.panel-loading-message {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .panel {
+    border-radius: var(--border-radius-md);
+  }
+  
+  .panel-header {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  }
+  
+  .panel-content {
+    padding: var(--spacing-md);
+  }
+  
+  .panel-footer {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .panel--compact {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .panel-button,
+  .panel-input,
+  .panel-select,
+  .panel-checkbox-input {
+    transition: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .panel {
+    border-width: 2px;
+  }
+  
+  .panel-input,
+  .panel-select {
+    border-width: 2px;
+  }
+  
+  .panel-checkbox-input {
+    border-width: 3px;
+  }
+}

@@ -5,7 +5,6 @@ import { SequenceProvider, useSequence } from './context/SequenceContext'
 import { FeedbackProvider } from './context/FeedbackContext'
 import SequenceInputPanel from './components/sequence/SequenceInputPanel'
 import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWithInfoPanel'
-import ShareAndExportPanel from './components/share/ShareAndExportPanel'
 import SharedUrlNotification from './components/ui/SharedUrlNotification'
 import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
 
@@ -262,24 +261,6 @@ function AppContent() {
             accessionA={state.sequences.accessionA}
             accessionB={state.sequences.accessionB}
           />
-
-           {/* Share URL and Export Image Panel */}
-          <div className="export-section">
-            <h3>Step 4: Share and Export Your Results</h3>
-            <p className="export-description">
-              Generate a shareable URL to save your analysis or export high-quality images for publications and presentations.
-            </p>
-            <ShareAndExportPanel
-              descriptorA={representativeDescriptor}
-              descriptorB={memberDescriptor}
-              alpha={state.params.alpha}
-              delta={state.params.delta}
-              accessionA={state.sequences.accessionA}
-              accessionB={state.sequences.accessionB}
-              canvasRef={canvasRef}
-              pointGridRef={pointGridRef}
-            />
-          </div>
         </div>
       )}
     </div>

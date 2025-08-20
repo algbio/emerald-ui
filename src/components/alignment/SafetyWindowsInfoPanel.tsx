@@ -1198,29 +1198,27 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
               Export high-quality images and share alignment links
             </div>
           </div>
-          <div className="export-panel-container">
-            {canvasRef && pointGridRef && alpha !== undefined && delta !== undefined ? (
-              <ShareAndExportPanel
-                descriptorA={representativeDescriptor || 'Representative'}
-                descriptorB={memberDescriptor || 'Member'}
-                alpha={alpha}
-                delta={delta}
-                accessionA={accessionA}
-                accessionB={accessionB}
-                canvasRef={canvasRef}
-                pointGridRef={pointGridRef}
-              />
-            ) : (
-              <div className="no-export-message">
-                <div className="no-export-icon">📤</div>
-                <h4>Export Not Available</h4>
-                <p>Export functionality requires a fully rendered alignment graph.</p>
-                <div className="help-text">
-                  <p>If you're seeing this message, please wait for the alignment to finish loading or try refreshing the page.</p>
-                </div>
+          {canvasRef && pointGridRef && alpha !== undefined && delta !== undefined ? (
+            <ShareAndExportPanel
+              descriptorA={representativeDescriptor || 'Representative'}
+              descriptorB={memberDescriptor || 'Member'}
+              alpha={alpha}
+              delta={delta}
+              accessionA={accessionA}
+              accessionB={accessionB}
+              canvasRef={canvasRef}
+              pointGridRef={pointGridRef}
+            />
+          ) : (
+            <div className="no-export-message">
+              <div className="no-export-icon">📤</div>
+              <h4>Export Not Available</h4>
+              <p>Export functionality requires a fully rendered alignment graph.</p>
+              <div className="help-text">
+                <p>If you're seeing this message, please wait for the alignment to finish loading or try refreshing the page.</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       ) : null}
     </div>
