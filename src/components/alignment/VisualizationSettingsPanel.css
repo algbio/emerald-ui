@@ -1,6 +1,28 @@
 /* VisualizationSettingsPanel specific styles */
 /* This panel uses shared styles from ../shared/Panel.css */
 
+/* Ensure visualization content panel header styles match other tabs */
+.visualization-content .panel-header {
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  flex-shrink: 0;
+}
+
+.visualization-content .panel-header h3 {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.visualization-content .panel-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
 /* Help text styling to match main panel - card-like element */
 .help-text {
   margin: 0;
@@ -13,8 +35,8 @@
   border-left: 3px solid var(--color-primary);
 }
 
-/* Ensure footer background matches main panel */
-.panel-footer {
+/* Ensure footer background matches main panel when used within visualization content */
+.visualization-content .panel-footer {
   background-color: var(--bg-secondary);
 }
 

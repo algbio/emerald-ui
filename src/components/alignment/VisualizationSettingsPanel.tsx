@@ -54,8 +54,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
   };
 
   return (
-    <div className="panel">
-      <div className="panel-header panel-header--large">
+    <>
+      <div className="panel-header">
         <h3>Visualization Settings</h3>
         <div className="panel-subtitle">
           Customize what elements are displayed on the alignment graph
@@ -253,7 +253,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
           Toggle individual elements to customize the visualization. Changes are applied immediately to the graph.
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
