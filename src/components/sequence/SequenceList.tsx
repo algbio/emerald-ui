@@ -84,7 +84,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
               {shouldShowDescription && <th>Description</th>}
               <th>Length</th>
               <th>Load</th>
-              <th>Actions</th>
+              <th>Other Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -113,7 +113,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                             className="btn-outline-success"
                             title="Load sequence A"
                           >
-                            Load A
+                            Load as A
                           </button>
                         )}
                         {onSelectB && (
@@ -122,7 +122,7 @@ export const SequenceList: React.FC<SequenceListProps> = ({
                             className="btn-outline-success"
                             title="Load sequence B"
                           >
-                            Load B
+                            Load as B
                           </button>
                         )}
                       </div>

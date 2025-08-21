@@ -35,11 +35,14 @@ export interface PointGridPlotRef {
     visualizationSettings: {
       showAxes: boolean;
       showAxisLabels: boolean;
+      showSequenceCharacters: boolean;
+      showSequenceIndices: boolean;
       showGrid: boolean;
       showMinimap: boolean;
       showSafetyWindows: boolean;
       showAlignmentEdges: boolean;
       showAlignmentDots: boolean;
+      showOptimalPath: boolean;
     };
   };
 }
@@ -62,6 +65,8 @@ interface PointGridProps {
   // Visualization settings
   showAxes?: boolean;
   showAxisLabels?: boolean;
+  showSequenceCharacters?: boolean;
+  showSequenceIndices?: boolean;
   showGrid?: boolean;
   showSafetyWindows?: boolean;
   showAlignmentEdges?: boolean;
@@ -104,6 +109,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // Visualization settings with defaults
   showAxes = true,
   showAxisLabels = true,
+  showSequenceCharacters = true,
+  showSequenceIndices = true,
   showGrid = true,
   showSafetyWindows = true,
   showAlignmentEdges = true,
@@ -200,6 +207,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       visualizationSettings: {
         showAxes,
         showAxisLabels,
+        showSequenceCharacters,
+        showSequenceIndices,
         showGrid,
         showMinimap,
         showSafetyWindows,
@@ -208,7 +217,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showOptimalPath
       }
     })
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath]);
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath]);
   
   // Extract safety windows and helper function
   const safetyWindows = alignments.filter(alignment => 
@@ -346,8 +355,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       yEnd: selectedWindow.endDot?.y
     } : undefined;
 
-    // Draw axis labels if enabled
-    if (showAxisLabels) {
+    // Draw axis labels if any label type is enabled
+    if (showAxisLabels || showSequenceCharacters || showSequenceIndices) {
       drawAxisLabels(
         ctx,
         xTicks,
@@ -360,7 +369,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         isInSafetyWindow,
         safetyWindowBounds,
         representativeDescriptor,
-        memberDescriptor
+        memberDescriptor,
+        showSequenceCharacters,
+        showSequenceIndices
       );
     }
 
@@ -739,6 +750,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
+      onContextMenu={(e) => e.preventDefault()}
     />
   );
 });

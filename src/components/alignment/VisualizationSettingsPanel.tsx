@@ -5,6 +5,8 @@ import './VisualizationSettingsPanel.css';
 export interface VisualizationSettings {
   showAxes: boolean;
   showAxisLabels: boolean;
+  showSequenceCharacters: boolean;
+  showSequenceIndices: boolean;
   showGrid: boolean;
   showMinimap: boolean;
   showSafetyWindows: boolean;
@@ -38,6 +40,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
     onSettingsChange({
       showAxes: true,
       showAxisLabels: true,
+      showSequenceCharacters: true,
+      showSequenceIndices: true,
       showGrid: true,
       showMinimap: true,
       showSafetyWindows: true,
@@ -107,6 +111,38 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
                 <div>
                   <div>Show Axis Labels</div>
                   <div className="panel-description">Display sequence characters and position indices</div>
+                </div>
+              </label>
+            </div>
+
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showSequenceCharacters"
+                checked={settings.showSequenceCharacters}
+                onChange={() => handleToggle('showSequenceCharacters')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showSequenceCharacters" className="panel-checkbox-label">
+                <div>
+                  <div>Show Sequence Characters</div>
+                  <div className="panel-description">Display amino acid or nucleotide characters along axes</div>
+                </div>
+              </label>
+            </div>
+
+            <div className="panel-checkbox-item">
+              <input
+                type="checkbox"
+                id="showSequenceIndices"
+                checked={settings.showSequenceIndices}
+                onChange={() => handleToggle('showSequenceIndices')}
+                className="panel-checkbox-input"
+              />
+              <label htmlFor="showSequenceIndices" className="panel-checkbox-label">
+                <div>
+                  <div>Show Sequence Indices</div>
+                  <div className="panel-description">Display position numbers along axes</div>
                 </div>
               </label>
             </div>

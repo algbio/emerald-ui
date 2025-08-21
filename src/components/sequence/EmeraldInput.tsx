@@ -28,6 +28,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   
   // Local validation state
   const [isValid, setIsValid] = useState(false);
+  const [hasShownReadyMessage, setHasShownReadyMessage] = useState(false);
 
   // Validate inputs when they change
   useEffect(() => {
@@ -41,6 +42,23 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     
     setIsValid(basicValidation && alignmentValidation);
   }, [sequences, params, canRunAlignment]);
+
+  // Show feedback when both sequences are ready for alignment
+  useEffect(() => {
+    const bothSequencesFilled = sequences.sequenceA.trim().length > 0 && sequences.sequenceB.trim().length > 0;
+    const alignmentReady = canRunAlignment();
+    
+    // Only show the message once when both sequences become available and valid
+    if (bothSequencesFilled && alignmentReady && !hasShownReadyMessage && alignmentStatus === 'idle') {
+      notifySuccess('Sequences Ready', 'Both sequences are loaded and ready for alignment generation!');
+      setHasShownReadyMessage(true);
+    }
+    
+    // Reset the flag when sequences are cleared or invalid
+    if (!bothSequencesFilled || !alignmentReady) {
+      setHasShownReadyMessage(false);
+    }
+  }, [sequences.sequenceA, sequences.sequenceB, canRunAlignment, hasShownReadyMessage, alignmentStatus, notifySuccess]);
 
   const handleSubmit = async () => {
     if (isValid) {

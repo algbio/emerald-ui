@@ -88,6 +88,8 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   const defaultSettings: VisualizationSettings = {
     showAxes: true,
     showAxisLabels: true,
+    showSequenceCharacters: true,
+    showSequenceIndices: true,
     showAxisDescriptors: true, // Added missing property
     showGrid: true,
     showMinimap: true,
@@ -592,7 +594,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           title="Customize visualization settings"
         >
           <span className="tab-icon">⚙️</span>
-          Visualization
+          Settings
         </button>
         <button 
           className={`tab-button ${activeTab === 'path-selection' ? 'active' : ''}`}

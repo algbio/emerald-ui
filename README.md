@@ -104,17 +104,8 @@ ROS1_ARATH and ROS1A_ORYSJ
 ## Quick notes
 
 * Leave the charactesr out when too zoomed out
-* Load as A instead of Load A
-* Actions -> Other actions
-* Visualization -> Settings
-* Gap analysis -> Unsafe windows
-* Unsafe window highlihgting lag is too much
 * Add explanation of the blue line
 * Crash report should tell the user to refresh the page
 * Examples should give better sequences to test
 * Try example should have a link
-* Folding getting started
-* no result found when search hasnt been pressed
-* Ready to generate suboptimal alignment graph message when both sequences loaded
 * Change example sequences
-* Remove "Step 3"

@@ -263,7 +263,9 @@ export function drawAxisLabels(
   isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean,
   selectedSafetyWindow?: SafetyWindowBounds,
   representativeDescriptor?: string,
-  memberDescriptor?: string
+  memberDescriptor?: string,
+  showSequenceCharacters: boolean = true,
+  showSequenceIndices: boolean = true
 ) {
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
@@ -282,11 +284,13 @@ export function drawAxisLabels(
   ctx.rect(marginLeft, 0, canvasWidth - marginLeft, marginTop);
   ctx.clip();
   
-  // Draw index markers (either full or minimal based on overlap)
-  if (xOverlap) {
-    drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
-  } else {
-    drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
+  // Draw index markers only if enabled (either full or minimal based on overlap)
+  if (showSequenceIndices) {
+    if (xOverlap) {
+      drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
+    } else {
+      drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
+    }
   }
 
   // Draw X axis descriptor (centered above axis)
@@ -309,10 +313,13 @@ export function drawAxisLabels(
   ctx.rect(0, marginTop, marginLeft, canvasHeight - marginTop);
   ctx.clip();
   
-  if (yOverlap) {
-    drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
-  } else {
-    drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
+  // Draw Y index markers only if enabled
+  if (showSequenceIndices) {
+    if (yOverlap) {
+      drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
+    } else {
+      drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
+    }
   }
 
   // Draw Y axis descriptor (rotated, centered along Y axis)
@@ -335,11 +342,14 @@ export function drawAxisLabels(
   
   ctx.restore();
   
-  // Draw Y axis character labels first (this function applies its own clipping)
-  drawYLabels(ctx, yTicks, y, marginTop, marginLeft, fontSize, isInSafetyWindow);
-  
-  // Draw X axis character labels (this function applies its own clipping)
-  drawXLabels(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
+  // Draw character labels only if enabled (these functions apply their own clipping)
+  if (showSequenceCharacters) {
+    // Draw Y axis character labels first
+    drawYLabels(ctx, yTicks, y, marginTop, marginLeft, fontSize, isInSafetyWindow);
+    
+    // Draw X axis character labels
+    drawXLabels(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
+  }
   
   // Draw selected safety window indices if provided
   if (selectedSafetyWindow) {
