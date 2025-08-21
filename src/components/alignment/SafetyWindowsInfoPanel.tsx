@@ -1074,7 +1074,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
             <div className="panel-header">
               <h3>Path Selection</h3>
               <div className="panel-subtitle">
-                Click on edges in the graph to select a custom alignment path
+                Right-click on edges in the graph to select a custom alignment path
               </div>
             </div>
           ) : (
@@ -1102,12 +1102,12 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                 <div className="no-selection-message">
                   <div className="no-selection-icon">🎯</div>
                   <h4>No Path Selected</h4>
-                  <p>Click on any edge in the alignment graph to start building a custom alignment path.</p>
+                  <p>Right-click on any edge in the alignment graph to start building a custom alignment path.</p>
                   <div className="help-text">
                     <strong>How to use:</strong>
                     <ul>
                       <li>Path selection is only active when you're on this tab</li>
-                      <li>Click on any edge in the alignment graph</li>
+                      <li>Right-click on any edge in the alignment graph to select it</li>
                       <li>The path will be selected (highlighted in orange)</li>
                       <li>Press the "Generate Alignment" button to create the alignment</li>
                     </ul>

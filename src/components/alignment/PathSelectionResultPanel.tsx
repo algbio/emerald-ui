@@ -17,7 +17,7 @@ export const PathSelectionResultPanel: React.FC<PathSelectionResultPanelProps> =
         <div className="panel-header">
           <h3>Path Selection</h3>
           <div className="panel-subtitle">
-            Click on edges in the graph to select a custom alignment path
+            Right-click on edges in the graph to select a custom alignment path
           </div>
         </div>
         <div className="no-selection">
