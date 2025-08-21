@@ -87,7 +87,6 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   // Default visualization settings if not provided
   const defaultSettings: VisualizationSettings = {
     showAxes: true,
-    showAxisLabels: true,
     showSequenceCharacters: true,
     showSequenceIndices: true,
     showAxisDescriptors: true, // Added missing property

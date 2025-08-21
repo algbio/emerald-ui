@@ -34,7 +34,6 @@ export interface PointGridPlotRef {
     transform: any;
     visualizationSettings: {
       showAxes: boolean;
-      showAxisLabels: boolean;
       showSequenceCharacters: boolean;
       showSequenceIndices: boolean;
       showGrid: boolean;
@@ -64,7 +63,6 @@ interface PointGridProps {
   minimapPadding?: number; 
   // Visualization settings
   showAxes?: boolean;
-  showAxisLabels?: boolean;
   showSequenceCharacters?: boolean;
   showSequenceIndices?: boolean;
   showGrid?: boolean;
@@ -108,7 +106,6 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   minimapPadding = 100,      // Padding around minimap
   // Visualization settings with defaults
   showAxes = true,
-  showAxisLabels = true,
   showSequenceCharacters = true,
   showSequenceIndices = true,
   showGrid = true,
@@ -206,7 +203,6 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       transform,
       visualizationSettings: {
         showAxes,
-        showAxisLabels,
         showSequenceCharacters,
         showSequenceIndices,
         showGrid,
@@ -217,7 +213,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showOptimalPath
       }
     })
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showAxisLabels, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath]);
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath]);
   
   // Extract safety windows and helper function
   const safetyWindows = alignments.filter(alignment => 
@@ -356,7 +352,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     } : undefined;
 
     // Draw axis labels if any label type is enabled
-    if (showAxisLabels || showSequenceCharacters || showSequenceIndices) {
+    if (showSequenceCharacters || showSequenceIndices) {
       drawAxisLabels(
         ctx,
         xTicks,
@@ -687,7 +683,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // This effect handles static/structural changes that require full redraws
   useEffect(() => {
     drawCanvas();
-  }, [transform, alignments, fontSize, showMinimap, showAxes, showAxisLabels, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, width, height, marginTop, marginRight, marginBottom, marginLeft]);
+  }, [transform, alignments, fontSize, showMinimap, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, width, height, marginTop, marginRight, marginBottom, marginLeft]);
   
   // This effect handles hover state changes
   useEffect(() => {

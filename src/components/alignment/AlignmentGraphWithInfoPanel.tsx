@@ -64,7 +64,6 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   // Default visualization settings
   const [visualizationSettings, setVisualizationSettings] = useState<VisualizationSettings>({
     showAxes: true,
-    showAxisLabels: true,
     showSequenceCharacters: true,
     showSequenceIndices: true,
     showGrid: true,
@@ -324,7 +323,6 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             yDomain={[0, member.length]}
             showMinimap={visualizationSettings.showMinimap}
             showAxes={visualizationSettings.showAxes}
-            showAxisLabels={visualizationSettings.showAxisLabels}
             showSequenceCharacters={visualizationSettings.showSequenceCharacters}
             showSequenceIndices={visualizationSettings.showSequenceIndices}
             showGrid={visualizationSettings.showGrid}

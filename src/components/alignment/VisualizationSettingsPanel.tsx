@@ -4,7 +4,6 @@ import './VisualizationSettingsPanel.css';
 
 export interface VisualizationSettings {
   showAxes: boolean;
-  showAxisLabels: boolean;
   showSequenceCharacters: boolean;
   showSequenceIndices: boolean;
   showGrid: boolean;
@@ -39,7 +38,6 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
   const resetToDefaults = () => {
     onSettingsChange({
       showAxes: true,
-      showAxisLabels: true,
       showSequenceCharacters: true,
       showSequenceIndices: true,
       showGrid: true,
@@ -93,24 +91,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showAxisDescriptors" className="panel-checkbox-label">
                 <div>
-                  <div>Show Axis Descriptors</div>
-                  <div className="panel-description">Display sequence names/IDs as axis titles for clarity</div>
-                </div>
-              </label>
-            </div>
-
-            <div className="panel-checkbox-item">
-              <input
-                type="checkbox"
-                id="showAxisLabels"
-                checked={settings.showAxisLabels}
-                onChange={() => handleToggle('showAxisLabels')}
-                className="panel-checkbox-input"
-              />
-              <label htmlFor="showAxisLabels" className="panel-checkbox-label">
-                <div>
-                  <div>Show Axis Labels</div>
-                  <div className="panel-description">Display sequence characters and position indices</div>
+                  <div>Show Sequence Names</div>
+                  <div className="panel-description">Display sequence identifiers as titles above and beside the graph</div>
                 </div>
               </label>
             </div>
@@ -126,7 +108,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               <label htmlFor="showSequenceCharacters" className="panel-checkbox-label">
                 <div>
                   <div>Show Sequence Characters</div>
-                  <div className="panel-description">Display amino acid or nucleotide characters along axes</div>
+                  <div className="panel-description">Display amino acid letters (A, C, G, T, etc.) along graph edges</div>
                 </div>
               </label>
             </div>
@@ -141,8 +123,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showSequenceIndices" className="panel-checkbox-label">
                 <div>
-                  <div>Show Sequence Indices</div>
-                  <div className="panel-description">Display position numbers along axes</div>
+                  <div>Show Position Numbers</div>
+                  <div className="panel-description">Display numerical position markers (1, 2, 3, etc.) along graph edges</div>
                 </div>
               </label>
             </div>
@@ -157,8 +139,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showGrid" className="panel-checkbox-label">
                 <div>
-                  <div>Show Grid</div>
-                  <div className="panel-description">Display background grid lines for easier reading</div>
+                  <div>Show Background Grid</div>
+                  <div className="panel-description">Display light grid lines behind the graph for easier navigation</div>
                 </div>
               </label>
             </div>
@@ -199,8 +181,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showSafetyWindows" className="panel-checkbox-label">
                 <div>
-                  <div>Show Safety Windows</div>
-                  <div className="panel-description">Display green bracket indicators for confident alignment regions</div>
+                  <div>Show Confidence Regions</div>
+                  <div className="panel-description">Display green brackets marking high-confidence alignment areas</div>
                 </div>
               </label>
             </div>
@@ -215,8 +197,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showAlignmentEdges" className="panel-checkbox-label">
                 <div>
-                  <div>Show Alignment Edges</div>
-                  <div className="panel-description">Display probability-weighted connection lines</div>
+                  <div>Show Alignment Connections</div>
+                  <div className="panel-description">Display colored lines connecting aligned sequence positions</div>
                 </div>
               </label>
             </div>
@@ -231,8 +213,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showAlignmentDots" className="panel-checkbox-label">
                 <div>
-                  <div>Show Alignment Dots</div>
-                  <div className="panel-description">Display start and end point markers</div>
+                  <div>Show Start/End Points</div>
+                  <div className="panel-description">Display circular markers at alignment connection endpoints</div>
                 </div>
               </label>
             </div>
@@ -247,61 +229,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showOptimalPath" className="panel-checkbox-label">
                 <div>
-                  <div>Show Optimal Path</div>
-                  <div className="panel-description">Display the blue optimal alignment path</div>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="panel-section">
-          <h4 className="panel-section-title">Interactive Highlighting</h4>
-          <div className="panel-checkbox-group">
-            <div className="panel-checkbox-item">
-              <input
-                type="checkbox"
-                id="enableSafetyWindowHighlighting"
-                checked={settings.enableSafetyWindowHighlighting}
-                onChange={() => handleToggle('enableSafetyWindowHighlighting')}
-                className="panel-checkbox-input"
-              />
-              <label htmlFor="enableSafetyWindowHighlighting" className="panel-checkbox-label">
-                <div>
-                  <div>Enable Safety Window Highlighting</div>
-                  <div className="panel-description">Allow safety windows to be highlighted when selected or hovered</div>
-                </div>
-              </label>
-            </div>
-
-            <div className="panel-checkbox-item">
-              <input
-                type="checkbox"
-                id="enableGapHighlighting"
-                checked={settings.enableGapHighlighting}
-                onChange={() => handleToggle('enableGapHighlighting')}
-                className="panel-checkbox-input"
-              />
-              <label htmlFor="enableGapHighlighting" className="panel-checkbox-label">
-                <div>
-                  <div>Enable Gap Highlighting</div>
-                  <div className="panel-description">Allow gap regions to be highlighted during gap analysis</div>
-                </div>
-              </label>
-            </div>
-
-            <div className="panel-checkbox-item">
-              <input
-                type="checkbox"
-                id="enablePathSelection"
-                checked={settings.enablePathSelection}
-                onChange={() => handleToggle('enablePathSelection')}
-                className="panel-checkbox-input"
-              />
-              <label htmlFor="enablePathSelection" className="panel-checkbox-label">
-                <div>
-                  <div>Enable Path Selection</div>
-                  <div className="panel-description">Click on edges to select custom alignment paths and generate alignments</div>
+                  <div>Show Best Alignment Path</div>
+                  <div className="panel-description">Display the highlighted blue line showing optimal sequence alignment</div>
                 </div>
               </label>
             </div>
@@ -321,7 +250,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
 
       <div className="panel-footer">
         <div className="help-text">
-          Toggle individual elements to customize the visualization. Use highlighting controls to enable/disable interactive selections. Changes are applied immediately to the graph.
+          Toggle individual elements to customize the visualization. Changes are applied immediately to the graph.
         </div>
       </div>
     </div>
