@@ -122,10 +122,17 @@ export class EmeraldService {
       // Check for memory-related errors
       if (error instanceof Error && 
           (error.message.includes('Cannot enlarge memory') || 
-           error.message.includes('Aborted'))) {
+           error.message.includes('Aborted') ||
+           error.message.includes('out of memory') ||
+           error.message.includes('OutOfMemory') ||
+           error.message.includes('stack overflow') ||
+           error.message.includes('Maximum call stack') ||
+           error.message.includes('RuntimeError') ||
+           error.message.includes('memory access out of bounds') ||
+           error.message.includes('unreachable executed'))) {
         throw new Error(
           `Memory limit exceeded: The sequences (${refSeq.length}×${memSeq.length} characters) ` +
-          `are too large for your browser to process. Please try using shorter sequences.`
+          `are too large for your browser to process. Please refresh the page and try using shorter sequences.`
         );
       }
       

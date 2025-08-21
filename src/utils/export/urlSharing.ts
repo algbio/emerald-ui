@@ -23,6 +23,9 @@ export interface ShareableAlignmentData {
   seqB?: string;
   alpha?: number;
   delta?: number;
+  gapCost?: number;
+  startGap?: number;
+  costMatrixType?: number;
 }
 
 /**
@@ -36,6 +39,9 @@ export const getShareableDataFromUrl = (): ShareableAlignmentData | null => {
     const seqB = urlParams.get('seqB');
     const alpha = urlParams.get('alpha');
     const delta = urlParams.get('delta');
+    const gapCost = urlParams.get('gapCost');
+    const startGap = urlParams.get('startGap');
+    const costMatrixType = urlParams.get('costMatrixType');
     
     // Validate that we have both sequences
     if (!seqA?.trim() || !seqB?.trim()) {
@@ -51,6 +57,9 @@ export const getShareableDataFromUrl = (): ShareableAlignmentData | null => {
     // Validate and parse numeric parameters
     let parsedAlpha: number | undefined;
     let parsedDelta: number | undefined;
+    let parsedGapCost: number | undefined;
+    let parsedStartGap: number | undefined;
+    let parsedCostMatrixType: number | undefined;
     
     if (alpha) {
       parsedAlpha = parseFloat(alpha);
@@ -68,11 +77,38 @@ export const getShareableDataFromUrl = (): ShareableAlignmentData | null => {
       }
     }
     
+    if (gapCost) {
+      parsedGapCost = parseFloat(gapCost);
+      if (isNaN(parsedGapCost)) {
+        console.warn('Invalid gap cost value in URL:', gapCost);
+        parsedGapCost = undefined;
+      }
+    }
+    
+    if (startGap) {
+      parsedStartGap = parseFloat(startGap);
+      if (isNaN(parsedStartGap)) {
+        console.warn('Invalid start gap value in URL:', startGap);
+        parsedStartGap = undefined;
+      }
+    }
+    
+    if (costMatrixType) {
+      parsedCostMatrixType = parseInt(costMatrixType, 10);
+      if (isNaN(parsedCostMatrixType) || parsedCostMatrixType < 0 || parsedCostMatrixType > 8) {
+        console.warn('Invalid cost matrix type value in URL:', costMatrixType);
+        parsedCostMatrixType = undefined;
+      }
+    }
+    
     return {
       seqA: seqA.trim().toUpperCase(),
       seqB: seqB.trim().toUpperCase(),
       alpha: parsedAlpha,
-      delta: parsedDelta
+      delta: parsedDelta,
+      gapCost: parsedGapCost,
+      startGap: parsedStartGap,
+      costMatrixType: parsedCostMatrixType
     };
   } catch (error) {
     console.error('Error parsing URL parameters:', error);
@@ -89,7 +125,10 @@ export const generateShareableUrl = (
   alpha: number,
   delta: number,
   accessionA?: string,
-  accessionB?: string
+  accessionB?: string,
+  gapCost?: number,
+  startGap?: number,
+  costMatrixType?: number
 ): string | null => {
   try {
     // Validate input parameters
@@ -132,6 +171,17 @@ export const generateShareableUrl = (
     params.set('alpha', alpha.toString());
     params.set('delta', delta.toString());
     
+    // Add optional parameters if provided and not default values
+    if (gapCost !== undefined && gapCost !== -1) {
+      params.set('gapCost', gapCost.toString());
+    }
+    if (startGap !== undefined && startGap !== -11) {
+      params.set('startGap', startGap.toString());
+    }
+    if (costMatrixType !== undefined && costMatrixType !== 2) { // 2 is BLOSUM62 (default)
+      params.set('costMatrixType', costMatrixType.toString());
+    }
+    
     // Get the base URL without any existing parameters
     const baseUrl = window.location.origin + window.location.pathname;
     
@@ -151,9 +201,12 @@ export const updateUrlWithShareableData = (
   alpha: number,
   delta: number,
   accessionA?: string,
-  accessionB?: string
+  accessionB?: string,
+  gapCost?: number,
+  startGap?: number,
+  costMatrixType?: number
 ): void => {
-  const shareableUrl = generateShareableUrl(descriptorA, descriptorB, alpha, delta, accessionA, accessionB);
+  const shareableUrl = generateShareableUrl(descriptorA, descriptorB, alpha, delta, accessionA, accessionB, gapCost, startGap, costMatrixType);
   
   if (shareableUrl) {
     // Update the URL without reloading the page
@@ -209,6 +262,24 @@ export const validateShareableData = (data: ShareableAlignmentData): boolean => 
     
     if (data.delta !== undefined) {
       if (typeof data.delta !== 'number' || isNaN(data.delta) || data.delta < 0 || data.delta > 100) {
+        return false;
+      }
+    }
+    
+    if (data.gapCost !== undefined) {
+      if (typeof data.gapCost !== 'number' || isNaN(data.gapCost)) {
+        return false;
+      }
+    }
+    
+    if (data.startGap !== undefined) {
+      if (typeof data.startGap !== 'number' || isNaN(data.startGap)) {
+        return false;
+      }
+    }
+    
+    if (data.costMatrixType !== undefined) {
+      if (typeof data.costMatrixType !== 'number' || isNaN(data.costMatrixType) || data.costMatrixType < 0 || data.costMatrixType > 8) {
         return false;
       }
     }

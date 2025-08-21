@@ -28,6 +28,9 @@ interface AlignmentGraphWithInfoPanelProps {
   delta?: number;
   accessionA?: string;
   accessionB?: string;
+  gapCost?: number;
+  startGap?: number;
+  costMatrixType?: number;
 }
 
 export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelProps> = ({
@@ -45,7 +48,10 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   alpha,
   delta,
   accessionA,
-  accessionB
+  accessionB,
+  gapCost: _gapCost,
+  startGap: _startGap,
+  costMatrixType: _costMatrixType
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);

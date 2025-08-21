@@ -394,7 +394,8 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
           alpha: action.payload.alpha !== undefined ? action.payload.alpha : state.params.alpha,
           delta: action.payload.delta !== undefined ? action.payload.delta : state.params.delta,
           gapCost: action.payload.gapCost !== undefined ? action.payload.gapCost : state.params.gapCost,
-          startGap: action.payload.startGap !== undefined ? action.payload.startGap : state.params.startGap
+          startGap: action.payload.startGap !== undefined ? action.payload.startGap : state.params.startGap,
+          costMatrixType: action.payload.costMatrixType !== undefined ? action.payload.costMatrixType : state.params.costMatrixType
         }
       };
     default:
@@ -448,6 +449,15 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         }
         if (shareableData.delta !== undefined) {
           paramUpdates.delta = shareableData.delta;
+        }
+        if (shareableData.gapCost !== undefined) {
+          paramUpdates.gapCost = shareableData.gapCost;
+        }
+        if (shareableData.startGap !== undefined) {
+          paramUpdates.startGap = shareableData.startGap;
+        }
+        if (shareableData.costMatrixType !== undefined) {
+          paramUpdates.costMatrixType = shareableData.costMatrixType as CostMatrixTypeValue;
         }
         
         if (Object.keys(paramUpdates).length > 0) {

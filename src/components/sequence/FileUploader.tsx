@@ -174,7 +174,23 @@ export const FileUploader = ({
       
     } catch (err) {
       console.error('Error processing file:', err);
-      alert('Error processing file: ' + err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      
+      // Check if this is a memory-related error
+      if (errorMessage.includes('Memory limit exceeded') || 
+          errorMessage.includes('Cannot enlarge memory') ||
+          errorMessage.includes('out of memory') ||
+          errorMessage.includes('OutOfMemory') ||
+          errorMessage.includes('stack overflow') ||
+          errorMessage.includes('Maximum call stack') ||
+          errorMessage.includes('Aborted') ||
+          errorMessage.includes('RuntimeError') ||
+          errorMessage.includes('memory access out of bounds') ||
+          errorMessage.includes('unreachable executed')) {
+        alert('Memory Limit Exceeded\n\nYour browser has run out of memory processing these sequences. Please refresh the page and try again with shorter sequences.');
+      } else {
+        alert('Error processing file: ' + errorMessage);
+      }
     } finally {
       setLoading(false);
     }

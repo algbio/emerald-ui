@@ -4,6 +4,7 @@ import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import { ShareAndExportPanel } from '../share';
 import type { PointGridPlotRef } from './PointGridPlot';
+import { useSequence } from '../../context/SequenceContext';
 // import AlignmentParamsPanel from './AlignmentParamsPanel';
 import './SafetyWindowsInfoPanel.css';
 import './SequenceAlignmentViewer.css'; // Import for amino acid coloring classes
@@ -79,6 +80,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   accessionA,
   accessionB
 }) => {
+  const { state } = useSequence();
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
   const [internalActiveTab, setInternalActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');  // Use external active tab if provided, otherwise use internal state
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
@@ -1207,6 +1209,9 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
               delta={delta}
               accessionA={accessionA}
               accessionB={accessionB}
+              gapCost={state.params.gapCost}
+              startGap={state.params.startGap}
+              costMatrixType={state.params.costMatrixType}
               canvasRef={canvasRef}
               pointGridRef={pointGridRef}
             />

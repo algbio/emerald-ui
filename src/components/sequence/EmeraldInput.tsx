@@ -21,7 +21,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   const { sequences, params, alignmentStatus, fetchStatusA, fetchErrorA, fetchStatusB, fetchErrorB } = state;
   
   // Feedback notifications
-  const { notifySuccess, notifyError, notifyInfo } = useFeedbackNotifications();
+  const { notifySuccess, notifyError, notifyInfo, showError } = useFeedbackNotifications();
   
   // Get validation warnings
   const validationWarnings = getValidationWarnings();
@@ -89,7 +89,26 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         
         notifySuccess('Alignment Complete', 'Suboptimal alignment graph has been generated successfully');
       } catch (error) {
-        notifyError('Alignment Failed', `Failed to generate alignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Check if this is a memory-related error
+        if (errorMessage.includes('Memory limit exceeded') || 
+            errorMessage.includes('Cannot enlarge memory') ||
+            errorMessage.includes('out of memory') ||
+            errorMessage.includes('OutOfMemory') ||
+            errorMessage.includes('stack overflow') ||
+            errorMessage.includes('Maximum call stack') ||
+            errorMessage.includes('Aborted') ||
+            errorMessage.includes('RuntimeError') ||
+            errorMessage.includes('memory access out of bounds')) {
+          showError(
+            'Memory Limit Exceeded', 
+            'Your browser has run out of memory processing these sequences. Please refresh the page and try again with shorter sequences.',
+            { duration: 0 } // Don't auto-dismiss memory errors
+          );
+        } else {
+          notifyError('Alignment Failed', `Failed to generate alignment: ${errorMessage}`);
+        }
       }
     } else {
       notifyError('Invalid Input', 'Please check your sequences and parameters before submitting');
@@ -478,7 +497,23 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           
           {state.alignmentError && (
             <div className="error-message">
-              {state.alignmentError}
+              {/* Check if this is a memory-related error from context */}
+              {(state.alignmentError.includes('Memory limit exceeded') || 
+                state.alignmentError.includes('Cannot enlarge memory') ||
+                state.alignmentError.includes('out of memory') ||
+                state.alignmentError.includes('OutOfMemory') ||
+                state.alignmentError.includes('stack overflow') ||
+                state.alignmentError.includes('Maximum call stack') ||
+                state.alignmentError.includes('Aborted') ||
+                state.alignmentError.includes('RuntimeError') ||
+                state.alignmentError.includes('memory access out of bounds')) ? (
+                <div>
+                  <strong>Memory Limit Exceeded</strong><br />
+                  Your browser has run out of memory processing these sequences. Please refresh the page and try again with shorter sequences.
+                </div>
+              ) : (
+                state.alignmentError
+              )}
             </div>
           )}
         </div>

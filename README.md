@@ -102,10 +102,5 @@ ROS1_ARATH and ROS1A_ORYSJ
 
 
 ## Quick notes
-
-* Leave the charactesr out when too zoomed out
-* Add explanation of the blue line
 * Crash report should tell the user to refresh the page
-* Examples should give better sequences to test
 * Try example should have a link
-* Change example sequences

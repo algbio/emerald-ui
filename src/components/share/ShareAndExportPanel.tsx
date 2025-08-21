@@ -12,6 +12,9 @@ interface ShareAndExportPanelProps {
   delta: number;
   accessionA?: string;
   accessionB?: string;
+  gapCost?: number;
+  startGap?: number;
+  costMatrixType?: number;
   // Props for ExportImagePanel
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   pointGridRef?: React.RefObject<PointGridPlotRef | null>;
@@ -24,6 +27,9 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
   delta,
   accessionA,
   accessionB,
+  gapCost,
+  startGap,
+  costMatrixType,
   canvasRef,
   pointGridRef
 }) => {
@@ -42,6 +48,9 @@ const ShareAndExportPanel: React.FC<ShareAndExportPanelProps> = ({
         delta={delta}
         accessionA={accessionA}
         accessionB={accessionB}
+        gapCost={gapCost}
+        startGap={startGap}
+        costMatrixType={costMatrixType}
       />
     </div>
   );
