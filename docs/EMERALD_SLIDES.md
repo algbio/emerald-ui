@@ -108,16 +108,11 @@ Match: +5   Mismatch: -2   Gap: -6
 
 # Issues in Protein Alignment
 
+- **Multiple Valid Alignments:** Different alignments may be equally plausible.
 - **Gap Placement:** Deciding where to insert gaps affects biological interpretation.
 - **Scoring Bias:** Choice of cost matrix influences which regions align.
-- **Multiple Valid Alignments:** Different alignments may be equally plausible.
 - **Functional Relevance:** Not all aligned regions are biologically meaningful.
 
-### Example Scenario:
-```
-Traditional:              ACDEFG--HIJK
-Alternative (Same cost):  ACDE--FGHIJK
-```
 ---
 
 Instead of finding **one "optimal" alignment**, what if we could:
