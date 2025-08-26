@@ -20,16 +20,22 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Authenticate with npm
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       
       - name: Install dependencies
-        run: npm install --prefer-offline
+        run: npm ci --prefer-offline
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       
       - name: Deploy to GitHub Pages
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           npm run build
-          # Use specific token authentication method for gh-pages
           npx gh-pages -d dist -u "github-actions-bot <support+actions@github.com>" -r https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
