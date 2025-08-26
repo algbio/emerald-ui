@@ -67,7 +67,7 @@ function AppContent() {
       <SharedUrlNotification />
       
       <h1 className="app-title">
-        Emerald UI
+        Emerald UI - Interactive Protein Sequence Alignment Visualization Tool
       </h1>
       <div className="app-description">
         <p className="app-subtitle">
