@@ -60,6 +60,12 @@ npm run dev
 
 4. Open your browser and navigate to `http://localhost:5173`
 
+5. New changes to the `main` branch are automatically published to github pages and visible at [https://algbio.github.io/emerald-ui](https://algbio.github.io/emerald-ui) via the github workflow `deploy-pages.yml`. If you prefer to do this manually, you can also publish from the local installation by running:
+
+```bash
+npm run deploy
+```
+
 ### Project Structure
 
 ```
