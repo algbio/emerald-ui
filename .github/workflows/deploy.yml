@@ -8,11 +8,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -24,9 +26,10 @@ jobs:
       
       - name: Deploy to GitHub Pages
         run: |
-          git config --global user.name ${{ github.actor }}
-          git config --global user.email ${{ github.actor }}@users.noreply.github.com
-          npm run deploy
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          npm run build
+          # Use specific token authentication method for gh-pages
+          npx gh-pages -d dist -u "github-actions-bot <support+actions@github.com>" -r https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         env:
-          # This is needed if your deploy script uses gh-pages
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
