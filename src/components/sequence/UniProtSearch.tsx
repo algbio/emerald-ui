@@ -200,6 +200,7 @@ const UniProtSearch: React.FC = () => {
             <li><code>insulin</code> - Protein name</li>
             <li><code>BRCA1</code> - Gene name</li>
             <li><code>hemoglobin homo sapiens</code> - Protein + organism</li>
+            <li><code>embryo development HOX</code> - Biological process</li>
           </ul>
         </div>
       </div>
