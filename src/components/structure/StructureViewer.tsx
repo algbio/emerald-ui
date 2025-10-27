@@ -177,11 +177,39 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       let isBinary = false;
       let finalPdbId = pdbId;
 
-      // Handle UniProt ID by loading AlphaFold structure directly
+      // Handle UniProt ID by loading AlphaFold structure via API
       if (uniprotId && !pdbId) {
-        // For UniProt IDs, we'll use AlphaFold exclusively for complete structures
-        url = `https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v4.cif`;
-        isBinary = true; // AlphaFold uses mmCIF format
+        try {
+          // Use the new AlphaFold API to get the structure URLs
+          const response = await fetch(`https://alphafold.ebi.ac.uk/api/prediction/${uniprotId}`);
+          if (!response.ok) {
+            throw new Error(`AlphaFold API returned ${response.status}: ${response.statusText}`);
+          }
+          
+          const predictions = await response.json();
+          if (!predictions || predictions.length === 0) {
+            throw new Error(`No AlphaFold predictions found for UniProt ID: ${uniprotId}`);
+          }
+          
+          // Use the first prediction (usually the canonical sequence)
+          const prediction = predictions[0];
+          
+          // Prefer CIF format over PDB for better structure quality
+          if (prediction.cifUrl) {
+            url = prediction.cifUrl;
+            isBinary = true; // CIF format
+          } else if (prediction.pdbUrl) {
+            url = prediction.pdbUrl;
+            isBinary = false; // PDB format
+          } else {
+            throw new Error(`No structure files available for UniProt ID: ${uniprotId}`);
+          }
+          
+          console.log(`Loading AlphaFold structure from API: ${url}`);
+        } catch (apiError) {
+          console.error('AlphaFold API error:', apiError);
+          throw new Error(`Failed to fetch AlphaFold structure: ${apiError}`);
+        }
       } else if (pdbContent) {
         // Load from content string
         const blob = new Blob([pdbContent], { type: 'text/plain' });
@@ -197,31 +225,78 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         throw new Error('No PDB ID, UniProt ID, URL, or content provided');
       }
 
-      // Load the structure
+      // Load the structure with better error handling
+      console.log(`Loading structure from: ${url}, format: ${isBinary ? 'mmcif' : 'pdb'}`);
+      
       const data = await pluginRef.current.builders.data.download(
         { url: Asset.Url(url) },
         { state: { isGhost: false } }
       );
 
-      // Parse the structure format
+      if (!data) {
+        throw new Error('Failed to download structure data');
+      }
+
+      // Parse the structure format with improved format detection
+      let format = isBinary ? 'mmcif' : 'pdb';
+      
+      // Better format detection based on URL
+      if (url.toLowerCase().includes('.cif')) {
+        format = 'mmcif';
+      } else if (url.toLowerCase().includes('.bcif')) {
+        format = 'mmcif'; // Binary CIF is also mmcif format
+      } else if (url.toLowerCase().includes('.pdb')) {
+        format = 'pdb';
+      }
+
       const trajectory = await pluginRef.current.builders.structure.parseTrajectory(
         data,
-        isBinary ? 'mmcif' : 'pdb'
+        format
       );
+
+      if (!trajectory) {
+        throw new Error('Failed to parse structure trajectory');
+      }
 
       // Create the structure
       const model = await pluginRef.current.builders.structure.createModel(trajectory);
+      
+      if (!model) {
+        throw new Error('Failed to create structure model');
+      }
+      
       const structure = await pluginRef.current.builders.structure.createStructure(model);
 
+      if (!structure) {
+        throw new Error('Failed to create structure representation');
+      }
+
       // Apply default representation (cartoon + ball-and-stick for ligands)
-      await pluginRef.current.builders.structure.representation.addRepresentation(
-        structure,
-        {
-          type: 'cartoon',
-          color: 'chain-id',
-          size: 'uniform',
+      try {
+        await pluginRef.current.builders.structure.representation.addRepresentation(
+          structure,
+          {
+            type: 'cartoon',
+            color: 'chain-id',
+            size: 'uniform',
+          }
+        );
+      } catch (reprError) {
+        console.warn('Could not add cartoon representation, trying alternative:', reprError);
+        // Try a simpler representation if cartoon fails
+        try {
+          await pluginRef.current.builders.structure.representation.addRepresentation(
+            structure,
+            {
+              type: 'ball-and-stick',
+              color: 'element-symbol',
+            }
+          );
+        } catch (altReprError) {
+          console.warn('Alternative representation also failed:', altReprError);
+          // Structure is loaded but no representation - this is still partially successful
         }
-      );
+      }
 
       // Focus on the structure
       await PluginCommands.Camera.Reset(pluginRef.current, {});
@@ -235,10 +310,28 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       onStructureLoaded?.();
       
     } catch (err) {
-      const errorMsg = `Failed to load structure: ${err}`;
+      let errorMsg = 'Failed to load structure';
+      
+      // Provide more specific error messages based on the error type
+      if (err instanceof Error) {
+        if (err.message.includes('404') || err.message.includes('Not Found')) {
+          errorMsg = `Structure not found. The ${uniprotId ? 'UniProt ID' : 'PDB ID'} "${uniprotId || pdbId}" may not have an available structure in the database.`;
+        } else if (err.message.includes('Invalid data cell')) {
+          errorMsg = `Structure file format error. The structure data appears to be corrupted or in an unsupported format.`;
+        } else if (err.message.includes('AlphaFold API')) {
+          errorMsg = `AlphaFold database error: ${err.message}`;
+        } else if (err.message.includes('Network')) {
+          errorMsg = `Network error: Unable to download structure. Please check your internet connection.`;
+        } else {
+          errorMsg = `Structure loading error: ${err.message}`;
+        }
+      } else {
+        errorMsg = `Unknown error occurred while loading structure: ${err}`;
+      }
+      
       setError(errorMsg);
       onError?.(errorMsg);
-      console.error(errorMsg);
+      console.error('Structure loading error:', err);
     } finally {
       setIsLoading(false);
     }
