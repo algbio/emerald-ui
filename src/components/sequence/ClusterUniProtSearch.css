@@ -1,0 +1,151 @@
+.cluster-uniprot-search {
+  padding: 1rem;
+}
+
+.instructions {
+  margin-bottom: 1.5rem;
+}
+
+.instructions h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.instructions p {
+  color: #666;
+  margin: 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.accession-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  transition: border-color 0.2s;
+}
+
+.accession-input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.accessions-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.accessions-textarea:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.help-text {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+}
+
+.fetch-button {
+  padding: 0.75rem;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.fetch-button:hover:not(:disabled) {
+  background: #0052a3;
+}
+
+.fetch-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.example-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #e8f4f8;
+  border-radius: 6px;
+  border: 1px solid #bee5eb;
+}
+
+.example-section h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.example-section p {
+  margin: 0.5rem 0;
+  color: #495057;
+}
+
+.example-accessions {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #495057;
+}
+
+.load-example-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.load-example-button:hover:not(:disabled) {
+  background: #218838;
+}
+
+.load-example-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+

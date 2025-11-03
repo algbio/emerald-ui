@@ -4,6 +4,7 @@ import EmeraldInput from './components/sequence/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
 import { FeedbackProvider } from './context/FeedbackContext'
 import SequenceInputPanel from './components/sequence/SequenceInputPanel'
+import ClusterModePanel from './components/sequence/ClusterModePanel'
 import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWithInfoPanel'
 import SharedUrlNotification from './components/ui/SharedUrlNotification'
 import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
@@ -16,6 +17,8 @@ function AppContent() {
   const { state } = useSequence();
   const { sequences, alignments } = state;
   
+  const [analysisMode, setAnalysisMode] = useState<'pairwise' | 'cluster'>('pairwise');
+  const [isViewingClusterMember, setIsViewingClusterMember] = useState(false);
   const [representative, setRepresentative] = useState("");
   const [member, setMember] = useState("");
   const [representativeDescriptor, setRepresentativeDescriptor] = useState("");
@@ -23,6 +26,20 @@ function AppContent() {
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
   const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
   const [isInterpretationExpanded, setIsInterpretationExpanded] = useState(false);
+  
+  // Cluster mode state - persisted across tab switches
+  const [clusterData, setClusterData] = useState<{
+    representativeSequence: string;
+    representativeName: string;
+    clusterSequences: Array<{ name: string; sequence: string }>;
+    results: Array<{
+      memberName: string;
+      memberSequence: string;
+      safetyWindows: Array<{ start: number; end: number }>;
+      alignmentResult?: any;
+    }>;
+  } | null>(null);
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointGridRef = useRef<PointGridPlotRef | null>(null);
 
@@ -193,19 +210,62 @@ function AppContent() {
         )}
       </div>
       
-      <div className="input-methods">
-        <div className="input-method-tabs">
-          <h1 className="input-title">Input Options</h1>
-          <div className="tabs-container">
-            <SequenceInputPanel />
-          </div>
+      <div className="analysis-mode-section">
+        <div className="analysis-mode-tabs">
+          <button
+            className={`analysis-mode-tab ${analysisMode === 'pairwise' ? 'active' : ''}`}
+            onClick={() => {
+              setIsViewingClusterMember(false);
+              setAnalysisMode('pairwise');
+            }}
+          >
+            Pairwise Comparison
+          </button>
+          <button
+            className={`analysis-mode-tab ${analysisMode === 'cluster' ? 'active' : ''}`}
+            onClick={() => {
+              setIsViewingClusterMember(false);
+              setAnalysisMode('cluster');
+            }}
+          >
+            Cluster Mode
+          </button>
         </div>
-        
-        <EmeraldInput onSubmit={handleAlignmentsGenerated} />
       </div>
       
-      
-      {representative && member && localAlignments.length > 0 && (
+      {analysisMode === 'pairwise' && (
+        <>
+          {isViewingClusterMember && (
+            <div className="cluster-navigation-banner">
+              <div className="banner-content">
+                <span className="banner-text">
+                  📊 Viewing cluster member alignment
+                </span>
+                <button 
+                  className="return-to-cluster-button"
+                  onClick={() => {
+                    setIsViewingClusterMember(false);
+                    setAnalysisMode('cluster');
+                  }}
+                >
+                  ← Back to Cluster Results
+                </button>
+              </div>
+            </div>
+          )}
+          
+          <div className="input-methods">
+            <div className="input-method-tabs">
+              <h1 className="input-title">Input Options</h1>
+              <div className="tabs-container">
+                <SequenceInputPanel />
+              </div>
+            </div>
+            
+            <EmeraldInput onSubmit={handleAlignmentsGenerated} />
+          </div>
+          
+          {representative && member && localAlignments.length > 0 && (
         <div className="results-section">
           <div className="results-header">
             <h2>Explore Your Alignment Results</h2>
@@ -262,6 +322,19 @@ function AppContent() {
             accessionB={state.sequences.accessionB}
           />
         </div>
+          )}
+        </>
+      )}
+      
+      {analysisMode === 'cluster' && (
+        <ClusterModePanel 
+          onViewPairwiseAlignment={() => {
+            setIsViewingClusterMember(true);
+            setAnalysisMode('pairwise');
+          }}
+          cachedData={clusterData}
+          onDataChange={setClusterData}
+        />
       )}
     </div>
   );
