@@ -1,0 +1,169 @@
+.cluster-file-uploader {
+  padding: 1rem;
+}
+
+.upload-section {
+  margin-bottom: 1.5rem;
+}
+
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 2px dashed #0066cc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.file-upload-label:hover {
+  border-color: #0052a3;
+  background: #f0f7ff;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-icon {
+  font-size: 2.5rem;
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.upload-text strong {
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.upload-text span {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+}
+
+.sequences-preview {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.sequences-preview h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.representative-selector {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #e8f4f8;
+  border-radius: 6px;
+}
+
+.representative-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.rep-dropdown {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  background: white;
+}
+
+.sequences-list {
+  margin-bottom: 1.5rem;
+}
+
+.sequence-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.sequence-item.representative {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  font-weight: 600;
+}
+
+.sequence-item.member {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+.sequence-label {
+  color: #495057;
+  font-size: 0.9rem;
+  min-width: 120px;
+}
+
+.members-header {
+  display: block;
+  padding: 0.75rem 0;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid #dee2e6;
+  color: #495057;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cluster-sequence-name {
+  flex: 1;
+  color: #2c3e50;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  
+}
+
+.sequence-length {
+  color: #6c757d;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.load-cluster-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.load-cluster-button:hover {
+  background: #0052a3;
+}

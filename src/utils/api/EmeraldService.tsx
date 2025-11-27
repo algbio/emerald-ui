@@ -115,7 +115,57 @@ export class EmeraldService {
       }
       
       // Parse the result and return
-      return JSON.parse(jsonResult) as AlignmentResult;
+      const parsed = JSON.parse(jsonResult);
+      console.log('Parsed alignment result:', parsed);
+      
+      // Map windows_representative to safety_windows for compatibility
+      // The WASM module returns windows_representative and windows_member
+      // We need to convert this to the expected safety_windows format
+      if (!parsed.safety_windows && parsed.windows_representative && parsed.windows_member) {
+        console.log('Converting windows_representative/member to safety_windows format');
+        console.log('windows_representative:', parsed.windows_representative);
+        console.log('windows_member:', parsed.windows_member);
+        
+        // Parse window strings like "(0,2)" or handle array format
+        const parseWindow = (window: any): [number, number] | null => {
+          if (Array.isArray(window) && window.length === 2) {
+            return [window[0], window[1]];
+          }
+          if (typeof window === 'string') {
+            const match = window.match(/\((\d+),(\d+)\)/);
+            if (match) {
+              return [parseInt(match[1]), parseInt(match[2])];
+            }
+          }
+          if (typeof window === 'object' && window.start !== undefined && window.end !== undefined) {
+            return [window.start, window.end];
+          }
+          return null;
+        };
+        
+        parsed.safety_windows = parsed.windows_representative.map((refWindow: any, index: number) => {
+          const memWindow = parsed.windows_member[index];
+          const refParsed = parseWindow(refWindow);
+          const memParsed = parseWindow(memWindow);
+          
+          const converted = {
+            start_ref: refParsed ? refParsed[0] : 0,
+            end_ref: refParsed ? refParsed[1] : 0,
+            start_mem: memParsed ? memParsed[0] : 0,
+            end_mem: memParsed ? memParsed[1] : 0,
+            ratio: 1.0
+          };
+          console.log('Converted window:', converted);
+          return converted;
+        });
+        
+        console.log('Final safety_windows:', parsed.safety_windows);
+      } else if (!parsed.safety_windows) {
+        console.warn('No safety windows found in alignment result, adding empty array');
+        parsed.safety_windows = [];
+      }
+      
+      return parsed as AlignmentResult;
     } catch (error) {
       console.error('Error generating alignment:', error);
       
