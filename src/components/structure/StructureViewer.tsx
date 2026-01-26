@@ -9,6 +9,7 @@ import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSafetyWindowsHighlighting } from '../../hooks/useSafetyWindowsHighlighting';
 import { mapUniProtToKegg } from '../../utils/api/uniprotUtils';
 import './StructureViewer.css';
+import { Color } from 'molstar/lib/mol-util/color';
 
 interface StructureViewerProps {
   /** PDB ID to load (e.g., '1crn') */
@@ -43,6 +44,8 @@ interface StructureViewerProps {
   }>;
   /** Enable safety window highlighting */
   enableSafetyWindowHighlighting?: boolean;
+  /** Custom colors for cartoon representation (hex color codes) */
+  cartoonColors?: string[]; // Array of up to 8 hex colors like ['#FF0000', '#00FF00', ...]
 }
 
 export const StructureViewer: React.FC<StructureViewerProps> = ({
@@ -57,7 +60,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   onStructureLoaded,
   onError,
   safetyWindows = [],
-  enableSafetyWindowHighlighting = false
+  enableSafetyWindowHighlighting = false,
+  cartoonColors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#000000', '#FFFFFF'] // Default to 8 colors
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pluginRef = useRef<any>(null);
@@ -76,6 +80,23 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   // Custom Mol* plugin configuration for better protein visualization with sequence viewer
   const getPluginSpec = (): PluginUISpec => {
     const spec = DefaultPluginUISpec();
+    
+    // Configure Canvas3D rendering and colors
+    spec.canvas3d = {
+      ...DefaultPluginUISpec().canvas3d,
+      renderer: {
+        ...DefaultPluginUISpec().canvas3d?.renderer,
+        backgroundColor: Color(0xffffff), // white background
+        selectColor: Color(0xff6699), // pink higlight
+      },
+      // Customize highlight/selection colors
+      marking: {
+        enabled: true,
+        selectEdgeColor: Color(0xff6699), // pink higlight
+        highlightEdgeColor: Color(0xff6699), // pink highlight
+        
+      }
+    };
     
     // Enable sequence viewer and ensure it's visible
     spec.layout = {
@@ -279,6 +300,19 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
             type: 'cartoon',
             color: 'chain-id',
             size: 'uniform',
+            params: {
+              // Custom color configuration
+              colors: cartoonColors?.length ? {
+                name: 'custom',
+                params: {
+                  colors: cartoonColors.map(hex => {
+                    // Convert hex to Mol* Color format
+                    const num = parseInt(hex.replace('#', ''), 16);
+                    return Color(num);
+                  })
+                }
+              } : undefined
+            }
           }
         );
       } catch (reprError) {
@@ -662,7 +696,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
               className="external-link-button external-link-ligsys"
               title={`View ${uniprotId} in LIGSYS Database`}
             >
-              💊 LIGSYS
+              💊 LIGYSIS
             </button>
           )}
         </div>
