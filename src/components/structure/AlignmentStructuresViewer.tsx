@@ -88,6 +88,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
               showSequence={true}
               safetyWindows={safetyWindowsA}
               enableSafetyWindowHighlighting={safetyWindowsA.length > 0}
+              cartoonColorScheme="uniform"
               onStructureLoaded={() => console.log(`Structure A loaded`)}
               onError={(error) => console.error(`Structure A error:`, error)}
             />
@@ -131,6 +132,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
               showSequence={true}
               safetyWindows={safetyWindowsB}
               enableSafetyWindowHighlighting={safetyWindowsB.length > 0}
+              cartoonColorScheme='uniform'
               onStructureLoaded={() => console.log(`Structure B loaded`)}
               onError={(error) => console.error(`Structure B error:`, error)}
             />

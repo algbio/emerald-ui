@@ -46,6 +46,8 @@ interface StructureViewerProps {
   enableSafetyWindowHighlighting?: boolean;
   /** Custom colors for cartoon representation (hex color codes) */
   cartoonColors?: string[]; // Array of up to 8 hex colors like ['#FF0000', '#00FF00', ...]
+  /** Cartoon color scheme to use - colors the backbone by different criteria */
+  cartoonColorScheme?: 'chain-id' | 'secondary-structure' | 'b-factor' | 'uniform';
 }
 
 export const StructureViewer: React.FC<StructureViewerProps> = ({
@@ -61,7 +63,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   onError,
   safetyWindows = [],
   enableSafetyWindowHighlighting = false,
-  cartoonColors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#000000', '#FFFFFF'] // Default to 8 colors
+  cartoonColorScheme = 'chain-id'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pluginRef = useRef<any>(null);
@@ -87,13 +89,13 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       renderer: {
         ...DefaultPluginUISpec().canvas3d?.renderer,
         backgroundColor: Color(0xffffff), // white background
-        selectColor: Color(0xff6699), // pink higlight
+        selectColor: Color(0x00cc66), // green highlight
       },
       // Customize highlight/selection colors
       marking: {
         enabled: true,
-        selectEdgeColor: Color(0xff6699), // pink higlight
-        highlightEdgeColor: Color(0xff6699), // pink highlight
+        selectEdgeColor: Color(0x00cc66), // green highlight
+        highlightEdgeColor: Color(0x00cc66), // green highlight
         
       }
     };
@@ -294,42 +296,34 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
       // Apply default representation (cartoon + ball-and-stick for ligands)
       try {
-        await pluginRef.current.builders.structure.representation.addRepresentation(
+        // Map the color scheme to valid Mol* values
+        let colorScheme: string = 'chain-id';
+        if (cartoonColorScheme === 'secondary-structure') {
+          colorScheme = 'secondary-structure';
+        } else if (cartoonColorScheme === 'b-factor') {
+          colorScheme = 'uncertainty';
+        } else if (cartoonColorScheme === 'uniform') {
+          colorScheme = 'uniform';
+        } else {
+          colorScheme = 'chain-id';
+        }
+
+        const repr = await pluginRef.current.builders.structure.representation.addRepresentation(
           structure,
           {
             type: 'cartoon',
-            color: 'chain-id',
+            color: colorScheme,
             size: 'uniform',
-            params: {
-              // Custom color configuration
-              colors: cartoonColors?.length ? {
-                name: 'custom',
-                params: {
-                  colors: cartoonColors.map(hex => {
-                    // Convert hex to Mol* Color format
-                    const num = parseInt(hex.replace('#', ''), 16);
-                    return Color(num);
-                  })
-                }
-              } : undefined
-            }
           }
         );
-      } catch (reprError) {
-        console.warn('Could not add cartoon representation, trying alternative:', reprError);
-        // Try a simpler representation if cartoon fails
-        try {
-          await pluginRef.current.builders.structure.representation.addRepresentation(
-            structure,
-            {
-              type: 'ball-and-stick',
-              color: 'element-symbol',
-            }
-          );
-        } catch (altReprError) {
-          console.warn('Alternative representation also failed:', altReprError);
-          // Structure is loaded but no representation - this is still partially successful
+
+        // Ensure the representation is fully updated
+        if (repr && pluginRef.current.managers.structure) {
+          await pluginRef.current.managers.structure.component.updateRepresentations([repr]);
         }
+      } catch (reprError) {
+        console.warn('Could not add cartoon representation:', reprError);
+        // Just log the error - don't add alternative representation
       }
 
       // Focus on the structure
