@@ -742,7 +742,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         setHoveredCell(null);
+        setHoveredEdge(null);
         onSafetyWindowHover?.(null);
+        requestAnimationFrame(drawCanvas);
       }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
