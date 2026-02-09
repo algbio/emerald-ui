@@ -103,10 +103,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   },
 })
 ```
-### Breaking example:
-ROS1_ARATH and ROS1A_ORYSJ
-
-
-## Quick notes
-* Crash report should tell the user to refresh the page
-* Try example should have a link
