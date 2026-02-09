@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { exportCanvasAsPNG, exportCanvasAsJPEG, copyCanvasToClipboard, generateExportFilename } from '../../utils/export/exportUtils';
+import { exportCanvasAsPNG, exportCanvasAsJPEG, exportCanvasAsPNGHighRes, exportCanvasAsJPEGHighRes, copyCanvasToClipboard, generateExportFilename } from '../../utils/export/exportUtils';
 import { exportCanvasAsSVG, generateSVGFilename } from '../../utils/export/svgUtils';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import type { PointGridPlotRef } from '../alignment/PointGridPlot';
@@ -24,6 +24,7 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
   const [exportError, setExportError] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<'png' | 'jpeg' | 'svg'>('png');
   const [quality, setQuality] = useState(0.9);
+  const [resolutionScale, setResolutionScale] = useState(1);
   const [canvasIsFullyReady, setCanvasIsFullyReady] = useState(false);
   
   // Feedback notifications
@@ -143,17 +144,42 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
       } else {
         // Handle raster export (PNG/JPEG)
         const filename = generateExportFilename(descriptorA, descriptorB, selectedFormat);
+        const exportWidth = Math.floor(canvas.width * resolutionScale);
+        const exportHeight = Math.floor(canvas.height * resolutionScale);
         
-        if (selectedFormat === 'png') {
-          exportCanvasAsPNG(canvas, filename, 1.0);
-        } else {
-          exportCanvasAsJPEG(canvas, filename, quality);
+        // Use high-resolution re-rendering if pointGridRef is available and scale > 1
+        let exportCanvas: HTMLCanvasElement = canvas;
+        if (resolutionScale > 1 && pointGridRef?.current?.renderHighResCanvas) {
+          const highResCanvas = pointGridRef.current.renderHighResCanvas(resolutionScale);
+          if (highResCanvas) {
+            exportCanvas = highResCanvas;
+          } else {
+            console.warn('High-res rendering not available, falling back to scaled export');
+          }
         }
         
-        const successMsg = `Graph exported as ${filename}`;
+        if (selectedFormat === 'png') {
+          // If we got a high-res canvas, export it directly; otherwise use the old scaling method
+          if (exportCanvas !== canvas) {
+            exportCanvasAsPNG(exportCanvas, filename, 1.0);
+          } else {
+            exportCanvasAsPNGHighRes(canvas, filename, resolutionScale);
+          }
+        } else {
+          if (exportCanvas !== canvas) {
+            exportCanvasAsJPEG(exportCanvas, filename, quality);
+          } else {
+            exportCanvasAsJPEGHighRes(canvas, filename, quality, resolutionScale);
+          }
+        }
+        
+        // Include resolution info in success message
+        const resolutionInfo = resolutionScale > 1 ? ` at ${exportWidth}×${exportHeight}px (${resolutionScale}×)` : '';
+        
+        const successMsg = `Graph exported as ${filename}${resolutionInfo}`;
         showTemporaryMessage(successMsg);
         notifyDownloadStarted(filename);
-        notifySuccess(`${selectedFormat.toUpperCase()} Export Complete`, 'Image saved successfully');
+        notifySuccess(`${selectedFormat.toUpperCase()} Export Complete`, `Image saved successfully${resolutionInfo}`);
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -319,6 +345,32 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
             </div>
           )}
 
+          {(selectedFormat === 'png' || selectedFormat === 'jpeg') && (
+            <div className="panel-form-item">
+              <label htmlFor="resolution-range" className="panel-label">
+                Resolution: {resolutionScale}× 
+                {canvasRef.current && (
+                  <span className="panel-label-hint">
+                    ({Math.floor(canvasRef.current.width * resolutionScale)} × {Math.floor(canvasRef.current.height * resolutionScale)} px)
+                  </span>
+                )}
+              </label>
+              <input
+                id="resolution-range"
+                type="range"
+                min="1"
+                max="4"
+                step="0.5"
+                value={resolutionScale}
+                onChange={(e) => setResolutionScale(parseFloat(e.target.value))}
+                className="panel-input"
+              />
+              <div className="panel-hint">
+                Graph is re-rendered at higher resolution for sharp output. Use 2× or higher for print quality.
+              </div>
+            </div>
+          )}
+
           <div className="panel-display-group">
             <button
               onClick={handleExportImage}
@@ -357,6 +409,7 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
               <li><strong>PNG:</strong> High quality raster image, larger file size</li>
               <li><strong>JPEG:</strong> Compressed raster image, smaller file size, adjustable quality</li>
               <li><strong>SVG:</strong> Vector image that scales perfectly at any zoom level</li>
+              <li><strong>Resolution:</strong> Use 2×-4× for print quality or high-DPI displays</li>
               <li><strong>Copy:</strong> Copy image directly to clipboard (PNG format)</li>
               <li><strong>Highlighted Windows:</strong> Safety window highlights are included in exports</li>
             </ul>

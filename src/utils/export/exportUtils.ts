@@ -3,6 +3,39 @@
  */
 
 /**
+ * Create a scaled canvas from the source canvas for high-resolution export
+ * @param sourceCanvas - The source canvas element
+ * @param scale - The scale factor (e.g., 2 for 2x resolution)
+ * @returns A new canvas with the scaled content
+ */
+export const createScaledCanvas = (
+  sourceCanvas: HTMLCanvasElement,
+  scale: number = 1
+): HTMLCanvasElement => {
+  const scaledCanvas = document.createElement('canvas');
+  const scaledWidth = Math.floor(sourceCanvas.width * scale);
+  const scaledHeight = Math.floor(sourceCanvas.height * scale);
+  
+  scaledCanvas.width = scaledWidth;
+  scaledCanvas.height = scaledHeight;
+  
+  const ctx = scaledCanvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Failed to get canvas context for scaling');
+  }
+  
+  // Enable high-quality image scaling
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  
+  // Scale and draw the source canvas
+  ctx.scale(scale, scale);
+  ctx.drawImage(sourceCanvas, 0, 0);
+  
+  return scaledCanvas;
+};
+
+/**
  * Export a canvas element as a PNG image
  * @param canvas - The canvas element to export
  * @param filename - The filename for the downloaded image
@@ -29,6 +62,33 @@ export const exportCanvasAsPNG = (
   } catch (error) {
     console.error('Failed to export canvas as PNG:', error);
     throw new Error('Failed to export image. Please try again.');
+  }
+};
+
+/**
+ * Export a canvas element as a high-resolution PNG image
+ * @param canvas - The canvas element to export
+ * @param filename - The filename for the downloaded image
+ * @param scale - The scale factor for higher resolution (e.g., 2 for 2x)
+ */
+export const exportCanvasAsPNGHighRes = (
+  canvas: HTMLCanvasElement, 
+  filename: string = 'alignment-graph.png', 
+  scale: number = 1
+): void => {
+  try {
+    const exportCanvas = scale > 1 ? createScaledCanvas(canvas, scale) : canvas;
+    
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = exportCanvas.toDataURL('image/png', 1.0);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Failed to export canvas as high-res PNG:', error);
+    throw new Error('Failed to export high-resolution image. Please try again.');
   }
 };
 
@@ -60,6 +120,35 @@ export const exportCanvasAsJPEG = (
   } catch (error) {
     console.error('Failed to export canvas as JPEG:', error);
     throw new Error('Failed to export image. Please try again.');
+  }
+};
+
+/**
+ * Export a canvas element as a high-resolution JPEG image
+ * @param canvas - The canvas element to export
+ * @param filename - The filename for the downloaded image
+ * @param quality - Image quality (0-1)
+ * @param scale - The scale factor for higher resolution (e.g., 2 for 2x)
+ */
+export const exportCanvasAsJPEGHighRes = (
+  canvas: HTMLCanvasElement, 
+  filename: string = 'alignment-graph.jpg', 
+  quality: number = 0.9,
+  scale: number = 1
+): void => {
+  try {
+    const exportCanvas = scale > 1 ? createScaledCanvas(canvas, scale) : canvas;
+    
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = exportCanvas.toDataURL('image/jpeg', quality);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Failed to export canvas as high-res JPEG:', error);
+    throw new Error('Failed to export high-resolution image. Please try again.');
   }
 };
 

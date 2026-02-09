@@ -44,6 +44,12 @@ export interface PointGridPlotRef {
       showOptimalPath: boolean;
     };
   };
+  /**
+   * Render the graph to a high-resolution offscreen canvas
+   * @param scale - The scale factor (e.g., 2 for 2x resolution)
+   * @returns A canvas element with the graph rendered at the specified scale
+   */
+  renderHighResCanvas: (scale: number) => HTMLCanvasElement | null;
 }
 
 interface PointGridProps {
@@ -190,6 +196,16 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     transform // Pass the current transform to control tick density
   });
 
+  // Extract safety windows and helper function - must be defined before useImperativeHandle
+  const safetyWindows = alignments.filter(alignment => 
+    alignment.startDot && alignment.endDot
+  );
+
+  // Simple safety window selection logic
+  const selectedWindow = selectedSafetyWindowId ? 
+    safetyWindows.find((_, index) => `safety-window-${index}` === selectedSafetyWindowId) : 
+    null;
+
   // Expose canvas and export data through ref
   useImperativeHandle(ref, () => ({
     canvas: canvasRef.current,
@@ -212,18 +228,152 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showAlignmentDots,
         showOptimalPath
       }
-    })
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath]);
-  
-  // Extract safety windows and helper function
-  const safetyWindows = alignments.filter(alignment => 
-    alignment.startDot && alignment.endDot
-  );
-
-  // Simple safety window selection logic
-  const selectedWindow = selectedSafetyWindowId ? 
-    safetyWindows.find((_, index) => `safety-window-${index}` === selectedSafetyWindowId) : 
-    null;
+    }),
+    renderHighResCanvas: (scale: number) => {
+      if (!canvasRef.current || scale < 1) return null;
+      
+      // Create scaled dimensions
+      const scaledWidth = Math.floor(width * scale);
+      const scaledHeight = Math.floor(height * scale);
+      const scaledMarginTop = marginTop * scale;
+      const scaledMarginRight = marginRight * scale;
+      const scaledMarginBottom = marginBottom * scale;
+      const scaledMarginLeft = marginLeft * scale;
+      
+      // Create offscreen canvas
+      const offscreenCanvas = document.createElement('canvas');
+      offscreenCanvas.width = scaledWidth;
+      offscreenCanvas.height = scaledHeight;
+      
+      const ctx = offscreenCanvas.getContext('2d');
+      if (!ctx) return null;
+      
+      // Create scaled versions of the d3 scales
+      const padding = 0.5;
+      const xBaseScaled = d3.scaleLinear(
+        [-padding, representative.length + padding],
+        [scaledMarginLeft, scaledWidth - scaledMarginRight]
+      );
+      const yBaseScaled = d3.scaleLinear(
+        [-padding, member.length + padding],
+        [scaledMarginTop, scaledHeight - scaledMarginBottom]
+      );
+      
+      const xScaled = transform.rescaleX(xBaseScaled);
+      const yScaled = transform.rescaleY(yBaseScaled);
+      
+      // Calculate scaled font size
+      const cellWidth = Math.abs(xScaled(1) - xScaled(0));
+      const cellHeight = Math.abs(yScaled(1) - yScaled(0));
+      const scaledFontSize = Math.max(8 * scale, Math.min(cellWidth, cellHeight) * 0.6);
+      
+      // Create scaled ticks with recalculated offsets using the scaled scales
+      const scaledXTicks = xTicks.map(tick => ({ 
+        ...tick, 
+        xOffset: xScaled(tick.value)  // Recalculate offset using scaled scale
+      }));
+      const scaledYTicks = yTicks.map(tick => ({ 
+        ...tick, 
+        yOffset: yScaled(tick.value)  // Recalculate offset using scaled scale
+      }));
+      
+      // Helper function for safety window detection (same logic, scaled coordinates)
+      const isInSafetyWindowScaled = (position: number, axis: 'x' | 'y') => {
+        return safetyWindows.some(window => {
+          if (!window.startDot || !window.endDot) return false;
+          const start = axis === 'x' ? window.startDot.x : window.startDot.y;
+          const end = axis === 'x' ? window.endDot.x : window.endDot.y;
+          return position >= start && position < end;
+        });
+      };
+      
+      // Clear canvas with white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, scaledWidth, scaledHeight);
+      
+      // Draw safety windows if enabled
+      if (showSafetyWindows) {
+        drawSafetyWindows(ctx, safetyWindows, xScaled, yScaled, scaledFontSize, scaledMarginTop, scaledMarginLeft);
+        
+        if (selectedWindow) {
+          drawSafetyWindowHighlight(ctx, xScaled, yScaled, scaledMarginTop, scaledMarginLeft, selectedWindow);
+        }
+      }
+      
+      // Draw axes if enabled
+      if (showAxes) {
+        drawAxes(ctx, xScaled, yScaled, scaledMarginTop, scaledMarginLeft);
+      }
+      
+      // Create safety window bounds object for display
+      const scaledSafetyWindowBounds: SafetyWindowBounds | undefined = (showSafetyWindows && selectedWindow) ? {
+        xStart: selectedWindow.startDot?.x,
+        xEnd: selectedWindow.endDot?.x,
+        yStart: selectedWindow.startDot?.y,
+        yEnd: selectedWindow.endDot?.y
+      } : undefined;
+      
+      // Draw axis labels if any label type is enabled
+      if (showSequenceCharacters || showSequenceIndices) {
+        drawAxisLabels(
+          ctx,
+          scaledXTicks,
+          scaledYTicks,
+          xScaled,
+          yScaled,
+          scaledFontSize,
+          scaledMarginTop,
+          scaledMarginLeft,
+          isInSafetyWindowScaled,
+          scaledSafetyWindowBounds,
+          representativeDescriptor,
+          memberDescriptor,
+          showSequenceCharacters,
+          showSequenceIndices
+        );
+      }
+      
+      // Set up clipping and draw grid/data
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(scaledMarginLeft, scaledMarginTop, scaledWidth - scaledMarginLeft - scaledMarginRight, scaledHeight - scaledMarginTop - scaledMarginBottom);
+      ctx.clip();
+      
+      // Draw grid if enabled
+      if (showGrid) {
+        drawGridLines(ctx, scaledXTicks, scaledYTicks, xScaled, yScaled);
+      }
+      
+      // Draw alignment elements
+      renderGraph(
+        {
+          ctx,
+          x: xScaled,
+          y: yScaled,
+          width: scaledWidth,
+          height: scaledHeight,
+          marginTop: scaledMarginTop,
+          marginLeft: scaledMarginLeft
+        },
+        alignments,
+        {
+          showAlignmentEdges,
+          showAlignmentDots,
+          showOptimalPath,
+          showSelectedPath: enablePathSelection && selectedPath !== null,
+          selectedPath: selectedPath || undefined,
+          hoveredEdge: undefined, // Don't show hover in export
+          selectedIndividualEdges: enablePathSelection ? selectedIndividualEdges : undefined
+        }
+      );
+      
+      ctx.restore();
+      
+      // Note: We skip minimap in high-res export as it's for navigation only
+      
+      return offscreenCanvas;
+    }
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath, width, height, marginTop, marginRight, marginBottom, marginLeft, safetyWindows, selectedWindow, representativeDescriptor, memberDescriptor, enablePathSelection, selectedPath, selectedIndividualEdges]);
     
   const hoveredWindow = hoveredSafetyWindowId ? 
     safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) : 

@@ -249,3 +249,18 @@
 .emergency-button:hover {
   background-color: #ffcccc;
 }
+
+/* Resolution and quality hints */
+.panel-label-hint {
+  font-weight: normal;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-left: var(--spacing-xs);
+}
+
+.panel-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: var(--spacing-xs);
+  line-height: 1.4;
+}
