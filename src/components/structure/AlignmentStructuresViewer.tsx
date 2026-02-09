@@ -45,11 +45,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
 
   return (
     <div className="alignment-structures-viewer">
-      <h2 className="structures-title">Aligned Sequence Structures</h2>
-      <p className="structures-subtitle">
-        3D structures for aligned sequences with interactive sequence mapping
-      </p>
-      
+      <h2 className="structures-title">Safety Windows Mapped on 3D structures</h2>      
       <div className="structures-container">
         {/* Sequence A Structure */}
         {hasStructureA && (
