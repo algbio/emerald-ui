@@ -134,7 +134,9 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
           exportData.yTicks,
           exportData.transform,
           exportData.visualizationSettings,
-          filename
+          filename,
+          exportData.representativeDescriptor || descriptorA,
+          exportData.memberDescriptor || descriptorB
         );
         
         const successMsg = `Graph exported as ${filename}`;

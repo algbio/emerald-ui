@@ -32,6 +32,8 @@ export interface PointGridPlotRef {
     xTicks: Array<{value: number; label: string}>;
     yTicks: Array<{value: number; label: string}>;
     transform: any;
+    representativeDescriptor?: string;
+    memberDescriptor?: string;
     visualizationSettings: {
       showAxes: boolean;
       showSequenceCharacters: boolean;
@@ -217,6 +219,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       xTicks: xTicks.map(tick => ({ value: tick.value, label: tick.label })),
       yTicks: yTicks.map(tick => ({ value: tick.value, label: tick.label })),
       transform,
+      representativeDescriptor,
+      memberDescriptor,
       visualizationSettings: {
         showAxes,
         showSequenceCharacters,

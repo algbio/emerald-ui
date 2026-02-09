@@ -101,103 +101,142 @@ function drawSVGAxisLabels(
   ctx: SVGContext,
   xTicks: Array<{value: number; label: string}>,
   yTicks: Array<{value: number; label: string}>,
-  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean
+  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean,
+  showSequenceCharacters: boolean = true,
+  showSequenceIndices: boolean = true,
+  representativeDescriptor?: string,
+  memberDescriptor?: string
 ) {
   const { svg, x, y, marginTop, marginLeft, fontSize, width, height } = ctx;
   
   const labelsGroup = svg.append('g').attr('class', 'axis-labels');
   
-  // X axis labels (sequence characters)
-  const xLabelsGroup = labelsGroup.append('g').attr('class', 'x-labels');
-  xTicks.forEach(tick => {
-    if (tick.label && tick.value >= 0) {
-      const xPos = x(tick.value + 0.5);
-      if (xPos >= marginLeft && xPos <= width) {
-        const isInSafety = isInSafetyWindow(tick.value, 'x');
-        xLabelsGroup.append('text')
-          .attr('x', xPos)
-          .attr('y', marginTop - 10)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'bottom')
-          .attr('font-family', 'monospace')
-          .attr('font-size', `${Math.max(10, fontSize * 0.9)}px`)
-          .attr('font-weight', isInSafety ? 'bold' : 'normal')
-          .attr('fill', isInSafety ? 'green' : '#333')
-          .text(tick.label);
+  // Draw axis descriptors (titles) if provided
+  if (representativeDescriptor) {
+    const xAxisCenter = marginLeft + (width - marginLeft) / 2;
+    labelsGroup.append('text')
+      .attr('x', xAxisCenter)
+      .attr('y', 18)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'top')
+      .attr('font-family', 'sans-serif')
+      .attr('font-size', `${Math.max(13, fontSize * 1.1)}px`)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#333')
+      .text(representativeDescriptor);
+  }
+  
+  if (memberDescriptor) {
+    const yAxisCenter = marginTop + (height - marginTop) / 2;
+    labelsGroup.append('text')
+      .attr('x', 18)
+      .attr('y', yAxisCenter)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'top')
+      .attr('font-family', 'sans-serif')
+      .attr('font-size', `${Math.max(13, fontSize * 1.1)}px`)
+      .attr('font-weight', 'bold')
+      .attr('fill', '#333')
+      .attr('transform', `rotate(-90, 18, ${yAxisCenter})`)
+      .text(memberDescriptor);
+  }
+  
+  // Draw X axis labels (sequence characters) if enabled
+  if (showSequenceCharacters) {
+    const xLabelsGroup = labelsGroup.append('g').attr('class', 'x-labels');
+    xTicks.forEach(tick => {
+      if (tick.label && tick.value >= 0) {
+        const xPos = x(tick.value + 0.5);
+        if (xPos >= marginLeft && xPos <= width) {
+          const isInSafety = isInSafetyWindow(tick.value, 'x');
+          xLabelsGroup.append('text')
+            .attr('x', xPos)
+            .attr('y', marginTop - 10)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'bottom')
+            .attr('font-family', 'monospace')
+            .attr('font-size', `${Math.max(10, fontSize * 0.9)}px`)
+            .attr('font-weight', isInSafety ? 'bold' : 'normal')
+            .attr('fill', isInSafety ? 'green' : '#333')
+            .text(tick.label);
+        }
       }
-    }
-  });
-  
-  // Y axis labels (sequence characters)
-  const yLabelsGroup = labelsGroup.append('g').attr('class', 'y-labels');
-  yTicks.forEach(tick => {
-    if (tick.label && tick.value >= 0) {
-      const yPos = y(tick.value + 0.5);
-      if (yPos >= marginTop && yPos <= height) {
-        const isInSafety = isInSafetyWindow(tick.value, 'y');
-        yLabelsGroup.append('text')
-          .attr('x', marginLeft - 10)
-          .attr('y', yPos)
-          .attr('text-anchor', 'end')
-          .attr('dominant-baseline', 'middle')
-          .attr('font-family', 'monospace')
-          .attr('font-size', `${Math.max(10, fontSize * 0.9)}px`)
-          .attr('font-weight', isInSafety ? 'bold' : 'normal')
-          .attr('fill', isInSafety ? 'green' : '#333')
-          .text(tick.label);
+    });
+    
+    // Y axis labels (sequence characters)
+    const yLabelsGroup = labelsGroup.append('g').attr('class', 'y-labels');
+    yTicks.forEach(tick => {
+      if (tick.label && tick.value >= 0) {
+        const yPos = y(tick.value + 0.5);
+        if (yPos >= marginTop && yPos <= height) {
+          const isInSafety = isInSafetyWindow(tick.value, 'y');
+          yLabelsGroup.append('text')
+            .attr('x', marginLeft - 10)
+            .attr('y', yPos)
+            .attr('text-anchor', 'end')
+            .attr('dominant-baseline', 'middle')
+            .attr('font-family', 'monospace')
+            .attr('font-size', `${Math.max(10, fontSize * 0.9)}px`)
+            .attr('font-weight', isInSafety ? 'bold' : 'normal')
+            .attr('fill', isInSafety ? 'green' : '#333')
+            .text(tick.label);
+        }
       }
-    }
-  });
+    });
+  }
   
-  // X axis index markers (position numbers)
-  const xIndexGroup = labelsGroup.append('g').attr('class', 'x-indices');
-  const xStart = Math.max(0, Math.floor(x.invert(marginLeft)));
-  const xEnd = Math.min(xTicks.length, Math.ceil(x.invert(width)));
-  const xMiddle = Math.floor((xStart + xEnd) / 2);
-  
-  [xStart, xMiddle, xEnd].forEach((index) => {
-    if (index >= 0 && index < xTicks.length && index >= xStart && index < xEnd) {
-      const xPos = x(index + 0.5);
-      if (xPos >= marginLeft && xPos <= width) {
-        const isInSafety = isInSafetyWindow(index, 'x');
-        xIndexGroup.append('text')
-          .attr('x', xPos)
-          .attr('y', marginTop - 30)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'bottom')
-          .attr('font-family', 'monospace')
-          .attr('font-size', `${Math.max(10, fontSize * 0.8)}px`)
-          .attr('font-weight', isInSafety ? 'bold' : 'normal')
-          .attr('fill', isInSafety ? 'green' : '#555')
-          .text((index + 1).toString());
+  // Draw index markers if enabled
+  if (showSequenceIndices) {
+    // X axis index markers (position numbers)
+    const xIndexGroup = labelsGroup.append('g').attr('class', 'x-indices');
+    const xStart = Math.max(0, Math.floor(x.invert(marginLeft)));
+    const xEnd = Math.min(xTicks.length, Math.ceil(x.invert(width)));
+    const xMiddle = Math.floor((xStart + xEnd) / 2);
+    
+    [xStart, xMiddle, xEnd].forEach((index) => {
+      if (index >= 0 && index < xTicks.length && index >= xStart && index < xEnd) {
+        const xPos = x(index + 0.5);
+        if (xPos >= marginLeft && xPos <= width) {
+          const isInSafety = isInSafetyWindow(index, 'x');
+          xIndexGroup.append('text')
+            .attr('x', xPos)
+            .attr('y', marginTop - 30)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'bottom')
+            .attr('font-family', 'monospace')
+            .attr('font-size', `${Math.max(10, fontSize * 0.8)}px`)
+            .attr('font-weight', isInSafety ? 'bold' : 'normal')
+            .attr('fill', isInSafety ? 'green' : '#555')
+            .text((index + 1).toString());
+        }
       }
-    }
-  });
-  
-  // Y axis index markers (position numbers)
-  const yIndexGroup = labelsGroup.append('g').attr('class', 'y-indices');
-  const yStart = Math.max(0, Math.floor(y.invert(marginTop)));
-  const yEnd = Math.min(yTicks.length, Math.ceil(y.invert(height)));
-  const yMiddle = Math.floor((yStart + yEnd) / 2);
-  
-  [yStart, yMiddle, yEnd].forEach((index) => {
-    if (index >= 0 && index < yTicks.length && index >= yStart && index < yEnd) {
-      const yPos = y(index + 0.5);
-      if (yPos >= marginTop && yPos <= height) {
-        const isInSafety = isInSafetyWindow(index, 'y');
-        yIndexGroup.append('text')
-          .attr('x', marginLeft - 30)
-          .attr('y', yPos)
-          .attr('text-anchor', 'end')
-          .attr('dominant-baseline', 'middle')
-          .attr('font-family', 'monospace')
-          .attr('font-size', `${Math.max(10, fontSize * 0.8)}px`)
-          .attr('font-weight', isInSafety ? 'bold' : 'normal')
-          .attr('fill', isInSafety ? 'green' : '#555')
-          .text((index + 1).toString());
+    });
+    
+    // Y axis index markers (position numbers)
+    const yIndexGroup = labelsGroup.append('g').attr('class', 'y-indices');
+    const yStart = Math.max(0, Math.floor(y.invert(marginTop)));
+    const yEnd = Math.min(yTicks.length, Math.ceil(y.invert(height)));
+    const yMiddle = Math.floor((yStart + yEnd) / 2);
+    
+    [yStart, yMiddle, yEnd].forEach((index) => {
+      if (index >= 0 && index < yTicks.length && index >= yStart && index < yEnd) {
+        const yPos = y(index + 0.5);
+        if (yPos >= marginTop && yPos <= height) {
+          const isInSafety = isInSafetyWindow(index, 'y');
+          yIndexGroup.append('text')
+            .attr('x', marginLeft - 30)
+            .attr('y', yPos)
+            .attr('text-anchor', 'end')
+            .attr('dominant-baseline', 'middle')
+            .attr('font-family', 'monospace')
+            .attr('font-size', `${Math.max(10, fontSize * 0.8)}px`)
+            .attr('font-weight', isInSafety ? 'bold' : 'normal')
+            .attr('fill', isInSafety ? 'green' : '#555')
+            .text((index + 1).toString());
+        }
       }
-    }
-  });
+    });
+  }
 }
 
 /**
@@ -503,7 +542,9 @@ export const exportCanvasAsSVG = (
   yTicks: Array<{value: number; label: string}>,
   currentTransform: any,
   visualizationSettings: any,
-  filename: string = 'alignment-graph.svg'
+  filename: string = 'alignment-graph.svg',
+  representativeDescriptor?: string,
+  memberDescriptor?: string
 ): void => {
   try {
     const width = canvas.width;
@@ -599,8 +640,18 @@ export const exportCanvasAsSVG = (
       drawSVGAxes(ctx);
     }
 
-    if (visualizationSettings.showAxisLabels) {
-      drawSVGAxisLabels(ctx, xTicks, yTicks, isInSafetyWindow);
+    // Draw axis labels if either sequence characters or indices are enabled
+    if (visualizationSettings.showSequenceCharacters || visualizationSettings.showSequenceIndices) {
+      drawSVGAxisLabels(
+        ctx,
+        xTicks,
+        yTicks,
+        isInSafetyWindow,
+        visualizationSettings.showSequenceCharacters,
+        visualizationSettings.showSequenceIndices,
+        representativeDescriptor,
+        memberDescriptor
+      );
     }
 
     // Create a group with clipping for main plot elements
