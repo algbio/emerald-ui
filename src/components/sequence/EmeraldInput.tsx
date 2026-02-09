@@ -185,10 +185,47 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     
     notifySuccess('Example Data Loaded', 'Loaded Human p53 and Serum albumin protein sequences');
   };
+  const loadShortExampleSequences = () => {
+    const exampleSequenceA = "MLQFLLGFTLGNVVGMYLAQNYDIPNLAKKLEEIKKDLDAKKKPPSA";
+    const exampleDescriptorA = "E0CX11 | Short transmembrane mitochondrial protein 1 | Short transmembrane mitochondrial protein 1 | Homo sapiens";
+    
+    const exampleSequenceB = "MAAATLTSKLYSLLFRRTSTFALTIIVGVMFFERAFDQGADAIYDHINEGKLWKHIKHKYENK";
+    const exampleDescriptorB = "Q9UDW1 | Cytochrome b-c1 complex subunit 9 | Cytochrome b-c1 complex subunit 9 | Homo sapiens";
+    
+    dispatch({ 
+      type: 'LOAD_SEQUENCES', 
+      payload: {
+        sequenceA: exampleSequenceA,
+        descriptorA: exampleDescriptorA,
+        sequenceB: exampleSequenceB,
+        descriptorB: exampleDescriptorB
+      } 
+    });
+    
+    notifySuccess('Example Data Loaded', 'Loaded Human p53 and Serum albumin protein sequences');
+  };
 
   return (
     <div className="emerald-input-card">
       <h2 className="emerald-title">Protein Sequence Input</h2>
+      {/* Load Example button */}          
+        <div className="load-example-section">
+          <button 
+            onClick={loadShortExampleSequences}
+            className="load-example-button-small"
+            title="Load short example protein sequences (Human p53 and Serum albumin)"
+          >
+            Load Short Example
+          </button>
+          <button 
+            onClick={loadExampleSequences}
+            className="load-example-button-small"
+            title="Load example protein sequences (Human p53 and Serum albumin)"
+          >
+            Load Long Example
+          </button>
+        </div>
+      
       
       <div className="emerald-grid">
         {/* Sequence A */}
@@ -484,16 +521,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
             {alignmentStatus === 'loading' ? 'Generating...' : 'Generate Suboptimal Alignment Graph'}
           </button>
           
-          {/* Load Example button */}
-          <div className="load-example-section">
-            <button 
-              onClick={loadExampleSequences}
-              className="load-example-button-small"
-              title="Load example protein sequences (Human p53 and Serum albumin)"
-            >
-              Load Example Data
-            </button>
-          </div>
+          
           
           {state.alignmentError && (
             <div className="error-message">

@@ -37,8 +37,10 @@
 
 /* Example section styles */
 .load-example-section {
-  margin-top: 1rem;
-  text-align: center;
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .load-example-button-small {
@@ -46,13 +48,13 @@
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 400;
   cursor: pointer;
   transition: all var(--transition-normal);
   text-decoration: none;
-  display: inline-block;
+  white-space: nowrap;
 }
 
 .load-example-button-small:hover:not(:disabled) {
@@ -68,11 +70,12 @@
 
 @media (max-width: 1024px) {
   .load-example-section {
-    margin-top: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .load-example-button-small {
-    padding: 0.75rem 1.25rem;
+    padding: 0.6rem 1rem;
     font-size: 0.85rem;
     min-height: 40px;
   }
