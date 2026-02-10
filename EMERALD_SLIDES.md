@@ -9,7 +9,7 @@ color: #333333
 <!-- _class: lead -->
 <!-- _paginate: false -->
 
-# EMERALD UI
+# EMERALD-UI
 ## Interactive Protein Sequence Alignment Visualization
 
 **Beyond Traditional Protein Sequence Alignment**
@@ -135,7 +135,7 @@ EMERALD:      Safety windows = regions where many paths agree
 - ❌ No interactive way to explore results
 - ❌ Researchers need visual tools to understand alignments
 
-### Our Solution: EMERALD UI
+### Our Solution: EMERALD-UI
 - 🌐 **Web-based** interactive visualization
 - ⚡ **No installation** required - runs in browser
 - 🔄 **Real-time exploration** of alignment space
@@ -148,7 +148,7 @@ EMERALD:      Safety windows = regions where many paths agree
 
 ---
 
-# EMERALD UI Features
+# EMERALD-UI Features
 ## An Interactive Research Platform
 
 ### 🔍 Interactive Alignment Visualization
@@ -247,7 +247,7 @@ Complex alignment algorithms need computational power
 ---
 
 # Real-World Applications
-## Who Benefits from EMERALD UI?
+## Who Benefits from EMERALD-UI?
 
 ### 🎓 Academic Researchers:
 - Protein family analysis
@@ -274,7 +274,7 @@ Complex alignment algorithms need computational power
 ---
 
 # Comparison with Existing Tools
-## How EMERALD UI Stands Apart
+## How EMERALD-UI Stands Apart
 
 ### Traditional Tools (BLAST, Clustal, etc.):
 - ✅ Fast and widely used
@@ -282,7 +282,7 @@ Complex alignment algorithms need computational power
 - ❌ No uncertainty quantification  
 - ❌ Limited interactive exploration
 
-### EMERALD UI Advantages:
+### EMERALD-UI Advantages:
 - ✅ Explores **suboptimal alignment** space
 - ✅ **Quantifies alignment** confidence
 - ✅ **Interactive** visualization
@@ -325,7 +325,7 @@ Complex alignment algorithms need computational power
 <!-- _paginate: false -->
 
 # Conclusion
-## EMERALD UI - Transforming Protein Sequence Analysis
+## EMERALD-UI - Transforming Protein Sequence Analysis
 
 ### Key Takeaways:
 1. **Traditional alignment methods are limited** - one "best" alignment isn't always enough
@@ -335,7 +335,7 @@ Complex alignment algorithms need computational power
 5. **Web-based accessibility democratizes advanced tools** - no installation barriers
 
 > **Impact Statement:**  
-> *"EMERALD UI transforms how researchers understand protein sequence relationships by making alignment confidence visible and interactive."*
+> *"EMERALD-UI transforms how researchers understand protein sequence relationships by making alignment confidence visible and interactive."*
 
 **Try it yourself:** [algbio.github.io/emerald-ui](https://algbio.github.io/emerald-ui)
 
@@ -366,7 +366,7 @@ Slide-by-Slide Timing (Total: 15 minutes):
 - Slides 3-4 (2 minutes): Traditional alignment limitations  
 - Slides 5-6 (2 minutes): EMERALD algorithm and safety windows
 - Slide 7 (1.5 minutes): Project motivation and technical approach
-- Slides 8-10 (3 minutes): EMERALD UI features and interface
+- Slides 8-10 (3 minutes): EMERALD-UI features and interface
 - Slides 11-12 (2.5 minutes): Technical implementation and applications
 - Slides 13-14 (1.5 minutes): Comparisons and future directions
 - Slide 15 (0.5 minutes): Conclusion and questions

@@ -1,10 +1,10 @@
-# EMERALD UI: Interactive Protein Sequence Alignment Visualization
+# EMERALD-UI: Interactive Protein Sequence Alignment Visualization
 ## A 15-Minute University Presentation
 
 ---
 
 ## Slide 1: Title & Context
-### EMERALD UI: Beyond Traditional Protein Sequence Alignment
+### EMERALD-UI: Beyond Traditional Protein Sequence Alignment
 **Interactive Visualization of Alignment Safety Windows**
 
 *Presenter: [Your Name]*  
@@ -120,7 +120,7 @@ EMERALD:      Safety windows = regions where many paths agree
 - No interactive way to explore results
 - Researchers need visual tools to understand alignments
 
-**Our Solution: EMERALD UI**
+**Our Solution: EMERALD-UI**
 - Web-based interactive visualization
 - No installation required - runs in browser
 - Real-time exploration of alignment space
@@ -133,7 +133,7 @@ EMERALD:      Safety windows = regions where many paths agree
 
 ---
 
-## Slide 8: EMERALD UI - Key Features Overview
+## Slide 8: EMERALD-UI - Key Features Overview
 ### An Interactive Research Platform
 
 **🔍 Interactive Alignment Visualization**
@@ -231,7 +231,7 @@ EMERALD:      Safety windows = regions where many paths agree
 ---
 
 ## Slide 12: Real-World Applications & Impact
-### Who Benefits from EMERALD UI?
+### Who Benefits from EMERALD-UI?
 
 **Academic Researchers:**
 - Protein family analysis
@@ -258,7 +258,7 @@ EMERALD:      Safety windows = regions where many paths agree
 ---
 
 ## Slide 13: Comparison with Existing Tools
-### How EMERALD UI Stands Apart
+### How EMERALD-UI Stands Apart
 
 **Traditional Tools (BLAST, Clustal, etc.):**
 - ✅ Fast and widely used
@@ -266,7 +266,7 @@ EMERALD:      Safety windows = regions where many paths agree
 - ❌ No uncertainty quantification  
 - ❌ Limited interactive exploration
 
-**EMERALD UI Advantages:**
+**EMERALD-UI Advantages:**
 - ✅ Explores suboptimal alignment space
 - ✅ Quantifies alignment confidence
 - ✅ Interactive visualization
@@ -306,7 +306,7 @@ EMERALD:      Safety windows = regions where many paths agree
 ---
 
 ## Slide 15: Conclusion & Questions
-### EMERALD UI - Transforming Protein Sequence Analysis
+### EMERALD-UI - Transforming Protein Sequence Analysis
 
 **Key Takeaways:**
 1. **Traditional alignment methods are limited** - one "best" alignment isn't always enough
@@ -316,7 +316,7 @@ EMERALD:      Safety windows = regions where many paths agree
 5. **Web-based accessibility democratizes advanced tools** - no installation barriers
 
 **Impact Statement:**
-*"EMERALD UI transforms how researchers understand protein sequence relationships by making alignment confidence visible and interactive."*
+*"EMERALD-UI transforms how researchers understand protein sequence relationships by making alignment confidence visible and interactive."*
 
 **Try it yourself:** algbio.github.io/emerald-ui
 
@@ -340,7 +340,7 @@ EMERALD:      Safety windows = regions where many paths agree
 - **Slides 3-4** (2 minutes): Traditional alignment limitations  
 - **Slides 5-6** (2 minutes): EMERALD algorithm and safety windows
 - **Slide 7** (1.5 minutes): Project motivation and technical approach
-- **Slides 8-10** (3 minutes): EMERALD UI features and interface
+- **Slides 8-10** (3 minutes): EMERALD-UI features and interface
 - **Slides 11-12** (2.5 minutes): Technical implementation and applications
 - **Slides 13-14** (1.5 minutes): Comparisons and future directions
 - **Slide 15** (0.5 minutes): Conclusion and questions

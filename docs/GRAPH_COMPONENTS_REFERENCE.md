@@ -1,4 +1,4 @@
-# Emerald UI Graph Components Reference Guide
+# EMERALD-UI Graph Components Reference Guide
 
 > **Last Updated**: August 6, 2025  
 > **Status**: Current - reflects latest codebase including gap highlighting features

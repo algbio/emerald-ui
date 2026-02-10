@@ -67,14 +67,14 @@ function AppContent() {
       <SharedUrlNotification />
       
       <h1 className="app-title">
-        Emerald UI
+        EMERALD-UI
       </h1>
       <div className="app-description">
         <p className="app-subtitle">
           <strong>Interactive Protein Sequence Alignment Visualization Tool</strong>
         </p>
         <p>
-          Emerald UI provides advanced visualization of optimal and suboptimal protein sequence alignments, 
+          EMERALD-UI provides advanced visualization of optimal and suboptimal protein sequence alignments, 
           enabling researchers to explore conserved / robust regions between these alignments.  
           These conserved regions are the <i>alignment-safe windows</i> introduced by the <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">EMERALD algorithm</a>.
         </p>
@@ -112,9 +112,9 @@ function AppContent() {
           
           <div className="project-credits">
             <p>
-                  <strong>Emerald UI Development:</strong><br />
-                  • Emerald UI Web Interface: Developed by Andrei Preoteasa<br />
-                  • EMERALD UI repository: <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a><br />
+                  <strong>EMERALD-UI Development:</strong><br />
+                  • EMERALD-UI Web Interface: Developed by Andrei Preoteasa<br />
+                  • EMERALD-UI repository: <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a><br />
                   • Original EMERALD Algorithm: <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
             </p>
           </div>
@@ -123,7 +123,7 @@ function AppContent() {
       
       <div className="getting-started-section">
         <div className="getting-started-header" onClick={() => setIsGettingStartedExpanded(!isGettingStartedExpanded)}>
-          <h2>Getting Started with Emerald UI</h2>
+          <h2>Getting Started with EMERALD-UI</h2>
           <span className={`expand-icon ${isGettingStartedExpanded ? 'expanded' : ''}`}>▼</span>
         </div>
         
@@ -180,7 +180,7 @@ function AppContent() {
             <div className="try-example-section">
               <h3>Try an Example</h3>
               <p>
-                To see Emerald UI in action, try searching for these protein pairs in UniProt:
+                To see EMERALD-UI in action, try searching for these protein pairs in UniProt:
               </p>
               <div className="example-proteins">
                 <div className="protein-pair">

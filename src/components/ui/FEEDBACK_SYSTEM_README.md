@@ -1,6 +1,6 @@
 # Feedback Notification System
 
-A comprehensive feedback notification system for the Emerald UI application that provides user feedback for various actions and events.
+A comprehensive feedback notification system for the EMERALD-UI application that provides user feedback for various actions and events.
 
 ## Features
 

@@ -1,8 +1,8 @@
-# Emerald UI
+# EMERALD-UI
 
 **Interactive Protein Sequence Alignment Visualization Tool**, available at [algbio.github.io/emerald-ui](https://algbio.github.io/emerald-ui/)
 
-Emerald UI provides advanced visualization of optimal and suboptimal protein sequence alignments, enabling researchers to explore conserved / robust regions between these alignments. These conserved regions are the alignment-safe windows introduced by the [EMERALD algorithm](https://doi.org/10.1186/s13059-023-03008-6).
+EMERALD-UI provides advanced visualization of optimal and suboptimal protein sequence alignments, enabling researchers to explore conserved / robust regions between these alignments. These conserved regions are the alignment-safe windows introduced by the [EMERALD algorithm](https://doi.org/10.1186/s13059-023-03008-6).
 
 ## About EMERALD
 

@@ -1,4 +1,4 @@
-# Emerald UI - Refactored Project Structure
+# EMERALD-UI - Refactored Project Structure
 
 ## New Directory Structure
 

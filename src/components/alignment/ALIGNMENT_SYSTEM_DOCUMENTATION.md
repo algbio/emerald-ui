@@ -1,10 +1,10 @@
-# Emerald UI Alignment Graph and Safety Windows Side Panel - System Documentation
+# EMERALD-UI Alignment Graph and Safety Windows Side Panel - System Documentation
 
 > **Last Updated**: July 28, 2025  
 > **Status**: Current - reflects latest codebase including `showOptimalPath` feature and new General Info tab
 
 ## Overview
-The Emerald UI alignment visualization system consists of four main coordinated components: a **PointGridPlot** (the main canvas-based alignment graph), a **SafetyWindowsInfoPanel** (the interactive side panel with general information, safety window navigation, and visualization settings), a **VisualizationSettingsPanel** (the customization panel for graph display options), and a **SequenceAlignmentViewer** (text-based sequence alignment display). Together they provide a comprehensive interactive visualization system for exploring sequence alignments and "safety windows" - regions of confident alignment identified by the EMERALD algorithm.
+The EMERALD-UI alignment visualization system consists of four main coordinated components: a **PointGridPlot** (the main canvas-based alignment graph), a **SafetyWindowsInfoPanel** (the interactive side panel with general information, safety window navigation, and visualization settings), a **VisualizationSettingsPanel** (the customization panel for graph display options), and a **SequenceAlignmentViewer** (text-based sequence alignment display). Together they provide a comprehensive interactive visualization system for exploring sequence alignments and "safety windows" - regions of confident alignment identified by the EMERALD algorithm.
 
 ## Core Architecture
 

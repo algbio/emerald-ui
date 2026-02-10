@@ -72,7 +72,7 @@ Project: [emerald-ui](https://algbio.github.io/emerald-ui)
 
 3. **EMERALD Algorithm**  
 
-4. **EMERALD UI Overview**  
+4. **EMERALD-UI Overview**  
 
 5. **Technical Implementation**  
 
