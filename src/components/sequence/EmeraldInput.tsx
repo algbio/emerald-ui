@@ -375,7 +375,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         {/* Parameters */}
         <div className="emerald-column">
           <div className="slider-container">
-            <label htmlFor="alpha-slider">Alpha: {params.alpha.toFixed(2)}</label>
+            <label htmlFor="alpha-slider">α (alpha): {params.alpha.toFixed(2)}</label>
             <input
               id="alpha-slider"
               type="range"
@@ -399,7 +399,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         
         <div className="emerald-column">
           <div className="slider-container">
-            <label htmlFor="delta-slider">Delta: {params.delta.toFixed(0)}</label>
+            <label htmlFor="delta-slider">Δ (delta): {params.delta.toFixed(0)}</label>
             <input
               id="delta-slider"
               type="range"
