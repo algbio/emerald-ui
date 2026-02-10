@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { TextAlignment, PathSelectionResult } from '../../types/PointGrid';
 import { exportAlignmentAsFasta, copyAlignmentFastaToClipboard } from '../../utils/export/fastaUtils';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
+import { extractUniProtId } from '../../utils/api/uniprotUtils';
 import './SequenceAlignmentViewer.css';
 
 interface SequenceAlignmentViewerProps {
@@ -121,8 +122,16 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
     return null;
   }
   
-  // Extract sequence name from descriptor (take text before first |)
+  // Extract sequence name from descriptor
+  // Prefer UniProt accession code if available, otherwise fall back to title
   const getSequenceName = (descriptor: string): string => {
+    // First try to extract a UniProt accession code
+    const accession = extractUniProtId(descriptor);
+    if (accession) {
+      return accession;
+    }
+    
+    // Fall back to extracting the first word/identifier from the descriptor
     const match = descriptor.match(/^>?(\w+)/);
     return match ? match[1] : 'Sequence';
   };
