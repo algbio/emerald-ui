@@ -90,7 +90,7 @@ Both might be biologically valid, but **we only see one!**
 
 #### EMERALD Algorithm Innovation:
 - ✅ Identifies not just the optimal alignment
-- 🔍 **Explores suboptimal alignments** within threshold (δ delta)
+- 🔍 **Explores suboptimal alignments** within threshold (Δ delta)
 - 🛡️ **Finds "safety windows"** - regions consistently aligned
 - ⚙️ Uses robustness parameter (α alpha) for confidence levels
 
@@ -167,7 +167,7 @@ EMERALD:      Safety windows = regions where many paths agree
 - Direct sequence paste
 
 ### ⚙️ Customizable Parameters
-- δ (delta): suboptimality threshold
+- Δ (delta): suboptimality threshold
 - α (alpha): safety/robustness parameter
 - Various substitution matrices
 
@@ -183,7 +183,7 @@ EMERALD:      Safety windows = regions where many paths agree
 
 ### Step 2: Parameter Configuration  
 - **α (alpha):** 0.5-1.0 (default 0.75) - robustness threshold
-- **δ (delta):** suboptimality threshold (default 8)
+- **Δ (delta):** suboptimality threshold (default 8)
 - Gap costs and substitution matrices
 
 ### Step 3: Interactive Visualization

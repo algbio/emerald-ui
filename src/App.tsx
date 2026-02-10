@@ -85,7 +85,7 @@ function AppContent() {
             <li><strong>Interactive Alignment Visualization:</strong> Explore the optimal and suboptimal alignment space between two sequences</li>
             <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
             <li><strong>Multiple Input Methods:</strong> Upload FASTA files, search UniProt database, or paste sequences directly</li>
-            <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
+            <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
             <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>    
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
@@ -144,7 +144,7 @@ function AppContent() {
                 <div className="step-number">2</div>
                 <div className="step-content">
                   <h3>Set Parameters</h3>
-                  <p>Adjust the safety parameter α (alpha: 0.5-1.0) to increase or decrease how robust the safety windows are and δ (delta: 0-32) for the suboptimality threshold.</p>
+                  <p>Adjust the safety parameter α (alpha: 0.5-1.0) to increase or decrease how robust the safety windows are and Δ (delta: 0-32) for the suboptimality threshold.</p>
 
                 </div>
               </div>
@@ -223,7 +223,7 @@ function AppContent() {
                   <ul>
                     <li>Diagonal black lines represent regions of similarity, while vertical or horizontal black lines indicate insertions or deletions. This is a classical representation of sequence alignments via dynamic programming. Complex regions with black lines diverging diagonally, horizontally or vertically suggest areas of high variability.</li>
                     <li>Green intervals indicate alignment-safe windows. These are defined as those partial alignments that are common to a proportion of at least α alpha of all alignments in the plot 
-                      (i.e. of all optimal and δ delta-suboptimal alignments). 
+                      (i.e. of all optimal and Δ delta-suboptimal alignments). 
                       If you increase α alpha, then safety windows are common to more alignments. For example:
                         <ul>
                           <li>α=0.75 means the safety windows are common to at least 75% of all such alignments.</li>

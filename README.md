@@ -13,7 +13,7 @@ EMERALD goes beyond traditional pairwise sequence alignment by identifying not j
 - **🔍 Interactive Alignment Visualization**: Explore the optimal and suboptimal alignment space between two sequences
 - **🛡️ Safety Window Analysis**: Identify regions where alignments are conserved / robust
 - **📁 Multiple Input Methods**: Upload FASTA files, search UniProt database, or paste sequences directly
-- **⚙️ Customizable Parameters**: Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)
+- **⚙️ Customizable Parameters**: Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)
 - **🧬 3D Structure Integration**: Overlay protein structure information when available
 - **📊 Export & Sharing**: Generate publication-ready images and shareable URLs
 
