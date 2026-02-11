@@ -982,17 +982,24 @@ input[type="file"] {
   font-size: 1rem;
 }
 
-/* New citation and attribution styles integrated into app description */
+/* Footer styling */
+.app-footer {
+  margin-top: 4rem;
+  padding: 2rem;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  border-top: 4px solid var(--accent-primary);
+}
+
+/* Citation and attribution styles */
 .citation-attribution {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid var(--accent-primary);
+  text-align: left;
 }
 
 .citation-attribution h3 {
   color: var(--accent-primary);
   margin-bottom: 1rem;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 .citation-content {
@@ -1081,9 +1088,13 @@ input[type="file"] {
     font-size: 0.9rem;
   }
 
+  .app-footer {
+    margin-top: 2rem;
+    padding: 1rem;
+  }
+
   .citation-attribution {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
+    text-align: left;
   }
 
   .citation-text {

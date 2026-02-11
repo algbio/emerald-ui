@@ -90,44 +90,6 @@ function AppContent() {
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
-
-        <div className="citation-attribution">
-          <h3>Citation & Credits</h3>
-          <div className="citation-content">
-            
-            <p>
-              <strong>Please cite the following references and star the GitHub repositories when using EMERALD-UI for your research. </strong>Your support helps us continue improving the tool and adding new features.
-            </p>
-            
-              <p className="citation-text">
-              Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost.
-              <br />
-              <a href="" target="_blank" rel="noopener noreferrer">
-                EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space.
-              </a>
-              <br />
-              <strong>In preparation.</strong>
-              <br />
-              <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a><br />
-              
-            </p>
-            
-            <p className="citation-text">
-              Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu.
-              <br />
-              <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">
-                Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD.
-              </a>
-              <br />
-              <strong>Genome Biology</strong> 24, 168 (2023).
-              <br />
-              <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
-              
-            </p>
-          
-          </div>
-          
-        </div>
       </div>
       
       <div className="getting-started-section">
@@ -272,6 +234,42 @@ function AppContent() {
           />
         </div>
       )}
+
+      {/* Footer with Citation & Credits */}
+      <footer className="app-footer">
+        <div className="citation-attribution">
+          <h3>Citation & Credits</h3>
+          <div className="citation-content">
+            <p>
+              <strong>Please cite the following references and star the GitHub repositories when using EMERALD-UI for your research. </strong>Your support helps us continue improving the tool and adding new features.
+            </p>
+            
+            <p className="citation-text">
+              Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost.
+              <br />
+              <a href="" target="_blank" rel="noopener noreferrer">
+                EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space.
+              </a>
+              <br />
+              <strong>In preparation.</strong>
+              <br />
+              <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+            </p>
+            
+            <p className="citation-text">
+              Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu.
+              <br />
+              <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">
+                Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD.
+              </a>
+              <br />
+              <strong>Genome Biology</strong> 24, 168 (2023).
+              <br />
+              <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
