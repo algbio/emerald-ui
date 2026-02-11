@@ -69,6 +69,51 @@
   transform: translateY(1px);
 }
 
+/* Safety Window Toggle Button */
+.safety-window-toggle {
+  padding: 6px 12px;
+  border: 1px solid #00FF7F;
+  background: rgba(0, 255, 127, 0.1);
+  color: #00FF7F;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.safety-window-toggle:hover {
+  background: rgba(0, 255, 127, 0.2);
+  border-color: #40FFB0;
+  color: #40FFB0;
+}
+
+.safety-window-toggle.active {
+  background: rgba(0, 255, 127, 0.25);
+  box-shadow: 0 0 6px rgba(0, 255, 127, 0.4);
+}
+
+.safety-window-toggle:active {
+  transform: translateY(1px);
+}
+
+/* Safety Window Highlight on amino acids */
+.safety-window-highlight {
+  position: relative;
+}
+
+/* Safety Window Container - no longer uses outline, just groups characters */
+.safety-window-container {
+  display: inline;
+}
+
+/* Safety Window character highlighting - overrides amino acid colors */
+.safety-window-char {
+  background-color: #00FF7F !important;
+  color: #FFFFFF !important;
+}
+
 .alignment-stats {
   display: flex;
   gap: 16px;

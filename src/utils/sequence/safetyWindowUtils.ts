@@ -31,25 +31,27 @@ export function extractSafetyWindowsFromAlignments(
       // Y-axis typically represents sequence A (representative)
       
       // For sequence A (Y-axis), use the Y coordinates
+      // startPosition is 1-indexed, endPosition is inclusive
       const seqAWindow: SequenceSafetyWindow = {
         startPosition: Math.floor(alignment.startDot.x) + 1, // Convert to 1-indexed
-        endPosition: Math.floor(alignment.endDot.x) + 1,
+        endPosition: Math.floor(alignment.endDot.x),         // Already 1-indexed (end is inclusive)
         color: alignment.color || '#90EE90'
       };
       
       // For sequence B (X-axis), use the X coordinates  
       const seqBWindow: SequenceSafetyWindow = {
         startPosition: Math.floor(alignment.startDot.y) + 1, // Convert to 1-indexed
-        endPosition: Math.floor(alignment.endDot.y) + 1,
+        endPosition: Math.floor(alignment.endDot.y),         // Already 1-indexed (end is inclusive)
         color: alignment.color || '#90EE90'
       };
       
-      // Only add valid windows (start < end and positive positions)
-      if (seqAWindow.startPosition > 0 && seqAWindow.endPosition > seqAWindow.startPosition) {
+      // Only add valid windows (start <= end and positive positions)
+      // Allow single-character windows where start === end
+      if (seqAWindow.startPosition > 0 && seqAWindow.endPosition >= seqAWindow.startPosition) {
         sequenceA.push(seqAWindow);
       }
       
-      if (seqBWindow.startPosition > 0 && seqBWindow.endPosition > seqBWindow.startPosition) {
+      if (seqBWindow.startPosition > 0 && seqBWindow.endPosition >= seqBWindow.startPosition) {
         sequenceB.push(seqBWindow);
       }
     }

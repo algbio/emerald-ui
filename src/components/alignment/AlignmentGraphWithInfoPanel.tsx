@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import PointGridPlot from './PointGridPlot';
 import type { PointGridPlotRef } from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
@@ -9,6 +9,7 @@ import './AlignmentGraphWithInfoPanel.css';
 import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer';
 import { validatePath, generateAlignmentFromPath, buildPathThroughSelectedEdges, calculateDistanceFromOptimalPath } from '../../utils/canvas/pathSelection';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
+import { extractSafetyWindowsFromAlignments } from '../../utils/sequence/safetyWindowUtils';
 
 
 interface AlignmentGraphWithInfoPanelProps {
@@ -96,6 +97,11 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   const safetyWindows = alignments.filter(alignment => 
     alignment.startDot && alignment.endDot
   );
+
+  // Memoized safety window mappings for sequence highlighting
+  const safetyWindowMappings = useMemo(() => {
+    return extractSafetyWindowsFromAlignments(safetyWindows);
+  }, [safetyWindows]);
 
   // Initialize selection to first window if available, but only if user hasn't manually unselected
   React.useEffect(() => {
@@ -413,6 +419,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             pathSelectionResult={pathSelectionResult}
             representativeDescriptor={representativeDescriptor}
             memberDescriptor={memberDescriptor}
+            representativeSafetyWindows={safetyWindowMappings.sequenceA}
+            memberSafetyWindows={safetyWindowMappings.sequenceB}
           />
         </div>
       )}

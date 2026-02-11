@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { TextAlignment, PathSelectionResult } from '../../types/PointGrid';
 import { exportAlignmentAsFasta, copyAlignmentFastaToClipboard } from '../../utils/export/fastaUtils';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { extractUniProtId } from '../../utils/api/uniprotUtils';
+import type { SequenceSafetyWindow } from '../../utils/sequence/safetyWindowUtils';
 import './SequenceAlignmentViewer.css';
 
 interface SequenceAlignmentViewerProps {
@@ -10,6 +11,8 @@ interface SequenceAlignmentViewerProps {
   pathSelectionResult?: PathSelectionResult | null; // Custom path alignment
   representativeDescriptor?: string;
   memberDescriptor?: string;
+  representativeSafetyWindows?: SequenceSafetyWindow[]; // Safety windows for representative sequence
+  memberSafetyWindows?: SequenceSafetyWindow[]; // Safety windows for member sequence
 }
 
 /**
@@ -75,13 +78,220 @@ const calculateSimilarity = (position: number, sequences: string[]): string => {
 /**
  * Renders sequence alignment with biological highlighting
  */
+/**
+ * Check if a character position (1-indexed, excluding gaps) falls within any safety window
+ */
+const isCharPositionInSafetyWindow = (
+  charPosition: number, 
+  safetyWindows: SequenceSafetyWindow[]
+): SequenceSafetyWindow | null => {
+  for (const window of safetyWindows) {
+    if (charPosition >= window.startPosition && charPosition <= window.endPosition) {
+      return window;
+    }
+  }
+  return null;
+};
+
+/**
+ * Check if a position is between two character positions that are in the same safety window
+ * This is used to include gaps that appear within a safety window range
+ */
+const findActiveWindowForGap = (
+  lastCharPosition: number,
+  safetyWindows: SequenceSafetyWindow[]
+): SequenceSafetyWindow | null => {
+  // A gap is in a safety window if the last character we saw was inside a window
+  // and we haven't yet passed the window's end position
+  for (const window of safetyWindows) {
+    if (lastCharPosition >= window.startPosition && lastCharPosition < window.endPosition) {
+      return window;
+    }
+  }
+  return null;
+};
+
+/**
+ * Groups sequence characters into segments based on safety window boundaries
+ * Tracks actual character positions (excluding gaps) for proper safety window matching
+ * Gaps between characters in the same safety window are included in the window
+ * Returns an array of segments, where each segment is either inside or outside a safety window
+ */
+interface SequenceSegment {
+  startIdx: number;
+  endIdx: number;
+  chars: string[];
+  safetyWindow: SequenceSafetyWindow | null;
+}
+
+const groupBySegments = (
+  sequence: string,
+  safetyWindows: SequenceSafetyWindow[]
+): SequenceSegment[] => {
+  if (sequence.length === 0) return [];
+  
+  const segments: SequenceSegment[] = [];
+  let currentSegment: SequenceSegment | null = null;
+  let charPosition = 0; // Track actual character position (excluding gaps), 1-indexed
+  
+  for (let i = 0; i < sequence.length; i++) {
+    const char = sequence[i];
+    const isGap = char === '-';
+    
+    let window: SequenceSafetyWindow | null = null;
+    
+    if (!isGap) {
+      // Increment character position for non-gap characters
+      charPosition++;
+      // Check if this character is in a safety window
+      window = isCharPositionInSafetyWindow(charPosition, safetyWindows);
+    } else {
+      // For gaps, check if we're currently inside a safety window
+      // (i.e., the last character was in a window and we haven't passed the end)
+      window = findActiveWindowForGap(charPosition, safetyWindows);
+    }
+    
+    // Check if we need to start a new segment
+    const windowId = window ? `${window.startPosition}-${window.endPosition}` : null;
+    const currentWindowId = currentSegment?.safetyWindow 
+      ? `${currentSegment.safetyWindow.startPosition}-${currentSegment.safetyWindow.endPosition}` 
+      : null;
+    
+    if (!currentSegment || windowId !== currentWindowId) {
+      // Start new segment
+      if (currentSegment) {
+        segments.push(currentSegment);
+      }
+      currentSegment = {
+        startIdx: i,
+        endIdx: i,
+        chars: [char],
+        safetyWindow: window
+      };
+    } else {
+      // Continue current segment
+      currentSegment.endIdx = i;
+      currentSegment.chars.push(char);
+    }
+  }
+  
+  // Push the last segment
+  if (currentSegment) {
+    segments.push(currentSegment);
+  }
+  
+  return segments;
+};
+
+/**
+ * Checks if an aligned pair falls ON the diagonal line of a safety window.
+ * A safety window is a diagonal from (repStart, memStart) to (repEnd, memEnd).
+ * A point is on this diagonal if the offset from start is the same for both sequences.
+ */
+const isOnSafetyWindowDiagonal = (
+  repPos: number,
+  memPos: number,
+  repWindow: SequenceSafetyWindow,
+  memWindow: SequenceSafetyWindow
+): boolean => {
+  // Check if position is within bounds of both windows
+  if (repPos < repWindow.startPosition || repPos > repWindow.endPosition) return false;
+  if (memPos < memWindow.startPosition || memPos > memWindow.endPosition) return false;
+  
+  // Check if the offset from start is the same (point is on the diagonal)
+  const repOffset = repPos - repWindow.startPosition;
+  const memOffset = memPos - memWindow.startPosition;
+  
+  return repOffset === memOffset;
+};
+
+/**
+ * Filters and clips safety windows to only include the portions that the alignment path goes through.
+ * A safety window is "traversed" if there's at least one alignment position where
+ * both sequences have a non-gap character that falls ON the diagonal line of the safety window.
+ * 
+ * The returned windows are clipped to only cover the range that the path actually traverses.
+ * 
+ * Note: repSafetyWindows[i] and memSafetyWindows[i] are paired - they come from the same
+ * alignment entry and represent the same diagonal line in the alignment plot.
+ */
+const filterSafetyWindowsByPath = (
+  repSeq: string,
+  memSeq: string,
+  repSafetyWindows: SequenceSafetyWindow[],
+  memSafetyWindows: SequenceSafetyWindow[]
+): { filteredRepWindows: SequenceSafetyWindow[]; filteredMemWindows: SequenceSafetyWindow[] } => {
+  // Build a set of (repCharPos, memCharPos) pairs that represent diagonal moves in the alignment
+  // These are positions where the path goes through a cell (both sequences align)
+  const alignedPairs: Array<{ repPos: number; memPos: number }> = [];
+  
+  let repCharPos = 0;
+  let memCharPos = 0;
+  
+  for (let i = 0; i < repSeq.length; i++) {
+    const repChar = repSeq[i];
+    const memChar = memSeq[i];
+    const repIsGap = repChar === '-';
+    const memIsGap = memChar === '-';
+    
+    if (!repIsGap) repCharPos++;
+    if (!memIsGap) memCharPos++;
+    
+    // A diagonal move (match/mismatch) is when neither sequence has a gap
+    if (!repIsGap && !memIsGap) {
+      alignedPairs.push({ repPos: repCharPos, memPos: memCharPos });
+    }
+  }
+  
+  const filteredRepWindows: SequenceSafetyWindow[] = [];
+  const filteredMemWindows: SequenceSafetyWindow[] = [];
+  
+  // The windows are paired by index - check each pair together
+  const numPairs = Math.min(repSafetyWindows.length, memSafetyWindows.length);
+  
+  for (let i = 0; i < numPairs; i++) {
+    const repWindow = repSafetyWindows[i];
+    const memWindow = memSafetyWindows[i];
+    
+    // Find all aligned pairs that fall ON the diagonal line of this safety window
+    const pairsOnDiagonal = alignedPairs.filter(pair => 
+      isOnSafetyWindowDiagonal(pair.repPos, pair.memPos, repWindow, memWindow)
+    );
+    
+    if (pairsOnDiagonal.length > 0) {
+      // Clip the windows to only the range that the path actually traverses
+      const minRepPos = Math.min(...pairsOnDiagonal.map(p => p.repPos));
+      const maxRepPos = Math.max(...pairsOnDiagonal.map(p => p.repPos));
+      const minMemPos = Math.min(...pairsOnDiagonal.map(p => p.memPos));
+      const maxMemPos = Math.max(...pairsOnDiagonal.map(p => p.memPos));
+      
+      filteredRepWindows.push({
+        startPosition: minRepPos,
+        endPosition: maxRepPos,
+        color: repWindow.color
+      });
+      
+      filteredMemWindows.push({
+        startPosition: minMemPos,
+        endPosition: maxMemPos,
+        color: memWindow.color
+      });
+    }
+  }
+  
+  return { filteredRepWindows, filteredMemWindows };
+};
+
 const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({ 
   alignment, 
   pathSelectionResult,
   representativeDescriptor,
-  memberDescriptor 
+  memberDescriptor,
+  representativeSafetyWindows = [],
+  memberSafetyWindows = []
 }) => {
   const [activeTab, setActiveTab] = useState<'optimal' | 'custom'>('optimal');
+  const [showSafetyWindowHighlight, setShowSafetyWindowHighlight] = useState(true);
   const { notifySuccess, notifyError, notifyCopySuccess } = useFeedbackNotifications();
   
   // Determine what alignments we have
@@ -93,6 +303,32 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   
   // Default to custom if we only have custom, optimal if we only have optimal
   const effectiveActiveTab = showTabs ? activeTab : (hasCustomAlignment ? 'custom' : 'optimal');
+  
+  // Pre-compute filtered safety windows for optimal path
+  const optimalFilteredWindows = useMemo(() => {
+    if (!hasOptimalAlignment || representativeSafetyWindows.length === 0 || memberSafetyWindows.length === 0) {
+      return { filteredRepWindows: [], filteredMemWindows: [] };
+    }
+    return filterSafetyWindowsByPath(
+      alignment.representative.sequence,
+      alignment.member.sequence,
+      representativeSafetyWindows,
+      memberSafetyWindows
+    );
+  }, [hasOptimalAlignment, alignment, representativeSafetyWindows, memberSafetyWindows]);
+  
+  // Pre-compute filtered safety windows for custom path
+  const customFilteredWindows = useMemo(() => {
+    if (!hasCustomAlignment || representativeSafetyWindows.length === 0 || memberSafetyWindows.length === 0) {
+      return { filteredRepWindows: [], filteredMemWindows: [] };
+    }
+    return filterSafetyWindowsByPath(
+      pathSelectionResult.alignedRepresentative,
+      pathSelectionResult.alignedMember,
+      representativeSafetyWindows,
+      memberSafetyWindows
+    );
+  }, [hasCustomAlignment, pathSelectionResult, representativeSafetyWindows, memberSafetyWindows]);
   
   // Early return if no alignment data
   if (!hasOptimalAlignment && !hasCustomAlignment) {
@@ -121,6 +357,14 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   } else {
     return null;
   }
+  
+  // Select the appropriate filtered windows based on active tab
+  const { filteredRepWindows, filteredMemWindows } = effectiveActiveTab === 'custom' 
+    ? customFilteredWindows 
+    : optimalFilteredWindows;
+  
+  // Check if we have any filtered safety windows to highlight
+  const hasFilteredSafetyWindows = filteredRepWindows.length > 0 || filteredMemWindows.length > 0;
   
   // Extract sequence name from descriptor
   // Prefer UniProt accession code if available, otherwise fall back to title
@@ -237,13 +481,22 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   return (
     <div className="sequence-alignment-viewer">
       <div className="alignment-section-header">
-        <h3>Sequence Alignment</h3>
+        <h3>Safety Windows Mapped on Sequence Alignment</h3>
         <div className="alignment-actions">
           {effectiveActiveTab === 'custom' && pathSelectionResult && (
             <div className="alignment-stats">
               <span>Path Length: {pathSelectionResult.pathLength}</span>
               <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
             </div>
+          )}
+          {hasFilteredSafetyWindows && (
+            <button
+              onClick={() => setShowSafetyWindowHighlight(!showSafetyWindowHighlight)}
+              className={`safety-window-toggle ${showSafetyWindowHighlight ? 'active' : ''}`}
+              title={showSafetyWindowHighlight ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
+            >
+              🛡️ Safety Windows {showSafetyWindowHighlight ? 'ON' : 'OFF'}
+            </button>
           )}
           <div className="export-buttons">
             <button
@@ -298,20 +551,43 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
             <div className="sequence-name">{repName}</div>
             <div className="alignment-row-content">
               <div className="sequence-content">
-                {Array.from(repSeq).map((char, idx) => (
-                  <span 
-                    key={idx} 
-                    className={getAminoAcidClass(char)}
-                    style={{ 
-                      width: '16px', 
-                      display: 'inline-block', 
-                      textAlign: 'center',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    {char}
-                  </span>
-                ))}
+                {showSafetyWindowHighlight && filteredRepWindows.length > 0
+                  ? groupBySegments(repSeq, filteredRepWindows).map((segment, segIdx) => (
+                      <span
+                        key={`seg-${segIdx}`}
+                        title={segment.safetyWindow ? `Safety Window: ${segment.safetyWindow.startPosition}-${segment.safetyWindow.endPosition}` : undefined}
+                      >
+                        {segment.chars.map((char, charIdx) => (
+                          <span 
+                            key={segment.startIdx + charIdx} 
+                            className={`${getAminoAcidClass(char)}${segment.safetyWindow ? ' safety-window-char' : ''}`}
+                            style={{ 
+                              width: '16px', 
+                              display: 'inline-block', 
+                              textAlign: 'center',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            {char}
+                          </span>
+                        ))}
+                      </span>
+                    ))
+                  : Array.from(repSeq).map((char, idx) => (
+                      <span 
+                        key={idx} 
+                        className={getAminoAcidClass(char)}
+                        style={{ 
+                          width: '16px', 
+                          display: 'inline-block', 
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        {char}
+                      </span>
+                    ))
+                }
               </div>
             </div>
           </div>
@@ -321,20 +597,43 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
             <div className="sequence-name">{memName}</div>
             <div className="alignment-row-content">
               <div className="sequence-content">
-                {Array.from(memSeq).map((char, idx) => (
-                  <span 
-                    key={idx} 
-                    className={getAminoAcidClass(char)}
-                    style={{ 
-                      width: '16px', 
-                      display: 'inline-block', 
-                      textAlign: 'center',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    {char}
-                  </span>
-                ))}
+                {showSafetyWindowHighlight && filteredMemWindows.length > 0
+                  ? groupBySegments(memSeq, filteredMemWindows).map((segment, segIdx) => (
+                      <span
+                        key={`seg-${segIdx}`}
+                        title={segment.safetyWindow ? `Safety Window: ${segment.safetyWindow.startPosition}-${segment.safetyWindow.endPosition}` : undefined}
+                      >
+                        {segment.chars.map((char, charIdx) => (
+                          <span 
+                            key={segment.startIdx + charIdx} 
+                            className={`${getAminoAcidClass(char)}${segment.safetyWindow ? ' safety-window-char' : ''}`}
+                            style={{ 
+                              width: '16px', 
+                              display: 'inline-block', 
+                              textAlign: 'center',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            {char}
+                          </span>
+                        ))}
+                      </span>
+                    ))
+                  : Array.from(memSeq).map((char, idx) => (
+                      <span 
+                        key={idx} 
+                        className={getAminoAcidClass(char)}
+                        style={{ 
+                          width: '16px', 
+                          display: 'inline-block', 
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        {char}
+                      </span>
+                    ))
+                }
               </div>
             </div>
           </div>
@@ -388,16 +687,16 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
           <div className="legend-title">Conservation</div>
           <div className="legend-items">
             <div className="legend-item">
+              <p></p>
               <span className="legend-color similarity-high"></span>
-              <span>100% identical</span>
+              <span>Match</span>
             </div>
             <div className="legend-item">
               <span className="legend-color similarity-medium"></span>
-              <span>Similar</span>
+              <span>Mismatch</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color similarity-low"></span>
-              <span>Different</span>
+              
             </div>
           </div>
         </div>
