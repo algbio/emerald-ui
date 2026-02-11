@@ -481,14 +481,16 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   return (
     <div className="sequence-alignment-viewer">
       <div className="alignment-section-header">
-        <h3>Safety Windows Mapped on Sequence Alignment</h3>
-        <div className="alignment-actions">
+        <div className="alignment-header-left">
+          <h3>Safety Windows Mapped on Sequence Alignment</h3>
           {effectiveActiveTab === 'custom' && pathSelectionResult && (
             <div className="alignment-stats">
               <span>Path Length: {pathSelectionResult.pathLength}</span>
               <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
             </div>
           )}
+        </div>
+        <div className="alignment-actions">
           {hasFilteredSafetyWindows && (
             <button
               onClick={() => setShowSafetyWindowHighlight(!showSafetyWindowHighlight)}
@@ -638,20 +640,25 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
             </div>
           </div>
           
-          {/* Similarity bar */}
-          <div className="similarity-row">
-            {similarityClasses.map((cls, idx) => (
-              <span 
-                key={idx} 
-                className={cls} 
-                style={{ 
-                  width: '16px', 
-                  height: '8px', 
-                  display: 'inline-block',
-                  boxSizing: 'border-box'
-                }}
-              ></span>
-            ))}
+          {/* Conservation / Similarity bar */}
+          <div className="alignment-row conservation-row">
+            <div className="sequence-name">Conservation</div>
+            <div className="alignment-row-content">
+              <div className="similarity-row">
+                {similarityClasses.map((cls, idx) => (
+                  <span 
+                    key={idx} 
+                    className={cls} 
+                    style={{ 
+                      width: '16px', 
+                      height: '8px', 
+                      display: 'inline-block',
+                      boxSizing: 'border-box'
+                    }}
+                  ></span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
