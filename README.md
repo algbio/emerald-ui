@@ -103,11 +103,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   },
 })
 ```
-Notes
 
-Add counter
-
-Move credits section to footer.
-
-Fix export image rendering logic
 
