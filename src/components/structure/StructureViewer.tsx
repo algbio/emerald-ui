@@ -89,14 +89,16 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       renderer: {
         ...DefaultPluginUISpec().canvas3d?.renderer,
         backgroundColor: Color(0xffffff), // white background
-        selectColor: Color(0x00cc66), // green highlight
+        selectColor: Color(0x00cc66), // green selection
+        highlightColor: Color(0x00cc66), // green highlight (same as selection)
       },
-      // Customize highlight/selection colors
+      // Customize highlight/selection colors - use same green for both
       marking: {
         enabled: true,
-        selectEdgeColor: Color(0x00cc66), // green highlight
-        highlightEdgeColor: Color(0x00cc66), // green highlight
-        
+        selectEdgeColor: Color(0x00cc66), // green selection edge
+        selectColor: Color(0x00cc66), // green selection face
+        highlightEdgeColor: Color(0x00cc66), // green highlight edge
+        highlightColor: Color(0x00cc66), // green highlight face
       }
     };
     
