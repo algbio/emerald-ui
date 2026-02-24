@@ -82,11 +82,12 @@ const AlignmentCounter: React.FC<AlignmentCounterProps> = ({ className = '' }) =
 
   return (
     <div className={`alignment-counter ${getStatusClass()} ${className}`}>
-      <span className="counter-icon">🧬</span>
+      <span className="counter-label">EMERALD-UI has been used</span>
+
       <span className={`counter-value ${isUpdated ? 'updated' : ''}`}>
         {renderCount()}
       </span>
-      <span className="counter-label">alignments generated</span>
+      <span className="counter-label">times.</span>
     </div>
   );
 };

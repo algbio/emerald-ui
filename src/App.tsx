@@ -68,7 +68,6 @@ function AppContent() {
       <SharedUrlNotification />
       
       {/* Alignment Counter */}
-      <AlignmentCounter />
       
       <h1 className="app-title">
         EMERALD-UI
@@ -94,6 +93,8 @@ function AppContent() {
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
+        <AlignmentCounter />
+
       </div>
       
       <div className="getting-started-section">

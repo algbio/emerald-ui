@@ -10,7 +10,6 @@
   font-weight: 500;
   border-radius: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
 }
 
 .alignment-counter.loading {
@@ -27,8 +26,7 @@
 
 .counter-value {
   font-weight: 700;
-  font-size: 1rem;
-  min-width: 2.5rem;
+  font-size: 1.2rem;
   text-align: center;
 }
 
