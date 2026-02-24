@@ -96,9 +96,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       marking: {
         enabled: true,
         selectEdgeColor: Color(0x00cc66), // green selection edge
-        selectColor: Color(0x00cc66), // green selection face
         highlightEdgeColor: Color(0x00cc66), // green highlight edge
-        highlightColor: Color(0x00cc66), // green highlight face
       }
     };
     
