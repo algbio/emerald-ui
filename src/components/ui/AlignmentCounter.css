@@ -1,0 +1,71 @@
+.alignment-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.alignment-counter.loading {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+.alignment-counter.error {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.counter-icon {
+  font-size: 1.1rem;
+}
+
+.counter-value {
+  font-weight: 700;
+  font-size: 1rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.counter-label {
+  font-weight: 400;
+}
+
+/* Animation for count update */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.counter-value.updated {
+  animation: pulse 0.3s ease-in-out;
+}
+
+/* Subtle loading animation */
+@keyframes shimmer {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+.alignment-counter.loading .counter-value {
+  animation: shimmer 1s ease-in-out infinite;
+}

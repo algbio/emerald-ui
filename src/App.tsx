@@ -6,6 +6,7 @@ import { FeedbackProvider } from './context/FeedbackContext'
 import SequenceInputPanel from './components/sequence/SequenceInputPanel'
 import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWithInfoPanel'
 import SharedUrlNotification from './components/ui/SharedUrlNotification'
+import AlignmentCounter from './components/ui/AlignmentCounter'
 import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
 
 const GRAPH_WIDTH = 800;
@@ -65,6 +66,9 @@ function AppContent() {
     <div className="app-container">
       {/* Shared URL Notification */}
       <SharedUrlNotification />
+      
+      {/* Alignment Counter */}
+      <AlignmentCounter />
       
       <h1 className="app-title">
         EMERALD-UI

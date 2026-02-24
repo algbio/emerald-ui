@@ -3,6 +3,7 @@ import { useSequence } from '../../context/SequenceContext';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import StructureFileUploader from '../structure/StructureFileUploader';
 import type { CostMatrixTypeValue } from '../../utils/api/EmeraldService';
+import { triggerCounterIncrement } from '../ui/AlignmentCounter';
 // import type { StructureData } from '../../utils/structure/pdbParser';
 import './EmeraldInput.css';
 
@@ -86,6 +87,9 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           sequences,
           params
         );
+        
+        // Increment the alignment counter
+        triggerCounterIncrement();
         
         notifySuccess('Alignment Complete', 'Suboptimal alignment graph has been generated successfully');
       } catch (error) {

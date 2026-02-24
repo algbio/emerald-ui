@@ -2,3 +2,4 @@
 export * from './EmeraldService';
 export * from './uniprotFetcher';
 export * from './uniprotUtils';
+export * from './counterService';
