@@ -1034,6 +1034,97 @@ input[type="file"] {
   text-decoration: underline;
 }
 
+/* GitHub link styling */
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border: 2px solid var(--accent-primary);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+.github-link:hover {
+  background-color: var(--accent-primary);
+  color: #ffffff !important;
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.github-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.github-link:hover .github-icon {
+  transform: scale(1.1);
+}
+
+.star-icon-small {
+  font-size: 0.9rem;
+  color: #fbbf24;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.github-link:hover .star-icon-small {
+  animation: spin 0.5s ease-in-out;
+}
+
+/* Star us banner */
+.star-us-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(251, 191, 36, 0.15));
+  border-radius: 8px;
+  border: 2px solid var(--accent-primary);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--accent-primary);
+}
+
+.star-icon {
+  color: #fbbf24;
+  font-size: 1.5rem;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.star-icon:first-child {
+  animation-delay: 0.5s;
+}
+
+.star-icon:last-child {
+  animation-delay: 1s;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .project-credits {
   background-color: rgba(16, 185, 129, 0.1);
   padding: 1rem;
@@ -1108,5 +1199,21 @@ input[type="file"] {
 
   .project-credits p {
     font-size: 0.85rem;
+  }
+
+  .star-us-banner {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .github-link {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .github-icon {
+    font-size: 1rem;
   }
 }

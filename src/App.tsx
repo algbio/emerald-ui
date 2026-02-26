@@ -8,6 +8,7 @@ import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWi
 import SharedUrlNotification from './components/ui/SharedUrlNotification'
 import AlignmentCounter from './components/ui/AlignmentCounter'
 import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
+import { FaGithub, FaStar } from 'react-icons/fa'
 
 const GRAPH_WIDTH = 800;
 const GRAPH_HEIGHT = 800;
@@ -257,7 +258,11 @@ function AppContent() {
               <br />
               <strong>arXiv</strong>
               <br />
-              <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+              <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer" className="github-link">
+                <FaGithub className="github-icon" />
+                GitHub Repository
+                <FaStar className="star-icon-small" />
+              </a>
             </p>
             
             <p className="citation-text">
@@ -269,7 +274,11 @@ function AppContent() {
               <br />
               <strong>Genome Biology</strong> 24, 168 (2023).
               <br />
-              <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+              <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer" className="github-link">
+                <FaGithub className="github-icon" />
+                GitHub Repository
+                <FaStar className="star-icon-small" />
+              </a>
             </p>
           </div>
           <AlignmentCounter />
