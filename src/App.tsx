@@ -93,7 +93,6 @@ function AppContent() {
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
           </ul>
         </div>
-        <AlignmentCounter />
 
       </div>
       
@@ -273,6 +272,7 @@ function AppContent() {
               <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
             </p>
           </div>
+          <AlignmentCounter />
         </div>
       </footer>
     </div>
