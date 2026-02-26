@@ -219,14 +219,14 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
             className="load-example-button-small"
             title="Load short example protein sequences (Human p53 and Serum albumin)"
           >
-            Load Short Example
+            <strong>Load Short Example</strong>
           </button>
           <button 
             onClick={loadExampleSequences}
             className="load-example-button-small"
             title="Load example protein sequences (Human p53 and Serum albumin)"
           >
-            Load Long Example
+            <strong>Load Long Example</strong>
           </button>
         </div>
       
