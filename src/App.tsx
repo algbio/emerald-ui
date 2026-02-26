@@ -252,11 +252,11 @@ function AppContent() {
             <p className="citation-text">
               Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost.
               <br />
-              <a href="" target="_blank" rel="noopener noreferrer">
+              <a href="https://doi.org/10.48550/arXiv.2602.12730" target="_blank" rel="noopener noreferrer">
                 EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space.
               </a>
               <br />
-              <strong>In preparation.</strong>
+              <strong>arXiv</strong>
               <br />
               <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
             </p>
