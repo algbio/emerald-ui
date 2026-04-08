@@ -80,11 +80,15 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
       
       try {
         // First run the internal alignment using EmeraldService
-        await runAlignment();
+        const result = await runAlignment();
+
+        if (!result.success || !result.submittedSequences) {
+          return;
+        }
         
         // Then call the onSubmit prop for backward compatibility
         onSubmit(
-          sequences,
+          result.submittedSequences,
           params
         );
         

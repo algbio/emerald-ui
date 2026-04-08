@@ -7,6 +7,11 @@ import { extractUniProtId } from '../utils/api/uniprotUtils';
 import { fetchUniProtSequence } from '../utils/api/uniprotFetcher';
 import { getShareableDataFromUrl } from '../utils/export/urlSharing';
 import { convertOptimalPathToAlignment } from '../utils/sequence/optimalPathConverter';
+import {
+  extractLeadingFastaHeader,
+  normalizeProteinSequenceInput,
+  hasInvalidProteinSequenceCharacters,
+} from '../utils/sequence/fastaInput';
 
 // Helper function to validate sequence for asterisks
 const validateSequenceAsterisks = (sequence: string) => {
@@ -407,7 +412,7 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
 interface SequenceContextType {
   state: SequenceState;
   dispatch: React.Dispatch<SequenceAction>;
-  runAlignment: () => Promise<void>;
+  runAlignment: () => Promise<{ success: boolean; submittedSequences?: Pick<SequenceData, 'sequenceA' | 'sequenceB' | 'descriptorA' | 'descriptorB'> }>;
   fetchSequenceA: (accession: string) => Promise<void>;
   fetchSequenceB: (accession: string) => Promise<void>;
   loadStructureFileA: (structureData: StructureData) => void;
@@ -714,7 +719,7 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'ALIGNMENT_ERROR', 
         payload: 'Both sequences are required to generate alignment' 
       });
-      return;
+      return { success: false };
     }
 
     // Check for middle asterisks which should prevent alignment
@@ -723,17 +728,63 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'ALIGNMENT_ERROR', 
         payload: 'Sequences cannot contain asterisks (*) in the middle. Please remove them before generating alignment.' 
       });
-      return;
+      return { success: false };
     }
 
     try {
       dispatch({ type: 'ALIGNMENT_START' });
+
+      const extractedSequenceA = extractLeadingFastaHeader(sequences.sequenceA);
+      const extractedSequenceB = extractLeadingFastaHeader(sequences.sequenceB);
+
+      const sequenceWithHeaderRemovedA = extractedSequenceA.hadHeader ? extractedSequenceA.sequence : sequences.sequenceA;
+      const sequenceWithHeaderRemovedB = extractedSequenceB.hadHeader ? extractedSequenceB.sequence : sequences.sequenceB;
+
+      const normalizedSequenceA = normalizeProteinSequenceInput(sequenceWithHeaderRemovedA);
+      const normalizedSequenceB = normalizeProteinSequenceInput(sequenceWithHeaderRemovedB);
+
+      const descriptorA = sequences.descriptorA.trim() || extractedSequenceA.header;
+      const descriptorB = sequences.descriptorB.trim() || extractedSequenceB.header;
       
       // Remove trailing asterisks if present
-      const cleanSequenceA = sequences.sequenceA.replace(/\*+$/, '');
-      const cleanSequenceB = sequences.sequenceB.replace(/\*+$/, '');
+      const cleanSequenceA = normalizedSequenceA.replace(/\*+$/, '');
+      const cleanSequenceB = normalizedSequenceB.replace(/\*+$/, '');
+
+      if (!cleanSequenceA || !cleanSequenceB) {
+        dispatch({
+          type: 'ALIGNMENT_ERROR',
+          payload: 'Both sequences must include protein sequence data after removing any FASTA header lines.'
+        });
+        return { success: false };
+      }
+
+      if (hasInvalidProteinSequenceCharacters(cleanSequenceA) || hasInvalidProteinSequenceCharacters(cleanSequenceB)) {
+        dispatch({
+          type: 'ALIGNMENT_ERROR',
+          payload: 'Sequences contain invalid characters. Please use protein letters only (A-Z), with optional trailing asterisk (*).'
+        });
+        return { success: false };
+      }
+
+      const validationAfterNormalizationA = validateSequenceAsterisks(cleanSequenceA);
+      const validationAfterNormalizationB = validateSequenceAsterisks(cleanSequenceB);
+
+      if (validationAfterNormalizationA.hasMiddleAsterisk || validationAfterNormalizationB.hasMiddleAsterisk) {
+        dispatch({
+          type: 'ALIGNMENT_ERROR',
+          payload: 'Sequences cannot contain asterisks (*) in the middle. Please remove them before generating alignment.'
+        });
+        return { success: false };
+      }
+
+      if (!sequences.descriptorA.trim() && extractedSequenceA.header) {
+        dispatch({ type: 'UPDATE_DESCRIPTOR_A', payload: extractedSequenceA.header });
+      }
+      if (!sequences.descriptorB.trim() && extractedSequenceB.header) {
+        dispatch({ type: 'UPDATE_DESCRIPTOR_B', payload: extractedSequenceB.header });
+      }
       
-      // Update sequences if asterisks were removed
+      // Update sequences if submit-time normalization changed them
       if (cleanSequenceA !== sequences.sequenceA) {
         dispatch({ type: 'UPDATE_SEQUENCE_A', payload: cleanSequenceA });
       }
@@ -744,9 +795,9 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       // Call EmeraldService to generate alignment
       const result = await emeraldService.generateAlignment(
         cleanSequenceA,
-        sequences.descriptorA || 'Sequence A',
+        descriptorA || 'Sequence A',
         cleanSequenceB,
-        sequences.descriptorB || 'Sequence B',
+        descriptorB || 'Sequence B',
         params.alpha,
         params.delta,
         params.gapCost,
@@ -763,6 +814,16 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'ALIGNMENT_SUCCESS', 
         payload: processedAlignments 
       });
+
+      return {
+        success: true,
+        submittedSequences: {
+          sequenceA: cleanSequenceA,
+          sequenceB: cleanSequenceB,
+          descriptorA: descriptorA || 'Sequence A',
+          descriptorB: descriptorB || 'Sequence B'
+        }
+      };
       
     } catch (error) {
       console.error('Error generating alignment:', error);
@@ -770,6 +831,7 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'ALIGNMENT_ERROR', 
         payload: error instanceof Error ? error.message : 'Unknown error generating alignment'
       });
+      return { success: false };
     }
   };
 
