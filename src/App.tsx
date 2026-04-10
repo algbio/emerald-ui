@@ -16,7 +16,7 @@ const GRAPH_HEIGHT = 800;
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {
-  const { state } = useSequence();
+  const { state, dispatch } = useSequence();
   const { sequences, alignments } = state;
   
   const [representative, setRepresentative] = useState("");
@@ -92,6 +92,42 @@ function AppContent() {
     }
   };
 
+  const loadLongExampleSequences = () => {
+    const exampleSequenceA = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRAKYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
+    const exampleDescriptorA = "sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens";
+
+    const exampleSequenceB = "MKWVTFISLLFLFSSAYSRGVFRRDAHKSEVAHRFKDLGEENFKALVLIAFAQYLQQCPFEDHVKLVNEVTEFAKTCVADESAENCDKSLHTLFGDKLCTVATLRETYGEMADCCAKQEPERNECFLQHKDDNPNLPRLVRPEVDVMCTAFHDNEETFLKKYLYEIARRHPYFYAPELLFFAKRYKAAFTECCQAADKAACLLPKLDELRDEGKASSAKQRLKCASLQKFGERAFKAWAVARLSQRFPKAEFAEVSKLVTDLTKVHTECCHGDLLECADDRADLAKYICENQDSISSKLKECCEKPLLEKSHCIAEVENDEMPADLPSLAADFVESKDVCKNYAEAKDVFLGMFLYEYARRHPDYSVVLLLRLAKTYETTLEKCCAAADPHECYAKVFDEFKPLVEEPQNLIKQNCELFEQLGEYKFQNALLVRYTKKVPQVSTPTLVEVSRNLGKVGSKCCKHPEAKRMPCAEDYLSVVLNQLCVLHEKTPVSDRVTKCCTESLVNRRPCFSALEVDETYVPKEFNAETFTFHADICTLSEKERQIKKQTALVELVKHKPKATKEQLKAVMDDFAAFVEKCCKADDKETCFAEEGKKLVAASQAALGL";
+    const exampleDescriptorB = "sp|P02769|ALBU_HUMAN Serum albumin OS=Homo sapiens";
+
+    dispatch({
+      type: 'LOAD_SEQUENCES',
+      payload: {
+        sequenceA: exampleSequenceA,
+        descriptorA: exampleDescriptorA,
+        sequenceB: exampleSequenceB,
+        descriptorB: exampleDescriptorB
+      }
+    });
+  };
+
+  const loadShortExampleSequences = () => {
+    const exampleSequenceA = "MLQFLLGFTLGNVVGMYLAQNYDIPNLAKKLEEIKKDLDAKKKPPSA";
+    const exampleDescriptorA = "E0CX11 | Short transmembrane mitochondrial protein 1 | Short transmembrane mitochondrial protein 1 | Homo sapiens";
+
+    const exampleSequenceB = "MAAATLTSKLYSLLFRRTSTFALTIIVGVMFFERAFDQGADAIYDHINEGKLWKHIKHKYENK";
+    const exampleDescriptorB = "Q9UDW1 | Cytochrome b-c1 complex subunit 9 | Cytochrome b-c1 complex subunit 9 | Homo sapiens";
+
+    dispatch({
+      type: 'LOAD_SEQUENCES',
+      payload: {
+        sequenceA: exampleSequenceA,
+        descriptorA: exampleDescriptorA,
+        sequenceB: exampleSequenceB,
+        descriptorB: exampleDescriptorB
+      }
+    });
+  };
+
   return (
     <div className="app-container">
       {/* Shared URL Notification */}
@@ -163,7 +199,7 @@ function AppContent() {
                 <div className="step-number">3</div>
                 <div className="step-content">
                   <h3>Run Analysis</h3>
-                  <p>Click "Generate Alignments" to compute and visualize all optimal and suboptimal alignments and identify alignment-safe windows in these alignments.</p>
+                  <p>Click <strong>"Run EMERALD-UI"</strong> to compute and visualize all optimal and suboptimal alignments and identify alignment-safe windows in these alignments.</p>
                 </div>
               </div>
               
@@ -188,15 +224,22 @@ function AppContent() {
             </div>
             
             <div className="try-example-section">
-              <h3>Try an Example</h3>
-              <p>
-                To see EMERALD-UI in action, try searching for these protein pairs in UniProt:
-              </p>
-              <div className="example-proteins">
-                <div className="protein-pair">
-                  <strong>ROS1_ARATH</strong> and <strong>ROS1A_ORYSJ</strong>
-                  <span className="example-description">DNA demethylases from different plant species</span>
-                </div>
+              <h3>Try an Example:</h3>
+              <div className="load-example-section">
+                <button
+                  onClick={loadShortExampleSequences}
+                  className="load-example-button-small"
+                  title="Load short example protein sequences (Human p53 and Serum albumin)"
+                >
+                  <strong>Load Short Example</strong>
+                </button>
+                <button
+                  onClick={loadLongExampleSequences}
+                  className="load-example-button-small"
+                  title="Load example protein sequences (Human p53 and Serum albumin)"
+                >
+                  <strong>Load Long Example</strong>
+                </button>
               </div>
             </div>
           </div>

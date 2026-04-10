@@ -91,7 +91,7 @@ const AlignmentCounter: React.FC<AlignmentCounterProps> = ({ className = '' }) =
         <span className="counter-label">analyses.</span>
       </div>
       <span className="counter-disclaimer">
-        This counter only tracks the number of times "Generate Suboptimal Alignment Graph" has been pressed. No other
+        This counter only tracks the number of times the "Run EMERALD-UI" button has been pressed. No other
         information is stored.
       </span>
     </div>
