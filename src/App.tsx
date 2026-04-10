@@ -23,6 +23,7 @@ function AppContent() {
   const [representativeDescriptor, setRepresentativeDescriptor] = useState("");
   const [memberDescriptor, setMemberDescriptor] = useState("");
   const [localAlignments, setLocalAlignments] = useState<Alignment[]>([]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
   const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
   const [isInterpretationExpanded, setIsInterpretationExpanded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -75,29 +76,33 @@ function AppContent() {
       <h1 className="app-title">
         EMERALD-UI
       </h1>
-      <div className="app-description">
-        <p className="app-subtitle">
-          <strong>Interactive Protein Sequence Alignment Visualization Tool</strong>
-        </p>
-        <p>
-          EMERALD-UI provides advanced visualization of optimal and suboptimal protein sequence alignments, 
-          enabling researchers to explore conserved / robust regions between these alignments.  
-          These conserved regions are the <i>alignment-safe windows</i> introduced by the <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">EMERALD algorithm</a>.
-        </p>
-        <div className="key-features">
-          <h3>Key Features:</h3>
-          <ul>
-            
-            <li><strong>Interactive Alignment Visualization:</strong> Explore the optimal and suboptimal alignment space between two sequences</li>
-            <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
-            <li><strong>Multiple Input Methods:</strong> Load FASTA files, search UniProt database, or paste sequences directly</li>
-            <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
-            <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>    
-            <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
-            <li><strong>Private & Local:</strong> All analyses are performed locally in your browser and remain private, no data is uploaded to any server. </li>
-          </ul>
+      <div className="getting-started-section">
+        <div className="getting-started-header" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+          <h2>Interactive Protein Sequence Alignment Visualization Tool</h2>
+          <span className={`expand-icon ${isDescriptionExpanded ? 'expanded' : ''}`}>▼</span>
         </div>
 
+        {isDescriptionExpanded && (
+          <div className="app-description no-data-message">
+            <p>
+              EMERALD-UI provides advanced visualization of optimal and suboptimal protein sequence alignments,
+              enabling researchers to explore conserved / robust regions between these alignments.
+              These conserved regions are the <strong><i>safety windows</i></strong> introduced by the <a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noopener noreferrer">EMERALD algorithm</a>.
+            </p>
+            <div className="key-features">
+              <h3>Key Features:</h3>
+              <ul>
+                <li><strong>Interactive Alignment Visualization:</strong> Explore the optimal and suboptimal alignment space between two sequences</li>
+                <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
+                <li><strong>Multiple Input Methods:</strong> Load FASTA files, search UniProt database, or paste sequences directly</li>
+                <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
+                <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>
+                <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
+                <li><strong>Private & Local:</strong> All analyses are performed locally in your browser and remain private, no data is uploaded to any server. </li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="getting-started-section">

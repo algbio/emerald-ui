@@ -432,7 +432,10 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
         {/* Advanced Options Section */}
         <div className="emerald-full-width">
           <details className="advanced-options-details">
-            <summary className="advanced-options-summary">Advanced Options</summary>
+            <summary className="advanced-options-summary">
+              <span>Advanced Options</span>
+              <span className="advanced-options-icon" aria-hidden="true">▼</span>
+            </summary>
             
             {/* Cost Matrix Selector */}
             <div className="param-container">

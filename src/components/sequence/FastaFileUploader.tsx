@@ -194,7 +194,7 @@ export const FastaFileUploader: React.FC = () => {
           {uploadedFiles.length >= 5 
             ? 'Maximum 5 files reached'
             : uploadedFiles.length > 0 
-              ? `${uploadedFiles.length}/max 5 files uploaded` 
+              ? `${uploadedFiles.length}/max 5 files loaded` 
               : 'Choose FASTA files (max 5)'
           }
         </label>

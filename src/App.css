@@ -48,6 +48,10 @@
   border-left: 4px solid var(--accent-primary);
 }
 
+.app-description.no-data-message {
+  border-left: none;
+}
+
 .app-subtitle {
   margin-bottom: 1rem;
   color: var(--accent-primary);
