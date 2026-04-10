@@ -414,10 +414,9 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
   // Function to apply safety window highlighting to the loaded structure
   const applySafetyWindowHighlighting = async (structure: any) => {
-    // Get optimized safety windows with change detection
-    const { safetyWindows: optimizedWindows, shouldUpdate, resetChangeFlag } = safetyWindowOptimization;
+    const { safetyWindows: optimizedWindows, resetChangeFlag } = safetyWindowOptimization;
     
-    if (!pluginRef.current || !enableSafetyWindowHighlighting || !shouldUpdate) {
+    if (!pluginRef.current || !enableSafetyWindowHighlighting) {
       return;
     }
 
@@ -487,9 +486,14 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     try {
       const plugin = pluginRef.current;
       
-      // Clear all highlights using the interactivity manager
+      // Clear hover highlights
       if (plugin.managers?.interactivity?.lociHighlights?.clear) {
         plugin.managers.interactivity.lociHighlights.clear();
+      }
+
+      // Clear the persistent selection (set by applySafetyWindowHighlighting)
+      if (plugin.managers?.structure?.selection?.clear) {
+        plugin.managers.structure.selection.clear();
       }
       
     } catch (err) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSequence } from '../../context/SequenceContext';
 import { StructureViewer } from './StructureViewer';
 import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
@@ -7,6 +7,10 @@ import './AlignmentStructuresViewer.css';
 export const AlignmentStructuresViewer: React.FC = () => {
   const { state } = useSequence();
   const { sequences, alignments, structureA, structureB } = state;
+  const [useSecondaryColorsA, setUseSecondaryColorsA] = useState(true);
+  const [useSecondaryColorsB, setUseSecondaryColorsB] = useState(true);
+  const [highlightSafetyWindowsA, setHighlightSafetyWindowsA] = useState(true);
+  const [highlightSafetyWindowsB, setHighlightSafetyWindowsB] = useState(true);
 
   // Only show structures if we have alignments and at least one sequence has a structure
   const hasAlignments = alignments.length > 0;
@@ -45,13 +49,35 @@ export const AlignmentStructuresViewer: React.FC = () => {
 
   return (
     <div className="alignment-structures-viewer">
-      <h2 className="structures-title">Safety Windows Mapped on 3D structures</h2>      
+      <h2 className="structures-title">Safety Windows Mapped on 3D structures</h2>
       <div className="structures-container">
         {/* Sequence A Structure */}
         {hasStructureA && (
           <div className="structure-panel">
             <div className="structure-header">
-              <h3>Sequence A: {sequences.descriptorA || 'Reference Sequence'}</h3>
+              <div className="structure-header-top">
+                <h3>Sequence A: {sequences.descriptorA || 'Reference Sequence'}</h3>
+                <div className="structure-panel-controls">
+                  <button
+                    type="button"
+                    className={`structure-panel-toggle ${useSecondaryColorsA ? 'active' : ''}`}
+                    onClick={() => setUseSecondaryColorsA((prev) => !prev)}
+                    title={useSecondaryColorsA ? 'Switch to uniform coloring' : 'Switch to secondary-structure coloring'}
+                  >
+                    🎨 Colors
+                  </button>
+                  {safetyWindowsA.length > 0 && (
+                    <button
+                      type="button"
+                      className={`structure-panel-toggle ${highlightSafetyWindowsA ? 'active' : ''}`}
+                      onClick={() => setHighlightSafetyWindowsA((prev) => !prev)}
+                      title={highlightSafetyWindowsA ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
+                    >
+                      🛡️ Safety Windows
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="structure-info">
                 {structureA.uniprotId && (
                   <span className="uniprot-id">UniProt: {structureA.uniprotId}</span>
@@ -65,15 +91,10 @@ export const AlignmentStructuresViewer: React.FC = () => {
                 {structureA.fileContent && (
                   <span className="file-type">Uploaded {structureA.fileType?.toUpperCase()} file</span>
                 )}
-                {safetyWindowsA.length > 0 && (
-                  <span className="safety-windows-info" style={{ color: '#28a745', fontSize: '12px' }}>
-                    🔒 {safetyWindowsA.length} safety window{safetyWindowsA.length > 1 ? 's' : ''} highlighted
-                  </span>
-                )}
               </div>
             </div>
             <StructureViewer
-              key={`structure-a-${structureA.uniprotId || structureA.pdbId || 'uploaded'}`}
+              key={`structure-a-${structureA.uniprotId || structureA.pdbId || 'uploaded'}-${useSecondaryColorsA ? 'sec' : 'uni'}-${highlightSafetyWindowsA ? 'sw1' : 'sw0'}`}
               uniprotId={structureA.uniprotId || undefined}
               pdbId={structureA.pdbId || undefined}
               pdbContent={structureA.fileContent || undefined}
@@ -84,8 +105,8 @@ export const AlignmentStructuresViewer: React.FC = () => {
               showLoading={true}
               showSequence={true}
               safetyWindows={safetyWindowsA}
-              enableSafetyWindowHighlighting={safetyWindowsA.length > 0}
-              cartoonColorScheme="uniform"
+              enableSafetyWindowHighlighting={highlightSafetyWindowsA && safetyWindowsA.length > 0}
+              cartoonColorScheme={useSecondaryColorsA ? 'secondary-structure' : 'uniform'}
               onStructureLoaded={() => console.log(`Structure A loaded`)}
               onError={(error) => console.error(`Structure A error:`, error)}
             />
@@ -96,7 +117,29 @@ export const AlignmentStructuresViewer: React.FC = () => {
         {hasStructureB && (
           <div className="structure-panel">
             <div className="structure-header">
-              <h3>Sequence B: {sequences.descriptorB || 'Member Sequence'}</h3>
+              <div className="structure-header-top">
+                <h3>Sequence B: {sequences.descriptorB || 'Member Sequence'}</h3>
+                <div className="structure-panel-controls">
+                  <button
+                    type="button"
+                    className={`structure-panel-toggle ${useSecondaryColorsB ? 'active' : ''}`}
+                    onClick={() => setUseSecondaryColorsB((prev) => !prev)}
+                    title={useSecondaryColorsB ? 'Switch to uniform coloring' : 'Switch to secondary-structure coloring'}
+                  >
+                    🎨 Colors
+                  </button>
+                  {safetyWindowsB.length > 0 && (
+                    <button
+                      type="button"
+                      className={`structure-panel-toggle ${highlightSafetyWindowsB ? 'active' : ''}`}
+                      onClick={() => setHighlightSafetyWindowsB((prev) => !prev)}
+                      title={highlightSafetyWindowsB ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
+                    >
+                      🛡️ Safety Windows
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="structure-info">
                 {structureB.uniprotId && (
                   <span className="uniprot-id">UniProt: {structureB.uniprotId}</span>
@@ -110,15 +153,10 @@ export const AlignmentStructuresViewer: React.FC = () => {
                 {structureB.fileContent && (
                   <span className="file-type">Uploaded {structureB.fileType?.toUpperCase()} file</span>
                 )}
-                {safetyWindowsB.length > 0 && (
-                  <span className="safety-windows-info" style={{ color: '#28a745', fontSize: '12px' }}>
-                    🔒 {safetyWindowsB.length} safety window{safetyWindowsB.length > 1 ? 's' : ''} highlighted
-                  </span>
-                )}
               </div>
             </div>
             <StructureViewer
-              key={`structure-b-${structureB.uniprotId || structureB.pdbId || 'uploaded'}`}
+              key={`structure-b-${structureB.uniprotId || structureB.pdbId || 'uploaded'}-${useSecondaryColorsB ? 'sec' : 'uni'}-${highlightSafetyWindowsB ? 'sw1' : 'sw0'}`}
               uniprotId={structureB.uniprotId || undefined}
               pdbId={structureB.pdbId || undefined}
               pdbContent={structureB.fileContent || undefined}
@@ -129,8 +167,8 @@ export const AlignmentStructuresViewer: React.FC = () => {
               showLoading={true}
               showSequence={true}
               safetyWindows={safetyWindowsB}
-              enableSafetyWindowHighlighting={safetyWindowsB.length > 0}
-              cartoonColorScheme='uniform'
+              enableSafetyWindowHighlighting={highlightSafetyWindowsB && safetyWindowsB.length > 0}
+              cartoonColorScheme={useSecondaryColorsB ? 'secondary-structure' : 'uniform'}
               onStructureLoaded={() => console.log(`Structure B loaded`)}
               onError={(error) => console.error(`Structure B error:`, error)}
             />
