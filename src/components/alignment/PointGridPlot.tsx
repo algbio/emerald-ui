@@ -382,9 +382,6 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   const hoveredWindow = hoveredSafetyWindowId ? 
     safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) : 
     null;
-    
-  const safetyWindowsChanged = () => false;
-  const resetSafetyWindowsChanged = () => {};
 
   const isInSafetyWindow = (position: number, axis: 'x' | 'y') => {
     return safetyWindows.some(window => {
@@ -837,7 +834,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // This effect handles static/structural changes that require full redraws
   useEffect(() => {
     drawCanvas();
-  }, [transform, alignments, fontSize, showMinimap, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, width, height, marginTop, marginRight, marginBottom, marginLeft]);
+  }, [transform, alignments, fontSize, showMinimap, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, representativeDescriptor, memberDescriptor, width, height, marginTop, marginRight, marginBottom, marginLeft]);
   
   // This effect handles hover state changes
   useEffect(() => {
@@ -853,15 +850,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     }
   }, [highlightedGap]);
   
-  // This effect monitors safety window changes using our optimized hook
+  // Redraw immediately when external safety-window selection/hover changes.
   useEffect(() => {
-    // Only redraw if safety windows have actually changed
-    if (safetyWindowsChanged()) {
-      requestAnimationFrame(() => {
-        drawCanvas();
-        resetSafetyWindowsChanged();
-      });
-    }
+    requestAnimationFrame(drawCanvas);
   }, [selectedWindow, hoveredWindow]);
 
   useEffect(() => {

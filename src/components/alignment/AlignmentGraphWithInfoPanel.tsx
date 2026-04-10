@@ -205,33 +205,48 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     } else {
       // User selected a window, reset the manual unselection flag
       setHasManuallyUnselected(false);
+      if (visualizationSettings.enableSafetyWindowHighlighting) {
+        setHoveredSafetyWindowId(windowId);
+      }
     }
   };
 
   const handleNavigateToPrevious = () => {
     if (safetyWindows.length === 0) return;
-    
+    let newWindowId: string;
+
     if (!selectedSafetyWindowId) {
       // No window selected, go to last window
-      setSelectedSafetyWindowId(`safety-window-${safetyWindows.length - 1}`);
+      newWindowId = `safety-window-${safetyWindows.length - 1}`;
     } else {
       const currentIndex = parseInt(selectedSafetyWindowId.split('-')[2]);
       const newIndex = currentIndex > 0 ? currentIndex - 1 : safetyWindows.length - 1;
-      setSelectedSafetyWindowId(`safety-window-${newIndex}`);
+      newWindowId = `safety-window-${newIndex}`;
+    }
+
+    setSelectedSafetyWindowId(newWindowId);
+    if (visualizationSettings.enableSafetyWindowHighlighting) {
+      setHoveredSafetyWindowId(newWindowId);
     }
     setHasManuallyUnselected(false); // Reset manual unselection when navigating
   };
 
   const handleNavigateToNext = () => {
     if (safetyWindows.length === 0) return;
-    
+    let newWindowId: string;
+
     if (!selectedSafetyWindowId) {
       // No window selected, go to first window
-      setSelectedSafetyWindowId('safety-window-0');
+      newWindowId = 'safety-window-0';
     } else {
       const currentIndex = parseInt(selectedSafetyWindowId.split('-')[2]);
       const newIndex = currentIndex < safetyWindows.length - 1 ? currentIndex + 1 : 0;
-      setSelectedSafetyWindowId(`safety-window-${newIndex}`);
+      newWindowId = `safety-window-${newIndex}`;
+    }
+
+    setSelectedSafetyWindowId(newWindowId);
+    if (visualizationSettings.enableSafetyWindowHighlighting) {
+      setHoveredSafetyWindowId(newWindowId);
     }
     setHasManuallyUnselected(false); // Reset manual unselection when navigating
   };

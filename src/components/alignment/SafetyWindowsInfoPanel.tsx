@@ -790,7 +790,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                         style={{ backgroundColor: currentWindow.color }}
                       />
                       <div className="window-title">
-                        Window {currentWindow.id.split('-')[2]}
+                        Window {currentWindowIndex + 1}
                       </div>
                       <div className="window-dimensions">
                         {currentWindow.xLength} × {currentWindow.yLength}

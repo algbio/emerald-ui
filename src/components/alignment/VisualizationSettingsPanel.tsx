@@ -56,7 +56,7 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
   return (
     <>
       <div className="panel-header">
-        <h3>Visualization Settings</h3>
+        <h3>View Settings</h3>
         <div className="panel-subtitle">
           Customize what elements are displayed on the alignment graph
         </div>
@@ -197,8 +197,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showAlignmentEdges" className="panel-checkbox-label">
                 <div>
-                  <div>Show Alignment Connections</div>
-                  <div className="panel-description">Display colored lines connecting aligned sequence positions</div>
+                  <div>Show Suboptimal Alignment Graph</div>
+                  <div className="panel-description">Display lines used by suboptimal alignments</div>
                 </div>
               </label>
             </div>
@@ -213,8 +213,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showAlignmentDots" className="panel-checkbox-label">
                 <div>
-                  <div>Show Start/End Points</div>
-                  <div className="panel-description">Display circular markers at alignment connection endpoints</div>
+                  <div>Show Start/End Points of Safety Windows</div>
+                  <div className="panel-description">Display circular markers at the beginning and end of safety windows</div>
                 </div>
               </label>
             </div>
