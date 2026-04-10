@@ -50,6 +50,9 @@ interface SafetyWindowsInfoPanelProps {
   delta?: number;
   accessionA?: string;
   accessionB?: string;
+  gapCost?: number;
+  startGap?: number;
+  costMatrixType?: number;
 }
 
 export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({ 
@@ -78,7 +81,10 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   alpha,
   delta,
   accessionA,
-  accessionB
+  accessionB,
+  gapCost,
+  startGap,
+  costMatrixType
 }) => {
   const { state } = useSequence();
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
@@ -1209,9 +1215,9 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
               delta={delta}
               accessionA={accessionA}
               accessionB={accessionB}
-              gapCost={state.params.gapCost}
-              startGap={state.params.startGap}
-              costMatrixType={state.params.costMatrixType}
+              gapCost={gapCost ?? state.params.gapCost}
+              startGap={startGap ?? state.params.startGap}
+              costMatrixType={costMatrixType ?? state.params.costMatrixType}
               canvasRef={canvasRef}
               pointGridRef={pointGridRef}
             />

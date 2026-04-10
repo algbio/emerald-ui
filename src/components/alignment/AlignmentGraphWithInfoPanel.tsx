@@ -10,6 +10,8 @@ import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewe
 import { validatePath, generateAlignmentFromPath, buildPathThroughSelectedEdges, calculateDistanceFromOptimalPath } from '../../utils/canvas/pathSelection';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { extractSafetyWindowsFromAlignments } from '../../utils/sequence/safetyWindowUtils';
+import { extractUniProtId } from '../../utils/api/uniprotUtils';
+import { generateShareableUrl } from '../../utils/export/urlSharing';
 
 
 interface AlignmentGraphWithInfoPanelProps {
@@ -50,9 +52,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   delta,
   accessionA,
   accessionB,
-  gapCost: _gapCost,
-  startGap: _startGap,
-  costMatrixType: _costMatrixType
+  gapCost,
+  startGap,
+  costMatrixType
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
@@ -102,6 +104,77 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   const safetyWindowMappings = useMemo(() => {
     return extractSafetyWindowsFromAlignments(safetyWindows);
   }, [safetyWindows]);
+
+  const getCostMatrixName = (matrixType?: number): string => {
+    const names: Record<number, string> = {
+      0: 'BLOSUM45',
+      1: 'BLOSUM50',
+      2: 'BLOSUM62',
+      3: 'BLOSUM80',
+      4: 'BLOSUM90',
+      5: 'PAM30',
+      6: 'PAM70',
+      7: 'PAM250',
+      8: 'IDENTITY'
+    };
+
+    if (matrixType === undefined) return 'N/A';
+    return names[matrixType] || `Unknown (${matrixType})`;
+  };
+
+  const resolvedAccessionA = accessionA || extractUniProtId(representativeDescriptor || '') || 'N/A';
+  const resolvedAccessionB = accessionB || extractUniProtId(memberDescriptor || '') || 'N/A';
+
+  const shareableUrlForIssue = useMemo(() => {
+    if (alpha === undefined || delta === undefined) {
+      return null;
+    }
+
+    return generateShareableUrl(
+      representativeDescriptor || '',
+      memberDescriptor || '',
+      alpha,
+      delta,
+      resolvedAccessionA !== 'N/A' ? resolvedAccessionA : undefined,
+      resolvedAccessionB !== 'N/A' ? resolvedAccessionB : undefined,
+      gapCost,
+      startGap,
+      costMatrixType
+    );
+  }, [
+    alpha,
+    delta,
+    representativeDescriptor,
+    memberDescriptor,
+    resolvedAccessionA,
+    resolvedAccessionB,
+    gapCost,
+    startGap,
+    costMatrixType
+  ]);
+
+  const issueUrl = useMemo(() => {
+    const title = 'Issue report: Safety Windows panel / alignment view';
+    const body = [
+      '## Issue Summary',
+      '<!-- Please describe what happened and what you expected to happen -->',
+      '',
+      '## Reproduction Context',
+      `- alpha: ${alpha ?? 'N/A'}`,
+      `- delta: ${delta ?? 'N/A'}`,
+      `- cost matrix type: ${getCostMatrixName(costMatrixType)}`,
+      `- gap cost: ${gapCost ?? 'N/A'}`,
+      `- start gap cost: ${startGap ?? 'N/A'}`,
+      `- accessionA: ${resolvedAccessionA}`,
+      `- accessionB: ${resolvedAccessionB}`,
+      `- shareable URL: ${shareableUrlForIssue || 'N/A (requires valid UniProt accessions)'}`,
+      '',
+      '## Additional Details',
+      '<!-- Add browser, screenshots, and exact steps to reproduce -->'
+    ].join('\n');
+
+    return `https://github.com/algbio/emerald-ui/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+  }, [alpha, delta, costMatrixType, gapCost, startGap, resolvedAccessionA, resolvedAccessionB, shareableUrlForIssue]);
 
   // Initialize selection to first window if available, but only if user hasn't manually unselected
   React.useEffect(() => {
@@ -406,7 +479,21 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             delta={delta}
             accessionA={accessionA}
             accessionB={accessionB}
+            gapCost={gapCost}
+            startGap={startGap}
+            costMatrixType={costMatrixType}
           />
+          <div className="report-issue-panel-row">
+            <a
+              href={issueUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="report-issue-panel-button"
+              title="Report an issue on GitHub with pre-filled alignment parameters"
+            >
+              Report an issue on GitHub
+            </a>
+          </div>
         </div>
       </div>
       

@@ -244,6 +244,9 @@ function AppContent() {
             delta={state.params.delta}
             accessionA={state.sequences.accessionA}
             accessionB={state.sequences.accessionB}
+            gapCost={state.params.gapCost}
+            startGap={state.params.startGap}
+            costMatrixType={state.params.costMatrixType}
           />
         </div>
       )}
