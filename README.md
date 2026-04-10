@@ -10,12 +10,13 @@ EMERALD goes beyond traditional pairwise sequence alignment by identifying not j
 
 ### Key Features
 
-- **🔍 Interactive Alignment Visualization**: Explore the optimal and suboptimal alignment space between two sequences
-- **🛡️ Safety Window Analysis**: Identify regions where alignments are conserved / robust
-- **📁 Multiple Input Methods**: Load FASTA files, search UniProt database, or paste sequences directly
-- **⚙️ Customizable Parameters**: Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)
-- **🧬 3D Structure Integration**: Overlay protein structure information when available
-- **📊 Export & Sharing**: Generate publication-ready images and shareable URLs
+- **Interactive Alignment Visualization:** Explore the optimal and suboptimal alignment space between two sequences
+- **Safety Window Analysis:** Identify regions where alignments are conserved / robust
+- **Multiple Input Methods:** Load FASTA files, search UniProt database, or paste sequences directly
+- **Customizable Parameters:** Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)
+- **3D Structure Integration:** Overlay protein structure information when available    
+- **Export & Sharing:** Generate publication-ready images and shareable URLs
+- **Private & Local:** All analyses are performed locally in your browser and remain private, no data is uploaded to any server. 
 
 ## Technical Implementation
 
@@ -29,9 +30,10 @@ This application is built with:
 
 ## Citation
 
-Please cite the following reference when using EMERALD for your research:
+Please cite the following reference when using EMERALD-UI for your research:
 
-Grigorjew, A., Gynter, A., Dias, F.H. et al. Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD. *Genome Biol* **24**, 168 (2023). https://doi.org/10.1186/s13059-023-03008-6
+- Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost, [EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space](https://doi.org/10.48550/arXiv.2602.12730) *arXiv* (2026) https://doi.org/10.48550/arXiv.2602.12730 
+- Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu, [Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD](https://doi.org/10.1186/s13059-023-03008-6) *Genome Biology* 24, 168 (2023). https://doi.org/10.1186/s13059-023-03008-6
 
 ## Development Getting Started
 
@@ -94,14 +96,8 @@ src/
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to [Report a Problem](https://github.com/algbio/emerald-ui/issues) or a submit a [Pull Request](https://github.com/algbio/emerald-ui/pulls).
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
-
-
