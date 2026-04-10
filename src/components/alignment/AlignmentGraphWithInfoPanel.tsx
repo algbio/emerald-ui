@@ -160,6 +160,7 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
       '<!-- Please describe what happened and what you expected to happen -->',
       '',
       '## Reproduction Context',
+      '<!-- Privacy note: delete any details below that you do not want to make public before submitting. -->',
       `- alpha: ${alpha ?? 'N/A'}`,
       `- delta: ${delta ?? 'N/A'}`,
       `- cost matrix type: ${getCostMatrixName(costMatrixType)}`,

@@ -2,9 +2,67 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/emeraldsvg.png" />
+    <link rel="icon" type="image/png" href="/social-preview.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EMERALD-UI</title>
+    <title>EMERALD-UI | Interactive Protein Sequence Alignment Visualization</title>
+
+    <meta
+      name="description"
+      content="Explore optimal and suboptimal protein sequence alignments with EMERALD-UI. Visualize safety windows directly in your browser."
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EMERALD-UI" />
+    <meta property="og:title" content="EMERALD-UI | Interactive Protein Sequence Alignment Visualization" />
+    <meta
+      property="og:description"
+      content="Explore optimal and suboptimal protein sequence alignments with EMERALD-UI. Visualize safety windows directly in your browser."
+    />
+    <meta property="og:url" content="https://algbio.github.io/emerald-ui/" />
+    <meta property="og:image" content="https://algbio.github.io/emerald-ui/social-preview.png" />
+    <meta property="og:image:alt" content="EMERALD-UI alignment visualization preview" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EMERALD-UI | Interactive Protein Sequence Alignment Visualization" />
+    <meta
+      name="twitter:description"
+      content="Explore optimal and suboptimal protein sequence alignments with EMERALD-UI. Visualize safety windows directly in your browser."
+    />
+    <meta name="twitter:image" content="https://algbio.github.io/emerald-ui/social-preview.png" />
+
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var seqA = params.get('seqA');
+        var seqB = params.get('seqB');
+
+        if (!seqA || !seqB) return;
+
+        var safeA = seqA.trim().toUpperCase();
+        var safeB = seqB.trim().toUpperCase();
+        var dynamicTitle = 'EMERALD-UI | ' + safeA + ' vs ' + safeB;
+        var dynamicDescription =
+          'Explore optimal and suboptimal protein sequence alignments of ' + safeA + ' and ' + safeB +
+          ' with EMERALD-UI. Visualize safety windows directly in your browser.';
+
+        document.title = dynamicTitle;
+
+        var metaDescription = document.querySelector('meta[name="description"]');
+        if (metaDescription) metaDescription.setAttribute('content', dynamicDescription);
+
+        var ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.setAttribute('content', dynamicTitle);
+
+        var ogDescription = document.querySelector('meta[property="og:description"]');
+        if (ogDescription) ogDescription.setAttribute('content', dynamicDescription);
+
+        var twitterTitle = document.querySelector('meta[name="twitter:title"]');
+        if (twitterTitle) twitterTitle.setAttribute('content', dynamicTitle);
+
+        var twitterDescription = document.querySelector('meta[name="twitter:description"]');
+        if (twitterDescription) twitterDescription.setAttribute('content', dynamicDescription);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

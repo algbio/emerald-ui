@@ -9,6 +9,7 @@ import SharedUrlNotification from './components/ui/SharedUrlNotification'
 import AlignmentCounter from './components/ui/AlignmentCounter'
 import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
 import { FaGithub, FaStar } from 'react-icons/fa'
+import { generateShareableUrl } from './utils/export/urlSharing'
 
 const GRAPH_WIDTH = 800;
 const GRAPH_HEIGHT = 800;
@@ -26,6 +27,7 @@ function AppContent() {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(true);
   const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
   const [isInterpretationExpanded, setIsInterpretationExpanded] = useState(false);
+  const [isSequenceLinkCopied, setIsSequenceLinkCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointGridRef = useRef<PointGridPlotRef | null>(null);
 
@@ -64,6 +66,30 @@ function AppContent() {
   // Callback to receive PointGridPlot ref from AlignmentGraphWithInfoPanel
   const handlePointGridRef = (ref: React.RefObject<PointGridPlotRef>) => {
     pointGridRef.current = ref.current;
+  };
+
+  const sequenceInfoShareUrl = generateShareableUrl(
+    representativeDescriptor,
+    memberDescriptor,
+    state.params.alpha,
+    state.params.delta,
+    state.sequences.accessionA,
+    state.sequences.accessionB,
+    state.params.gapCost,
+    state.params.startGap,
+    state.params.costMatrixType
+  );
+
+  const handleCopySequenceInfoLink = async () => {
+    if (!sequenceInfoShareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(sequenceInfoShareUrl);
+      setIsSequenceLinkCopied(true);
+      setTimeout(() => setIsSequenceLinkCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy share URL:', error);
+    }
   };
 
   return (
@@ -226,6 +252,28 @@ function AppContent() {
             <h3>Sequence Information</h3>
             <p><strong>X-axis (Horizontal): </strong> {representativeDescriptor}</p>
             <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}</p>
+            {sequenceInfoShareUrl && (
+              <div className="sequence-share-link-row">
+                <strong className="sequence-share-link-label">Shareable Link:</strong>
+                <a
+                  href={sequenceInfoShareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sequence-share-link"
+                  title="Open this shareable link"
+                >
+                  {sequenceInfoShareUrl}
+                </a>
+                <button
+                  type="button"
+                  onClick={handleCopySequenceInfoLink}
+                  className="sequence-share-copy-button"
+                  title="Copy shareable URL"
+                >
+                  {isSequenceLinkCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            )}
             
           </div>
 
