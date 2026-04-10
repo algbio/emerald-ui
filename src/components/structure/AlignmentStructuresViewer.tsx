@@ -77,6 +77,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
               uniprotId={structureA.uniprotId || undefined}
               pdbId={structureA.pdbId || undefined}
               pdbContent={structureA.fileContent || undefined}
+              structureFileType={structureA.fileType || undefined}
               sequence={sequences.sequenceA}
               width="100%"
               height={500}
@@ -121,6 +122,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
               uniprotId={structureB.uniprotId || undefined}
               pdbId={structureB.pdbId || undefined}
               pdbContent={structureB.fileContent || undefined}
+              structureFileType={structureB.fileType || undefined}
               sequence={sequences.sequenceB}
               width="100%"
               height={500}
@@ -140,7 +142,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
       {hasAlignments && !hasStructureA && !hasStructureB && (
         <div className="no-structures-message">
           <p>No 3D structures available for the aligned sequences.</p>
-          <p>To view structures, use descriptors that include UniProt IDs or upload PDB/CIF files:</p>
+          <p>To view structures, use descriptors that include UniProt IDs or load PDB/CIF files:</p>
           <div className="examples">
             <code>sp|P02769|ALBU_HUMAN</code> or <code>P02769</code> (Human Serum Albumin)
             <br />

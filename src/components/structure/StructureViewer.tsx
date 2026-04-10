@@ -20,6 +20,8 @@ interface StructureViewerProps {
   pdbUrl?: string;
   /** Custom PDB file content as string */
   pdbContent?: string;
+  /** Uploaded structure file type for content parsing */
+  structureFileType?: 'pdb' | 'cif';
   /** Protein sequence to display */
   sequence?: string;
   /** Width of the viewer */
@@ -55,6 +57,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   uniprotId,
   pdbUrl,
   pdbContent,
+  structureFileType,
   sequence,
   width = '100%',
   height = 400,
@@ -191,6 +194,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
     setIsLoading(true);
     setError('');
+    let objectUrlToRevoke: string | undefined;
 
     try {
       // Clear any existing structures first
@@ -199,9 +203,28 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       let url: string;
       let isBinary = false;
       let finalPdbId = pdbId;
+      let explicitFormat: 'pdb' | 'mmcif' | undefined;
 
-      // Handle UniProt ID by loading AlphaFold structure via API
-      if (uniprotId && !pdbId) {
+      // Prefer uploaded structure content over external sources
+      if (pdbContent) {
+        // Load from content string
+        const blob = new Blob([pdbContent], { type: 'text/plain' });
+        url = URL.createObjectURL(blob);
+        objectUrlToRevoke = url;
+        if (structureFileType === 'cif') {
+          explicitFormat = 'mmcif';
+        } else if (structureFileType === 'pdb') {
+          explicitFormat = 'pdb';
+        }
+      } else if (pdbUrl) {
+        // Load from custom URL
+        url = pdbUrl;
+        isBinary = pdbUrl.toLowerCase().includes('.cif') || pdbUrl.toLowerCase().includes('.bcif');
+      } else if (finalPdbId) {
+        // Load from PDB ID via RCSB PDB
+        url = `https://files.rcsb.org/download/${finalPdbId.toUpperCase()}.pdb`;
+      } else if (uniprotId) {
+        // Handle UniProt ID by loading AlphaFold structure via API
         try {
           // Use the new AlphaFold API to get the structure URLs
           const response = await fetch(`https://alphafold.ebi.ac.uk/api/prediction/${uniprotId}`);
@@ -233,17 +256,6 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           console.error('AlphaFold API error:', apiError);
           throw new Error(`Failed to fetch AlphaFold structure: ${apiError}`);
         }
-      } else if (pdbContent) {
-        // Load from content string
-        const blob = new Blob([pdbContent], { type: 'text/plain' });
-        url = URL.createObjectURL(blob);
-      } else if (pdbUrl) {
-        // Load from custom URL
-        url = pdbUrl;
-        isBinary = pdbUrl.toLowerCase().includes('.cif') || pdbUrl.toLowerCase().includes('.bcif');
-      } else if (finalPdbId) {
-        // Load from PDB ID via RCSB PDB
-        url = `https://files.rcsb.org/download/${finalPdbId.toUpperCase()}.pdb`;
       } else {
         throw new Error('No PDB ID, UniProt ID, URL, or content provided');
       }
@@ -261,14 +273,14 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       }
 
       // Parse the structure format with improved format detection
-      let format = isBinary ? 'mmcif' : 'pdb';
+      let format = explicitFormat ?? (isBinary ? 'mmcif' : 'pdb');
       
       // Better format detection based on URL
-      if (url.toLowerCase().includes('.cif')) {
+      if (!explicitFormat && url.toLowerCase().includes('.cif')) {
         format = 'mmcif';
-      } else if (url.toLowerCase().includes('.bcif')) {
+      } else if (!explicitFormat && url.toLowerCase().includes('.bcif')) {
         format = 'mmcif'; // Binary CIF is also mmcif format
-      } else if (url.toLowerCase().includes('.pdb')) {
+      } else if (!explicitFormat && url.toLowerCase().includes('.pdb')) {
         format = 'pdb';
       }
 
@@ -361,6 +373,9 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       onError?.(errorMsg);
       console.error('Structure loading error:', err);
     } finally {
+      if (objectUrlToRevoke) {
+        URL.revokeObjectURL(objectUrlToRevoke);
+      }
       setIsLoading(false);
     }
   };

@@ -239,8 +239,14 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         sequences: {
           ...state.sequences,
           sequenceA: action.payload.sequence,
-          descriptorA: action.payload.descriptor
+          descriptorA: action.payload.descriptor,
+          accessionA: ''
         },
+        alignments: [],
+        alignmentStatus: 'idle',
+        alignmentError: null,
+        fetchStatusA: 'idle',
+        fetchErrorA: null,
         validation: {
           ...state.validation,
           sequenceA: structureValidationA
@@ -260,8 +266,14 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         sequences: {
           ...state.sequences,
           sequenceB: action.payload.sequence,
-          descriptorB: action.payload.descriptor
+          descriptorB: action.payload.descriptor,
+          accessionB: ''
         },
+        alignments: [],
+        alignmentStatus: 'idle',
+        alignmentError: null,
+        fetchStatusB: 'idle',
+        fetchErrorB: null,
         validation: {
           ...state.validation,
           sequenceB: structureValidationB
@@ -365,16 +377,22 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
       return {
         ...state,
         structureA: {
+          ...state.structureA,
           uniprotId: action.payload.uniprotId,
-          pdbId: action.payload.pdbId || null
+          pdbId: action.payload.pdbId !== undefined
+            ? action.payload.pdbId || null
+            : state.structureA?.pdbId || null
         }
       };
     case 'SET_STRUCTURE_B':
       return {
         ...state,
         structureB: {
+          ...state.structureB,
           uniprotId: action.payload.uniprotId,
-          pdbId: action.payload.pdbId || null
+          pdbId: action.payload.pdbId !== undefined
+            ? action.payload.pdbId || null
+            : state.structureB?.pdbId || null
         }
       };
     case 'CLEAR_STRUCTURE_A':

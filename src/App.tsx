@@ -36,6 +36,8 @@ function AppContent() {
       setRepresentativeDescriptor(sequences.descriptorA);
       setMemberDescriptor(sequences.descriptorB);
       setLocalAlignments(alignments);
+    } else if (alignments.length === 0) {
+      setLocalAlignments([]);
     }
   }, [state.alignmentStatus, sequences, alignments]);
 
@@ -88,10 +90,11 @@ function AppContent() {
             
             <li><strong>Interactive Alignment Visualization:</strong> Explore the optimal and suboptimal alignment space between two sequences</li>
             <li><strong>Safety Window Analysis:</strong> Identify regions where alignments are conserved / robust</li>
-            <li><strong>Multiple Input Methods:</strong> Upload FASTA files, search UniProt database, or paste sequences directly</li>
+            <li><strong>Multiple Input Methods:</strong> Load FASTA files, search UniProt database, or paste sequences directly</li>
             <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
             <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>    
             <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
+            <li><strong>Private & Local:</strong> All analyses are performed locally in your browser and remain private, no data is uploaded to any server. </li>
           </ul>
         </div>
 
@@ -112,7 +115,7 @@ function AppContent() {
                 <div className="step-number">1</div>
                 <div className="step-content">
                   <h3>Provide Sequences</h3>
-                  <p>Upload a FASTA file containing two sequences, search for proteins in UniProt, or paste sequences directly into the input fields below.</p>
+                  <p>Load a FASTA file containing two sequences, search for proteins in UniProt, or paste sequences directly into the input fields below.</p>
                 </div>
               </div>
               

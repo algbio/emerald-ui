@@ -43,7 +43,7 @@ export function useSafetyWindowsHighlighting(
   
   // Memoize the safety windows processing
   const processedWindows = useMemo(() => {
-    if (!uniprotId || safetyWindows.length === 0) {
+    if (safetyWindows.length === 0) {
       return [];
     }
     
@@ -53,7 +53,7 @@ export function useSafetyWindowsHighlighting(
     
     if (idChanged || windowsChanged) {
       // Only log on actual changes
-      console.log(`Applying safety window highlighting for ${uniprotId}:`, safetyWindows);
+      console.log(`Applying safety window highlighting for ${uniprotId || 'uploaded-structure'}:`, safetyWindows);
       
       // Update refs
       previousIdRef.current = uniprotId;
