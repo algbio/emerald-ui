@@ -81,13 +81,19 @@ const AlignmentCounter: React.FC<AlignmentCounterProps> = ({ className = '' }) =
   };
 
   return (
-    <div className={`alignment-counter ${getStatusClass()} ${className}`}>
-      <span className="counter-label">Since launch, EMERALD-UI has been used to perform</span>
+    <div className="alignment-counter-container">
+      <div className={`alignment-counter ${getStatusClass()} ${className}`}>
+        <span className="counter-label">Since launch, EMERALD-UI has been used to perform</span>
 
-      <span className={`counter-value ${isUpdated ? 'updated' : ''}`}>
-        {renderCount()}
+        <span className={`counter-value ${isUpdated ? 'updated' : ''}`}>
+          {renderCount()}
+        </span>
+        <span className="counter-label">analyses.</span>
+      </div>
+      <span className="counter-disclaimer">
+        This counter only tracks the number of times "Generate Suboptimal Alignment Graph" has been pressed. No other
+        information is stored.
       </span>
-      <span className="counter-label">analyses.</span>
     </div>
   );
 };

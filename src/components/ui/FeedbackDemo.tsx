@@ -83,7 +83,7 @@ const FeedbackDemo: React.FC = () => {
             onClick={() => notifyFileUploadError('example.fasta', 'Invalid format')}
             className="demo-button"
           >
-            Upload Error
+            Load Error
           </button>
           
           <button 

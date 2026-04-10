@@ -641,7 +641,7 @@
   }
 }
 
-/* File upload styles */
+/* File load styles */
 .uploader-input {
   margin-bottom: 1rem;
   display: flex;
@@ -673,7 +673,7 @@ input[type="file"] {
   display: none;
 }
 
-/* Ensure proper separation between upload and results sections */
+/* Ensure proper separation between load and results sections */
 .parsed-sequences {
   margin-top: 2rem;
   padding-top: 1rem;

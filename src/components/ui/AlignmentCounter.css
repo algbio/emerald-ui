@@ -1,3 +1,10 @@
+.alignment-counter-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .alignment-counter {
   display: flex;
   align-items: center;
@@ -32,6 +39,14 @@
 
 .counter-label {
   font-weight: 400;
+}
+
+.counter-disclaimer {
+  max-width: 44rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-align: center;
+  color: #4b5563;
 }
 
 /* Animation for count update */

@@ -15,7 +15,7 @@
   transition: background-color 0.2s ease;
 }
 
-/* Mobile-specific upload button styling */
+/* Mobile-specific load button styling */
 @media (max-width: 768px) {
   .upload-button {
     padding: 14px 16px;

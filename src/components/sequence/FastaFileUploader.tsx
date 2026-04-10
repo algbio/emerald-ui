@@ -72,7 +72,7 @@ export const FastaFileUploader: React.FC = () => {
       // Check file limit
       const totalFiles = uploadedFiles.length + files.length;
       if (totalFiles > 5) {
-        setError(`Cannot upload more than 5 files. You're trying to upload ${files.length} files but already have ${uploadedFiles.length} files.`);
+        setError(`Cannot load more than 5 files. You're trying to load ${files.length} files but already have ${uploadedFiles.length} files.`);
         e.target.value = '';
         return;
       }
@@ -178,7 +178,7 @@ export const FastaFileUploader: React.FC = () => {
   
   return (
     <div className="fasta-uploader">
-      <h2>Upload FASTA Files</h2>
+      <h2>Load FASTA Files</h2>
       
       {/* File upload section */}
       <div className="uploader-input">

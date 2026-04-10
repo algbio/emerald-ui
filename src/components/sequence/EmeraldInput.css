@@ -346,7 +346,7 @@ h3 {
   margin-bottom: 0;
 }
 
-/* Mobile and tablet layout for fetch/upload row */
+/* Mobile and tablet layout for fetch/load row */
 @media (max-width: 1024px) {
   .fetch-upload-row {
     flex-direction: column;

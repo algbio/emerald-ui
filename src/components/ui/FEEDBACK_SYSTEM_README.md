@@ -74,7 +74,7 @@ const MyComponent = () => {
 
 - `notifyButtonPress(buttonName)` - Quick notification for button presses
 - `notifyFileUploaded(fileName)` - Success notification for file uploads
-- `notifyFileUploadError(fileName, error?)` - Error notification for upload failures
+- `notifyFileUploadError(fileName, error?)` - Error notification for load failures
 - `notifyCopySuccess(content)` - Success notification for clipboard operations
 - `notifyDownloadStarted(fileName)` - Info notification for downloads
 - `notifySettingsSaved()` - Success notification for saved settings

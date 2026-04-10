@@ -599,7 +599,7 @@ pre {
   color: var(--color-primary-dark);
 }
 
-/* Improved file upload area */
+/* Improved file load area */
 .file-upload-section {
   background: var(--bg-secondary);
   border: 2px dashed var(--border-color);

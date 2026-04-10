@@ -150,7 +150,7 @@ This is exactly what **EMERALD** does - it reveals which parts of your alignment
 
 - **Intuitive Visualization:** Draws an interactive, easy-to-use graph from raw EMERALD output.
 - **Accessible Interface:** Runs in the browser, no terminal required.
-- **Flexible Input:** Paste sequences, upload files, or search directly from UniProt.
+- **Flexible Input:** Paste sequences, load files, or search directly from UniProt.
 - **Alignment Confidence:** Highlights common areas of multiple alignments.
 - **Parameter Exploration:** Instantly adjust scoring and see how alignments change.
 - **Safety Windows Visualization:** Highlights common regions in 3D structures of proteins.

@@ -181,8 +181,8 @@ export const VisualizationSettingsPanel: React.FC<VisualizationSettingsPanelProp
               />
               <label htmlFor="showSafetyWindows" className="panel-checkbox-label">
                 <div>
-                  <div>Show Confidence Regions</div>
-                  <div className="panel-description">Display green brackets marking high-confidence alignment areas</div>
+                  <div>Show Safety Windows</div>
+                  <div className="panel-description">Display green brackets marking the safety windows</div>
                 </div>
               </label>
             </div>

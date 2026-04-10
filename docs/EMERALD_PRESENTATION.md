@@ -147,7 +147,7 @@ EMERALD:      Safety windows = regions where many paths agree
 - Navigate between individual windows
 
 **📁 Flexible Input Methods**
-- Upload FASTA files
+- Load FASTA files
 - Search UniProt protein database
 - Direct sequence paste
 

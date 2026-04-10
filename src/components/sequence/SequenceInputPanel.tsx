@@ -6,9 +6,9 @@ const SequenceInputPanel: React.FC = () => (
   <div className="sequence-input-panel">
     <div className="input-methods-container">
       <div className="input-method">
-        <h4>Method 1: Upload FASTA File</h4>
+        <h4>Method 1: Load FASTA File</h4>
         <p className="method-description">
-          Upload a FASTA file containing two protein sequences. The file should contain exactly two sequences 
+          Load a FASTA file containing two protein sequences. The file should contain exactly two sequences 
           in standard FASTA format with descriptive headers. Available sequences will appear below after upload.
         </p>
         <FastaFileUploader />

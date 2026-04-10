@@ -78,7 +78,7 @@ const StructureFileUploader: React.FC<StructureFileUploaderProps> = ({
         disabled={disabled || isLoading}
         className="upload-button"
       >
-        {isLoading ? 'Parsing...' : `Upload ${label}`}
+        {isLoading ? 'Parsing...' : `Load ${label}`}
       </button>
 
       {error && (

@@ -32,7 +32,7 @@ export const useFeedbackNotifications = () => {
       feedback.showSuccess('File Uploaded', `Successfully uploaded ${fileName}`),
     
     notifyFileUploadError: (fileName: string, error?: string) => 
-      feedback.showError('Upload Failed', `Failed to upload ${fileName}${error ? `: ${error}` : ''}`),
+      feedback.showError('Load Failed', `Failed to load ${fileName}${error ? `: ${error}` : ''}`),
     
     notifyCopySuccess: (content: string) => 
       feedback.showSuccess('Copied!', `${content} copied to clipboard`),
