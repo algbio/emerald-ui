@@ -5,6 +5,7 @@ import { PluginCommands } from 'molstar/lib/mol-plugin/commands';
 import { renderReact18 } from 'molstar/lib/mol-plugin-ui/react18';
 import { Asset } from 'molstar/lib/mol-util/assets';
 import { StructureElement } from 'molstar/lib/mol-model/structure';
+import { MarkerAction, MarkerActions } from 'molstar/lib/mol-util/marker-action';
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSafetyWindowsHighlighting } from '../../hooks/useSafetyWindowsHighlighting';
 import { mapUniProtToKegg } from '../../utils/api/uniprotUtils';
@@ -94,6 +95,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         backgroundColor: Color(0xffffff), // white background
         selectColor: Color(0x00cc66), // green selection
         highlightColor: Color(0x00cc66), // green highlight (same as selection)
+        selectStrength: 0,
+        highlightStrength: 0,
       },
       // Customize highlight/selection colors - use same green for both
       marking: {
@@ -416,18 +419,48 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   const applySafetyWindowHighlighting = async (structure: any) => {
     const { safetyWindows: optimizedWindows, resetChangeFlag } = safetyWindowOptimization;
     
-    if (!pluginRef.current || !enableSafetyWindowHighlighting) {
+    if (!pluginRef.current) {
+      return;
+    }
+
+    if (optimizedWindows.length === 0) {
+      await clearSafetyWindowHighlights(true);
       return;
     }
 
     try {
       const plugin = pluginRef.current;
       const structureData = structure.cell.obj.data;
+
+      const set3DMarkingEnabled = (enabled: boolean) => {
+        if (!plugin.canvas3d?.setProps) return;
+        const currentMarking = plugin.canvas3d.props?.marking ?? {};
+        plugin.canvas3d.setProps({
+          marking: {
+            ...currentMarking,
+            enabled,
+          },
+        });
+      };
+
+      const setRepresentationMarkerActions = (disableMarkers: boolean) => {
+        const structures = plugin.managers?.structure?.hierarchy?.current?.structures ?? [];
+        for (const s of structures) {
+          for (const component of s.components ?? []) {
+            for (const reprRef of component.representations ?? []) {
+              const repr = reprRef?.cell?.obj?.data?.repr;
+              if (repr?.setState) {
+                repr.setState({
+                  markerActions: disableMarkers ? MarkerAction.None : MarkerActions.All,
+                });
+              }
+            }
+          }
+        }
+      };
       
-      // Clear any existing highlights using the correct API
-      if (plugin.managers?.interactivity?.lociHighlights?.clear) {
-        plugin.managers.interactivity.lociHighlights.clear();
-      }
+      // Always clear existing transient 3D highlights before reapplying.
+      await clearSafetyWindowHighlights(false);
       
       // Collect all residues from all safety windows into a single schema
       const allResidues: { label_seq_id: number }[] = [];
@@ -454,13 +487,21 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         console.warn(`No residues found for any safety windows`);
         return;
       }
-      
-      // Apply highlighting for all safety windows at once
-      if (plugin.managers?.interactivity?.lociHighlights?.highlightOnly) {
-        plugin.managers.interactivity.lociHighlights.highlightOnly({ loci: combinedLoci });
+
+      if (!enableSafetyWindowHighlighting) {
+        // Hide both 3D highlights and sequence selection when toggle is OFF.
+        await clearSafetyWindowHighlights(true);
+        set3DMarkingEnabled(false);
+        setRepresentationMarkerActions(true);
+        resetChangeFlag();
+        return;
       }
-      
-      // Also apply selection for better visibility
+
+      // Ensure 3D visuals are restored when the toggle is ON.
+      set3DMarkingEnabled(true);
+      setRepresentationMarkerActions(false);
+
+      // Apply persistent selection so edge highlights survive mouse movement.
       if (plugin.managers?.structure?.selection?.fromLoci) {
         plugin.managers.structure.selection.fromLoci('set', combinedLoci);
       }
@@ -480,19 +521,19 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   };
 
   // Function to clear existing safety window highlights
-  const clearSafetyWindowHighlights = async () => {
+  const clearSafetyWindowHighlights = async (clearSelection = false) => {
     if (!pluginRef.current) return;
     
     try {
       const plugin = pluginRef.current;
       
       // Clear hover highlights
-      if (plugin.managers?.interactivity?.lociHighlights?.clear) {
-        plugin.managers.interactivity.lociHighlights.clear();
+      if (plugin.managers?.interactivity?.lociHighlights?.clearHighlights) {
+        plugin.managers.interactivity.lociHighlights.clearHighlights();
       }
 
-      // Clear the persistent selection (set by applySafetyWindowHighlighting)
-      if (plugin.managers?.structure?.selection?.clear) {
+      // Only clear sequence selection when explicitly requested.
+      if (clearSelection && plugin.managers?.structure?.selection?.clear) {
         plugin.managers.structure.selection.clear();
       }
       
@@ -567,17 +608,16 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
   // Apply safety window highlighting when it changes (without reloading structure)
   useEffect(() => {
-    if (isPluginReady && pluginRef.current && enableSafetyWindowHighlighting && safetyWindows.length > 0) {
-      // console.log('Applying safety window highlighting due to changes:', safetyWindows);
-      // Find the current structure in the plugin state
+    if (isPluginReady && pluginRef.current) {
       const structures = pluginRef.current.managers.structure.hierarchy.current.structures;
       if (structures.length > 0) {
         const structure = structures[0];
-        applySafetyWindowHighlighting(structure);
+        if (safetyWindows.length > 0) {
+          applySafetyWindowHighlighting(structure);
+        } else {
+          clearSafetyWindowHighlights(true);
+        }
       }
-    } else if (isPluginReady && pluginRef.current && (!enableSafetyWindowHighlighting || safetyWindows.length === 0)) {
-      // Clear highlighting if disabled or no windows
-      clearSafetyWindowHighlights();
     }
   }, [safetyWindows, enableSafetyWindowHighlighting, isPluginReady]);
 

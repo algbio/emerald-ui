@@ -173,25 +173,24 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     }
   };
 
-  // Load example protein sequences
-  const loadExampleSequences = () => {
-    const exampleSequenceA = "MEEPQSDPSVEPPLSQETFSDLWKLLPENNVLSPLPSQAMDDLMLSPDDIEQWFTEDPGPDEAPRMPEAAPPVAPAPAAPTPAAPAPAPSWPLSSSVPSQKTYQGSYGFRLGFLHSGTAKSVTCTYSPALNKMFCQLAKTCPVQLWVDSTPPPGTRVRAMAIYKQSQHMTEVVRRCPHHERCSDSDGLAPPQHLIRVEGNLRVEYLDDRNTFRHSVVVPYEPPEVGSDCTTIHYNYMCNSSCMGGMNRRPILTIITLEDSSGNLLGRNSFEVRVCACPGRDRRTEEENLRKKGEPHHELPPGSTKRALPNNTSSSPQPKKKPLDGEYFTLQIRGRERFEMFRELNEALELKDAQAGKEPGGSRAHSSHLKSKKGQSTSRHKKLMFKTEGPDSD";
-    const exampleDescriptorA = "sp|P04637|P53_HUMAN Cellular tumor antigen p53 OS=Homo sapiens";
-    
-    const exampleSequenceB = "MKWVTFISLLFLFSSAYSRGVFRRDAHKSEVAHRFKDLGEENFKALVLIAFAQYLQQCPFEDHVKLVNEVTEFAKTCVADESAENCDKSLHTLFGDKLCTVATLRETYGEMADCCAKQEPERNECFLQHKDDNPNLPRLVRPEVDVMCTAFHDNEETFLKKYLYEIARRHPYFYAPELLFFAKRYKAAFTECCQAADKAACLLPKLDELRDEGKASSAKQRLKCASLQKFGERAFKAWAVARLSQRFPKAEFAEVSKLVTDLTKVHTECCHGDLLECADDRADLAKYICENQDSISSKLKECCEKPLLEKSHCIAEVENDEMPADLPSLAADFVESKDVCKNYAEAKDVFLGMFLYEYARRHPDYSVVLLLRLAKTYETTLEKCCAAADPHECYAKVFDEFKPLVEEPQNLIKQNCELFEQLGEYKFQNALLVRYTKKVPQVSTPTLVEVSRNLGKVGSKCCKHPEAKRMPCAEDYLSVVLNQLCVLHEKTPVSDRVTKCCTESLVNRRPCFSALEVDETYVPKEFNAETFTFHADICTLSEKERQIKKQTALVELVKHKPKATKEQLKAVMDDFAAFVEKCCKADDKETCFAEEGKKLVAASQAALGL";
-    const exampleDescriptorB = "sp|P02769|ALBU_HUMAN Serum albumin OS=Homo sapiens";
-    
-    dispatch({ 
-      type: 'LOAD_SEQUENCES', 
+  const loadLongExampleSequences = () => {
+    const exampleSequenceA = "MNGTEGPNFYVPFSNATGVVRSPFEYPQYYLAEPWQFSMLAAYMFLLIVLGFPINFLTLYVTVQHKKLRTPLNYILLNLAVADLFMVLGGFTSTLYTSLHGYFVFGPTGCNLEGFFATLGGEIALWSLVVLAIERYVVVCKPMSNFRFGENHAIMGVAFTWVMALACAAPPLAGWSRYIPEGLQCSCGIDYYTLKPEVNNESFVIYMFVVHFTIPMIIIFFCYGQLVFTVKEAAAQQQESATTQKAEKEVTRMVIIMVIAFLICWVPYASVAFYIFTHQGSNFGPIFMTIPAFFAKSAAIYNPVIYIMMNKQFRNCMLTTICCGKNPLGDDEASATVSKTETSQVAPA";
+    const exampleDescriptorA = "P08100 | Rhodopsin | Rhodopsin | Homo sapiens";
+
+    const exampleSequenceB = "MGQPGNGSAFLLAPNGSHAPDHDVTQERDEVWVVGMGIVMSLIVLAIVFGNVLVITAIAKFERLQTVTNYFITSLACADLVMGLAVVPFGAAHILMKMWTFGNFWCEFWTSIDVLCVTASIETLCVIAVDRYFAITSPFKYQSLLTKNKARVIILMVWIVSGLTSFLPIQMHWYRATHQEAINCYANETCCDFFTNQAYAIASSIVSFYVPLVIMVFVYSRVFQEAKRQLQKIDKSEGRFHVQNLSQVEQDGRTGHGLRRSSKFCLKEHKALKTLGIIMGTFTLCWLPFFIVNIVHVIQDNLIRKEVYILLNWIGYVNSGFNPLIYCRSPDFRIAFQELLCLRRSSLKAYGNGYSSNGNTGEQSGYHVEQEKENKLLCEDLPGTEDFVGHQGTVPSDNIDSQGRNCSTNDSLL";
+    const exampleDescriptorB = "P07550 | Beta-2 adrenergic receptor | Beta-2 adrenergic receptor | Homo sapiens";
+
+    dispatch({
+      type: 'LOAD_SEQUENCES',
       payload: {
         sequenceA: exampleSequenceA,
         descriptorA: exampleDescriptorA,
         sequenceB: exampleSequenceB,
         descriptorB: exampleDescriptorB
-      } 
+      }
     });
-    
-    notifySuccess('Example Data Loaded', 'Loaded Human p53 and Serum albumin protein sequences');
+
+    notifySuccess('Example Data Loaded', 'Loaded Rhodopsin and Beta-2 adrenergic receptor protein sequences');
   };
   const loadShortExampleSequences = () => {
     const exampleSequenceA = "MLQFLLGFTLGNVVGMYLAQNYDIPNLAKKLEEIKKDLDAKKKPPSA";
@@ -210,7 +209,27 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
       } 
     });
     
-    notifySuccess('Example Data Loaded', 'Loaded Human p53 and Serum albumin protein sequences');
+    notifySuccess('Example Data Loaded', 'Loaded short example protein sequences');
+  };
+
+  const loadMediumExampleSequences = () => {
+    const exampleSequenceA = "MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQGAMNKALELFRKDIAAKYKELGYQG";
+    const exampleDescriptorA = "P02185 | Myoglobin | Myoglobin | Physeter macrocephalus";
+
+    const exampleSequenceB = "MSLSAAEADLAGKSWAPVFANKDANGDAFLVALFEKFPDSANFFADFKGKSVADIKASPKLRDVSSRIFTRLNEFVNNAADAGKMSAMLSQFAKEHVGFGVGSAQFENVRSMFPGFVASVAAPPAGADAAWTKLFGLIIDALKAAGK";
+    const exampleDescriptorB = "P02210 | Globin | Globin | Aplysia limacina";
+
+    dispatch({
+      type: 'LOAD_SEQUENCES',
+      payload: {
+        sequenceA: exampleSequenceA,
+        descriptorA: exampleDescriptorA,
+        sequenceB: exampleSequenceB,
+        descriptorB: exampleDescriptorB
+      }
+    });
+
+    notifySuccess('Example Data Loaded', 'Loaded medium example protein sequences');
   };
 
   return (
@@ -221,14 +240,21 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           <button 
             onClick={loadShortExampleSequences}
             className="load-example-button-small"
-            title="Load short example protein sequences (Human p53 and Serum albumin)"
+            title="Load short example protein sequences"
           >
             <strong>Load Short Example</strong>
           </button>
           <button 
-            onClick={loadExampleSequences}
+            onClick={loadMediumExampleSequences}
             className="load-example-button-small"
-            title="Load example protein sequences (Human p53 and Serum albumin)"
+            title="Load medium example protein sequences (Myoglobin and Globin)"
+          >
+            <strong>Load Medium Example</strong>
+          </button>
+          <button 
+            onClick={loadLongExampleSequences}
+            className="load-example-button-small"
+            title="Load long example protein sequences (Rhodopsin and Beta-2 adrenergic receptor)"
           >
             <strong>Load Long Example</strong>
           </button>

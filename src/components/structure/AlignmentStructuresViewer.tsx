@@ -3,6 +3,7 @@ import { useSequence } from '../../context/SequenceContext';
 import { StructureViewer } from './StructureViewer';
 import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
 import './AlignmentStructuresViewer.css';
+import { StructureSuperpositionPanel } from './StructureSuperpositionPanel';
 
 export const AlignmentStructuresViewer: React.FC = () => {
   const { state } = useSequence();
@@ -48,6 +49,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
   }
 
   return (
+    <>
     <div className="alignment-structures-viewer">
       <h2 className="structures-title">Safety Windows Mapped on 3D structures</h2>
       <div className="structures-container">
@@ -64,7 +66,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
                     onClick={() => setUseSecondaryColorsA((prev) => !prev)}
                     title={useSecondaryColorsA ? 'Switch to uniform coloring' : 'Switch to secondary-structure coloring'}
                   >
-                    🎨 Colors
+                    Colors: {useSecondaryColorsA ? 'On' : 'Off'}
                   </button>
                   {safetyWindowsA.length > 0 && (
                     <button
@@ -73,7 +75,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
                       onClick={() => setHighlightSafetyWindowsA((prev) => !prev)}
                       title={highlightSafetyWindowsA ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
                     >
-                      🛡️ Safety Windows
+                      Safety Windows (merged): {highlightSafetyWindowsA ? 'On' : 'Off'}
                     </button>
                   )}
                 </div>
@@ -94,7 +96,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
               </div>
             </div>
             <StructureViewer
-              key={`structure-a-${structureA.uniprotId || structureA.pdbId || 'uploaded'}-${useSecondaryColorsA ? 'sec' : 'uni'}-${highlightSafetyWindowsA ? 'sw1' : 'sw0'}`}
+              key={`structure-a-${structureA.uniprotId || structureA.pdbId || 'uploaded'}-${useSecondaryColorsA ? 'sec' : 'uni'}`}
               uniprotId={structureA.uniprotId || undefined}
               pdbId={structureA.pdbId || undefined}
               pdbContent={structureA.fileContent || undefined}
@@ -126,7 +128,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
                     onClick={() => setUseSecondaryColorsB((prev) => !prev)}
                     title={useSecondaryColorsB ? 'Switch to uniform coloring' : 'Switch to secondary-structure coloring'}
                   >
-                    🎨 Colors
+                    Colors: {useSecondaryColorsB ? 'On' : 'Off'}
                   </button>
                   {safetyWindowsB.length > 0 && (
                     <button
@@ -135,7 +137,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
                       onClick={() => setHighlightSafetyWindowsB((prev) => !prev)}
                       title={highlightSafetyWindowsB ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
                     >
-                      🛡️ Safety Windows
+                      Safety Windows (merged): {highlightSafetyWindowsB ? 'On' : 'Off'}
                     </button>
                   )}
                 </div>
@@ -156,7 +158,7 @@ export const AlignmentStructuresViewer: React.FC = () => {
               </div>
             </div>
             <StructureViewer
-              key={`structure-b-${structureB.uniprotId || structureB.pdbId || 'uploaded'}-${useSecondaryColorsB ? 'sec' : 'uni'}-${highlightSafetyWindowsB ? 'sw1' : 'sw0'}`}
+              key={`structure-b-${structureB.uniprotId || structureB.pdbId || 'uploaded'}-${useSecondaryColorsB ? 'sec' : 'uni'}`}
               uniprotId={structureB.uniprotId || undefined}
               pdbId={structureB.pdbId || undefined}
               pdbContent={structureB.fileContent || undefined}
@@ -190,6 +192,10 @@ export const AlignmentStructuresViewer: React.FC = () => {
         </div>
       )}
     </div>
+
+      {/* TM-align Superposition Panel — only shown when both structures are available */}
+      <StructureSuperpositionPanel />
+    </>
   );
 };
 

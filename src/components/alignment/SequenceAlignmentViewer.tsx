@@ -497,7 +497,7 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
               className={`safety-window-toggle ${showSafetyWindowHighlight ? 'active' : ''}`}
               title={showSafetyWindowHighlight ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
             >
-              🛡️ Safety Windows {showSafetyWindowHighlight ? 'ON' : 'OFF'}
+              Safety Windows (merged): {showSafetyWindowHighlight ? 'On' : 'Off'}
             </button>
           )}
           <div className="export-buttons">
