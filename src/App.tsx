@@ -192,7 +192,7 @@ function AppContent() {
                 <li><strong>Customizable Parameters:</strong> Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)</li>
                 <li><strong>3D Structure Integration:</strong> Overlay protein structure information when available</li>
                 <li><strong>Export & Sharing:</strong> Generate publication-ready images and shareable URLs</li>
-                <li><strong>Private & Local:</strong> All analyses are performed locally in your browser and remain private, no data is uploaded to any server. </li>
+                <li><strong>Local & API Integration:</strong> All analyses are performed locally in your browser. Additionally, EMERALD-UI uses the UniProt APIs and AlphaFold/RCSB fetches to retrieve sequence and structure information.</li>
               </ul>
             </div>
           </div>
