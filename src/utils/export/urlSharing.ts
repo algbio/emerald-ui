@@ -1,6 +1,13 @@
 // Utility functions for URL-based sharing of alignments with UniProt sequences
 
 import { extractUniProtId } from '../api/uniprotUtils';
+import {
+  DEFAULT_ALPHA,
+  DEFAULT_DELTA,
+  DEFAULT_GAP_COST,
+  DEFAULT_START_GAP,
+  DEFAULT_COST_MATRIX_TYPE,
+} from '../sequence/defaultEmeraldParams';
 
 /**
  * Basic UniProt ID format validation
@@ -168,17 +175,21 @@ export const generateShareableUrl = (
     const params = new URLSearchParams();
     params.set('seqA', uniprotA.toUpperCase());
     params.set('seqB', uniprotB.toUpperCase());
-    params.set('alpha', alpha.toString());
-    params.set('delta', delta.toString());
+    if (alpha !== DEFAULT_ALPHA) {
+      params.set('alpha', alpha.toString());
+    }
+    if (delta !== DEFAULT_DELTA) {
+      params.set('delta', delta.toString());
+    }
     
     // Add optional parameters if provided and not default values
-    if (gapCost !== undefined && gapCost !== -1) {
+    if (gapCost !== undefined && gapCost !== DEFAULT_GAP_COST) {
       params.set('gapCost', gapCost.toString());
     }
-    if (startGap !== undefined && startGap !== -11) {
+    if (startGap !== undefined && startGap !== DEFAULT_START_GAP) {
       params.set('startGap', startGap.toString());
     }
-    if (costMatrixType !== undefined && costMatrixType !== 2) { // 2 is BLOSUM62 (default)
+    if (costMatrixType !== undefined && costMatrixType !== DEFAULT_COST_MATRIX_TYPE) { // 2 is BLOSUM62 (default)
       params.set('costMatrixType', costMatrixType.toString());
     }
     

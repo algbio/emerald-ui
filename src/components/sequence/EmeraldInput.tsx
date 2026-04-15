@@ -213,11 +213,11 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   };
 
   const loadMediumExampleSequences = () => {
-    const exampleSequenceA = "MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQGAMNKALELFRKDIAAKYKELGYQG";
-    const exampleDescriptorA = "P02185 | Myoglobin | Myoglobin | Physeter macrocephalus";
+    const exampleSequenceA = "MSAPGTLSNYYVDSFLVPEGDELAAPRYAPAPLGPPPRPAALAEHPELAPCSFQPKAPVFGPPWSPAHPAGASGVPAVYHPYAHHQAPVAPPDGRYMRSWLEPVPGSLSFPGLPTSRHYGIKPEPLAARRADCTTFDTHTLSLSDYACGSPPVDRDKQSHEGAFSESNGESEANGEKPQIDPNNPAANWLHARSTRKKRCPYTKHQTLELEKEFLFNMYLTRDRRYEVARLLNLTERQVKIWFQNRRMKMKKINKDRAKDE";
+    const exampleDescriptorA = "H0YXI1 | Homeobox protein | Homeobox protein | Taeniopygia guttata";
 
-    const exampleSequenceB = "MSLSAAEADLAGKSWAPVFANKDANGDAFLVALFEKFPDSANFFADFKGKSVADIKASPKLRDVSSRIFTRLNEFVNNAADAGKMSAMLSQFAKEHVGFGVGSAQFENVRSMFPGFVASVAAPPAGADAAWTKLFGLIIDALKAAGK";
-    const exampleDescriptorB = "P02210 | Globin | Globin | Aplysia limacina";
+    const exampleSequenceB = "MSLTNYYSMMGLQTDEPYGAHFIPGGLQGSSVGCAKPVRGSEEEDGTTGSHIPDFSHLSNKQTSLNGFSAWTNTANPTSSSSPQLHSTPSHFQTHHFLSHHHPYYGPQTQTHTEHVASSAASESRFVRSWEGAPAPEVNLSHVSEEFQACVPPQTGLPSPRQTFDDVKPENSPAPHDSPADSSFDRPTEVVLERLGAAEEPKKKPERKKDGEERKTQTNAENPSVSWIHAKSTRKKRCPYTKHQTLELEKEFLYNMYLTRDRRLEVAGLLNLTERQVKIWFQNRRMKMKKLMMRDRRSVNQ";
+    const exampleDescriptorB = "Q1KKR7 | Homeobox protein Hox-D9b | Homeobox protein Hox-D9b | Takifugu rubripes";
 
     dispatch({
       type: 'LOAD_SEQUENCES',
@@ -229,7 +229,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
       }
     });
 
-    notifySuccess('Example Data Loaded', 'Loaded medium example protein sequences');
+    notifySuccess('Example Data Loaded', 'Loaded medium example Homeobox protein sequences');
   };
 
   return (
@@ -247,7 +247,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           <button 
             onClick={loadMediumExampleSequences}
             className="load-example-button-small"
-            title="Load medium example protein sequences (Myoglobin and Globin)"
+            title="Load medium example protein sequences (Homeobox proteins)"
           >
             <strong>Load Medium Example</strong>
           </button>

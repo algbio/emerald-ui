@@ -12,6 +12,13 @@ import {
   normalizeProteinSequenceInput,
   hasInvalidProteinSequenceCharacters,
 } from '../utils/sequence/fastaInput';
+import {
+  DEFAULT_ALPHA,
+  DEFAULT_DELTA,
+  DEFAULT_GAP_COST,
+  DEFAULT_START_GAP,
+  DEFAULT_COST_MATRIX_TYPE,
+} from '../utils/sequence/defaultEmeraldParams';
 
 // Helper function to validate sequence for asterisks
 const validateSequenceAsterisks = (sequence: string) => {
@@ -97,11 +104,11 @@ const initialState: SequenceState = {
     accessionB: ''
   },
   params: {
-    alpha: 0.75,
-    delta: 8,
-    gapCost: -1,
-    startGap: -11,
-    costMatrixType: 2  // Default to BLOSUM62
+    alpha: DEFAULT_ALPHA,
+    delta: DEFAULT_DELTA,
+    gapCost: DEFAULT_GAP_COST,
+    startGap: DEFAULT_START_GAP,
+    costMatrixType: DEFAULT_COST_MATRIX_TYPE  // Default to BLOSUM62
   },
   alignments: [],
   alignmentStatus: 'idle',
@@ -341,10 +348,27 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         fetchErrorB: action.payload
       };
     case 'UPDATE_PARAMS':
-      return {
-        ...state,
-        params: { ...state.params, ...action.payload }
-      };
+      {
+        const nextParams = { ...state.params, ...action.payload };
+        const paramsChanged =
+          nextParams.alpha !== state.params.alpha ||
+          nextParams.delta !== state.params.delta ||
+          nextParams.gapCost !== state.params.gapCost ||
+          nextParams.startGap !== state.params.startGap ||
+          nextParams.costMatrixType !== state.params.costMatrixType;
+
+        return {
+          ...state,
+          params: nextParams,
+          ...(paramsChanged
+            ? {
+                alignments: [],
+                alignmentStatus: 'idle' as const,
+                alignmentError: null,
+              }
+            : {})
+        };
+      }
     case 'LOAD_SEQUENCES':
       return {
         ...state,

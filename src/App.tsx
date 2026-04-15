@@ -41,6 +41,12 @@ function AppContent() {
       setMemberDescriptor(sequences.descriptorB);
       setLocalAlignments(alignments);
     } else if (alignments.length === 0) {
+      // Clear all plot-driving local state when analysis results are invalidated
+      // (e.g. after parameter changes) so plots are fully hidden until re-run.
+      setRepresentative('');
+      setMember('');
+      setRepresentativeDescriptor('');
+      setMemberDescriptor('');
       setLocalAlignments([]);
     }
   }, [state.alignmentStatus, sequences, alignments]);
@@ -137,11 +143,11 @@ function AppContent() {
   };
 
   const loadMediumExampleSequences = () => {
-    const exampleSequenceA = "MVLSEGEWQLVLHVWAKVEADVAGHGQDILIRLFKSHPETLEKFDRFKHLKTEAEMKASEDLKKHGVTVLTALGAILKKKGHHEAELKPLAQSHATKHKIPIKYLEFISEAIIHVLHSRHPGDFGADAQGAMNKALELFRKDIAAKYKELGYQG";
-    const exampleDescriptorA = "P02185 | Myoglobin | Myoglobin | Physeter macrocephalus";
+    const exampleSequenceA = "MSAPGTLSNYYVDSFLVPEGDELAAPRYAPAPLGPPPRPAALAEHPELAPCSFQPKAPVFGPPWSPAHPAGASGVPAVYHPYAHHQAPVAPPDGRYMRSWLEPVPGSLSFPGLPTSRHYGIKPEPLAARRADCTTFDTHTLSLSDYACGSPPVDRDKQSHEGAFSESNGESEANGEKPQIDPNNPAANWLHARSTRKKRCPYTKHQTLELEKEFLFNMYLTRDRRYEVARLLNLTERQVKIWFQNRRMKMKKINKDRAKDE";
+    const exampleDescriptorA = "H0YXI1 | Homeobox protein | Homeobox protein | Taeniopygia guttata";
 
-    const exampleSequenceB = "MSLSAAEADLAGKSWAPVFANKDANGDAFLVALFEKFPDSANFFADFKGKSVADIKASPKLRDVSSRIFTRLNEFVNNAADAGKMSAMLSQFAKEHVGFGVGSAQFENVRSMFPGFVASVAAPPAGADAAWTKLFGLIIDALKAAGK";
-    const exampleDescriptorB = "P02210 | Globin | Globin | Aplysia limacina";
+    const exampleSequenceB = "MSLTNYYSMMGLQTDEPYGAHFIPGGLQGSSVGCAKPVRGSEEEDGTTGSHIPDFSHLSNKQTSLNGFSAWTNTANPTSSSSPQLHSTPSHFQTHHFLSHHHPYYGPQTQTHTEHVASSAASESRFVRSWEGAPAPEVNLSHVSEEFQACVPPQTGLPSPRQTFDDVKPENSPAPHDSPADSSFDRPTEVVLERLGAAEEPKKKPERKKDGEERKTQTNAENPSVSWIHAKSTRKKRCPYTKHQTLELEKEFLYNMYLTRDRRLEVAGLLNLTERQVKIWFQNRRMKMKKLMMRDRRSVNQ";
+    const exampleDescriptorB = "Q1KKR7 | Homeobox protein Hox-D9b | Homeobox protein Hox-D9b | Takifugu rubripes";
 
     dispatch({
       type: 'LOAD_SEQUENCES',
@@ -262,7 +268,7 @@ function AppContent() {
                 <button
                   onClick={loadMediumExampleSequences}
                   className="load-example-button-small"
-                  title="Load medium example protein sequences (Myoglobin and Globin)"
+                  title="Load medium example protein sequences (Homeobox proteins)"
                 >
                   <strong>Load Medium Example</strong>
                 </button>
