@@ -348,7 +348,23 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
     case 'LOAD_SEQUENCES':
       return {
         ...state,
-        sequences: { ...state.sequences, ...action.payload }
+        sequences: {
+          ...state.sequences,
+          ...action.payload,
+          // Clear old accessions unless explicitly provided in the payload
+          accessionA: action.payload.accessionA ?? '',
+          accessionB: action.payload.accessionB ?? ''
+        },
+        // Clear stale data so the new example starts fresh
+        structureA: null,
+        structureB: null,
+        alignments: [],
+        alignmentStatus: 'idle',
+        alignmentError: null,
+        fetchStatusA: 'idle',
+        fetchErrorA: null,
+        fetchStatusB: 'idle',
+        fetchErrorB: null
       };
     case 'RESET_SEQUENCES':
       return {
@@ -374,25 +390,27 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         alignmentError: action.payload
       };
     case 'SET_STRUCTURE_A':
+      // Create a fresh structure object — do NOT spread old state, as that would
+      // carry over fileContent/fileType/chainId from a previous file upload.
       return {
         ...state,
         structureA: {
-          ...state.structureA,
           uniprotId: action.payload.uniprotId,
-          pdbId: action.payload.pdbId !== undefined
-            ? action.payload.pdbId || null
-            : state.structureA?.pdbId || null
+          pdbId: action.payload.pdbId !== undefined ? action.payload.pdbId || null : null,
+          chainId: null,
+          fileContent: null,
+          fileType: null
         }
       };
     case 'SET_STRUCTURE_B':
       return {
         ...state,
         structureB: {
-          ...state.structureB,
           uniprotId: action.payload.uniprotId,
-          pdbId: action.payload.pdbId !== undefined
-            ? action.payload.pdbId || null
-            : state.structureB?.pdbId || null
+          pdbId: action.payload.pdbId !== undefined ? action.payload.pdbId || null : null,
+          chainId: null,
+          fileContent: null,
+          fileType: null
         }
       };
     case 'CLEAR_STRUCTURE_A':
@@ -532,37 +550,48 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
     
     const uniprotIdA = extractUniProtId(state.sequences.descriptorA);
     const uniprotIdB = extractUniProtId(state.sequences.descriptorB);
+    const hasUploadedStructureA = Boolean(state.structureA?.fileContent);
+    const hasUploadedStructureB = Boolean(state.structureB?.fileContent);
 
     console.log('Extracted UniProt IDs:', { uniprotIdA, uniprotIdB });
 
     // Update structure A if UniProt ID found and different from current
-    if (uniprotIdA && state.structureA?.uniprotId !== uniprotIdA) {
+    if (!hasUploadedStructureA && uniprotIdA && state.structureA?.uniprotId !== uniprotIdA) {
       console.log('Setting structure A:', uniprotIdA);
       dispatch({
         type: 'SET_STRUCTURE_A',
         payload: { uniprotId: uniprotIdA }
       });
-    } else if (!uniprotIdA && state.structureA?.uniprotId && !state.sequences.sequenceA) {
-      // Only clear structure A if no UniProt ID found AND no sequence loaded
-      // This prevents clearing explicitly set structures from UniProt search
+    } else if (!uniprotIdA && (state.structureA?.uniprotId || state.structureA?.fileContent) && !state.sequences.sequenceA) {
+      // Clear structure A if no UniProt ID found AND no sequence loaded —
+      // covers both UniProt-based and file-based structures.
       console.log('Clearing structure A (no sequence loaded)');
       dispatch({ type: 'CLEAR_STRUCTURE_A' });
     }
 
     // Update structure B if UniProt ID found and different from current
-    if (uniprotIdB && state.structureB?.uniprotId !== uniprotIdB) {
+    if (!hasUploadedStructureB && uniprotIdB && state.structureB?.uniprotId !== uniprotIdB) {
       console.log('Setting structure B:', uniprotIdB);
       dispatch({
         type: 'SET_STRUCTURE_B',
         payload: { uniprotId: uniprotIdB }
       });
-    } else if (!uniprotIdB && state.structureB?.uniprotId && !state.sequences.sequenceB) {
-      // Only clear structure B if no UniProt ID found AND no sequence loaded
-      // This prevents clearing explicitly set structures from UniProt search
+    } else if (!uniprotIdB && (state.structureB?.uniprotId || state.structureB?.fileContent) && !state.sequences.sequenceB) {
+      // Clear structure B if no UniProt ID found AND no sequence loaded —
+      // covers both UniProt-based and file-based structures.
       console.log('Clearing structure B (no sequence loaded)');
       dispatch({ type: 'CLEAR_STRUCTURE_B' });
     }
-  }, [state.sequences.descriptorA, state.sequences.descriptorB, state.structureA?.uniprotId, state.structureB?.uniprotId, state.sequences.sequenceA, state.sequences.sequenceB]);
+  }, [
+    state.sequences.descriptorA,
+    state.sequences.descriptorB,
+    state.structureA?.uniprotId,
+    state.structureB?.uniprotId,
+    state.structureA?.fileContent,
+    state.structureB?.fileContent,
+    state.sequences.sequenceA,
+    state.sequences.sequenceB
+  ]);
 
   // Process alignment result function from FileUploader.tsx
   const processAlignmentResult = (result: any, originalRefSeq?: string, originalMemSeq?: string): Alignment[] => {
