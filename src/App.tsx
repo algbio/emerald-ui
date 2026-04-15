@@ -8,6 +8,7 @@ import AlignmentGraphWithInfoPanel from './components/alignment/AlignmentGraphWi
 import SharedUrlNotification from './components/ui/SharedUrlNotification'
 import AlignmentCounter from './components/ui/AlignmentCounter'
 import type { Alignment, PointGridPlotRef } from './components/alignment/PointGridPlot'
+import { SafetyWindowExplanation } from './components/information'
 import { FaGithub, FaStar } from 'react-icons/fa'
 import { generateShareableUrl } from './utils/export/urlSharing'
 
@@ -191,7 +192,7 @@ function AppContent() {
           </div>
         )}
       </div>
-      
+  
       <div className="getting-started-section">
         <div className="getting-started-header" onClick={() => setIsGettingStartedExpanded(!isGettingStartedExpanded)}>
           <h2>Getting Started with EMERALD-UI</h2>
@@ -277,7 +278,9 @@ function AppContent() {
           </div>
         )}
       </div>
-      
+  
+      <SafetyWindowExplanation />
+          
       <div className="input-methods">
         <div className="input-method-tabs">
           <h1 className="input-title">Input Options</h1>

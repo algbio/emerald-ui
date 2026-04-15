@@ -211,6 +211,47 @@
   line-height: 1.6;
 }
 
+/* Safety window explanation section styling */
+.safety-window-explanation-section {
+  margin: 2rem 0;
+  padding: 0;
+  background-color: var(--bg-secondary);
+  border-radius: 12px;
+  border: 2px solid var(--accent-primary);
+  width: 100%;
+}
+
+.safety-window-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.safety-window-header:hover {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.safety-window-header h2 {
+  margin: 0;
+  color: var(--accent-primary);
+}
+
+.safety-window-content {
+  padding: 0 2rem 1.5rem 2rem;
+  color: var(--text-primary);
+  line-height: 1.8;
+  font-size: 1rem;
+}
+
+.safety-window-content p {
+  margin: 0;
+  text-align: justify;
+}
+
 /* Getting started section styling */
 .getting-started-section {
   margin: 2rem 0;
