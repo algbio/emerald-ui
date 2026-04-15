@@ -247,9 +247,30 @@
   font-size: 1rem;
 }
 
+.safety-window-content > *:first-child {
+  margin-top: 0;
+}
+
+.safety-window-content > *:last-child {
+  margin-bottom: 0;
+}
+
 .safety-window-content p {
-  margin: 0;
+  margin: 0 0 1rem;
   text-align: justify;
+}
+
+.safety-window-content h3 {
+  margin: 1.5rem 0 0.75rem;
+}
+
+.safety-window-content ul {
+  margin: 0 0 1rem 1.5rem;
+  padding: 0;
+}
+
+.safety-window-content li + li {
+  margin-top: 0.5rem;
 }
 
 /* Getting started section styling */

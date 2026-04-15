@@ -1,0 +1,85 @@
+<p>
+  Pairwise sequence alignment is often presented as if there were a single correct answer. That is a useful
+  simplification for closely related proteins, but it becomes misleading once sequences are more divergent. In those
+  harder cases, many alignments can score almost as well as the optimum, and small shifts in gap placement can change
+  which residues are paired without changing the total score very much.
+</p>
+
+<p>
+  This observation is not new. Earlier work by <a href="https://pubmed.ncbi.nlm.nih.gov/2217130/" target="_blank" rel="noreferrer">Vingron and Argos, 1990</a>,
+  <a href="https://doi.org/10.1093/bioinformatics/9.4.387" target="_blank" rel="noreferrer">Chao, Hardison, and Miller, 1993</a>,
+  <a href="https://pubmed.ncbi.nlm.nih.gov/8790476/" target="_blank" rel="noreferrer">Naor and Brutlag, 1994</a>,
+  <a href="https://pubmed.ncbi.nlm.nih.gov/11847078/" target="_blank" rel="noreferrer">Cline, Hughey, and Karplus, 2002</a>, all argued that alignment reliability should be studied locally, not just by
+  reporting one global optimum. Their shared message is that ambiguous parts of an alignment should be treated
+  differently from parts that remain stable across many nearly equivalent solutions.
+  EMERALD takes that idea and turns it into an explicit algorithmic object: <strong>safety window</strong>
+ (<a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noreferrer">Grigorjew et al., 2023</a>).
+</p>
+
+<p>
+  In EMERALD, alignment safety means asking which residue-to-residue correspondences survive when we look beyond the
+  single best alignment and inspect the whole family of suboptimal alignments close to it. The method starts from the
+  usual dynamic-programming alignment graph and expands it to include every edge that participates in an alignment
+  within a chosen score threshold, called <strong>&Delta; (delta)</strong>, from the optimum. It then searches that graph for
+  contiguous intervals that are shared by a chosen fraction, called <strong>&alpha; (alpha)</strong>, of all admissible
+  alignments. Those intervals are the alignment-safe windows shown in this EMERALD-UI interface
+  (<a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noreferrer">Grigorjew et al., 2023</a>).
+</p>
+
+<p>
+  Intuitively, a safety window is not merely a region with a good score. It is a region where the alignment is hard
+  to perturb. If many alternative alignments all keep matching the same local block of residues, that block is more
+  likely to reflect a real conserved relationship. If a region disappears or shifts as soon as we allow near-optimal
+  solutions, it is probably alignment-ambiguous and should be interpreted with more caution.
+</p>
+
+<p>
+  This matters because alignment uncertainty propagates downstream. Template-based structure modeling, homology
+  analysis, functional annotation, and comparative interpretation all depend on which residues are considered
+  corresponding. Work on alignment stability and near-optimal alignments has shown that suboptimal solutions often
+  contain biologically correct residue pairings that a strict optimum alone does not expose
+  (<a href="https://pubmed.ncbi.nlm.nih.gov/18041762/" target="_blank" rel="noreferrer">Chen and Kihara, 2008</a>;
+  <a href="https://pubmed.ncbi.nlm.nih.gov/20307279/" target="_blank" rel="noreferrer">Sierk et al., 2010</a>).
+  Modern structure-prediction systems such as AlphaFold (<a href="https://doi.org/10.1038/s41586-021-03819-2" target="_blank" rel="noreferrer">Jumper et al., 2021</a>) 
+  and RoseTTAFold (<a href="https://doi.org/10.1126/science.abj8754" target="_blank" rel="noreferrer">Baek et al., 2021</a>) 
+  do not remove the need for trustworthy sequence relationships; if anything, they make it more useful to know which parts of 
+  an alignment are robust enough to be treated as anchors for structural or functional reasoning.
+</p>
+
+<p>
+  The EMERALD paper makes a stronger point than just "there is uncertainty." On large-scale experiments over
+  biodiverse SwissProt protein clusters, alignment-safe intervals were especially informative for more divergent
+  sequence pairs. In those cases, the safe windows covered only a limited fraction of the full sequence length, but
+  they retained a substantial fraction of structurally stable residues. That is exactly the behavior one wants from a
+  confidence concept: conservative coverage, but high value in the positions it keeps
+  (<a href="https://doi.org/10.1186/s13059-023-03008-6" target="_blank" rel="noreferrer">Grigorjew et al., 2023</a>).
+</p>
+
+<h3>How to read the parameters</h3>
+<ul>
+  <li>
+    <strong>&Delta;</strong> controls how much suboptimality is allowed. A larger <strong>&Delta;</strong> includes more
+    alternative alignments, which usually makes the safety test harder to satisfy. As <strong>&Delta;</strong> grows,
+    safety windows often become shorter, fewer, or both.
+  </li>
+  <li>
+    <strong>&alpha;</strong> controls how strict the consensus must be. When <strong>&alpha;</strong> = 1, a window must
+    be shared by all admissible alignments. Lower <strong>&alpha;</strong> values are more permissive and can recover
+    longer or more numerous windows, but with weaker robustness guarantees.
+  </li>
+</ul>
+
+<p>
+  A useful way to think about these parameters is that <strong>&Delta;</strong> sets how much uncertainty you are willing
+  to inspect, while <strong>&alpha;</strong> sets how much agreement you demand before calling something reliable.
+</p>
+
+<h3>Why the word "safe"?</h3>
+<p>
+  The term comes from a broader algorithmic idea developed in other bioinformatics problems. A partial solution is called <strong>safe</strong>
+  when it appears in every valid solution, or in a precisely defined high-confidence fraction of them. In genome
+  assembly, for example, safe contigs are sequence segments guaranteed to occur in every reconstruction consistent with
+  the data (<a href="https://doi.org/10.1089/cmb.2016.0141" target="_blank" rel="noreferrer">Tomescu and Medvedev, 2017</a>).
+  EMERALD applies the same philosophy to alignment: rather than forcing a single possibly fragile answer, it identifies
+  the parts of the answer space that remain stable under ambiguity.
+</p>
