@@ -19,6 +19,99 @@ const threeToOneLetter: { [key: string]: string } = {
   'SEC': 'U', 'PYL': 'O'
 };
 
+/**
+ * Extract only the specified chain from PDB content
+ */
+const extractPDBChain = (content: string, targetChainId: string): string => {
+  const lines = content.split('\n');
+  const result: string[] = [];
+  let hasAtoms = false;
+
+  for (const line of lines) {
+    // Keep header/remark lines
+    if (line.startsWith('HEADER') || line.startsWith('REMARK') || line.startsWith('TITLE') || line.startsWith('SEQRES')) {
+      result.push(line);
+      continue;
+    }
+
+    // Filter ATOM and HETATM records by chain
+    if ((line.startsWith('ATOM') || line.startsWith('HETATM')) && line.length > 21) {
+      const chainId = line.substring(21, 22).trim();
+      if (chainId === targetChainId) {
+        result.push(line);
+        hasAtoms = true;
+      }
+      continue;
+    }
+
+    // Copy other structural records
+    if (line.startsWith('TER') || line.startsWith('END') || line.startsWith('CONECT')) {
+      result.push(line);
+      continue;
+    }
+  }
+
+  return result.join('\n');
+};
+
+/**
+ * Extract only the specified chain from CIF content
+ */
+const extractCIFChain = (content: string, targetChainId: string): string => {
+  const lines = content.split('\n');
+  const result: string[] = [];
+  let inAtomSite = false;
+  let headerLines: string[] = [];
+  let atomLines: string[] = [];
+  let columnIndices: { [key: string]: number } = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Collect header lines and track column indices
+    if (!inAtomSite && (line.startsWith('data_') || line.startsWith('_') || line.startsWith('#'))) {
+      headerLines.push(lines[i]);
+      
+      if (line.startsWith('_atom_site.')) {
+        inAtomSite = true;
+        const columnName = line.split('.')[1];
+        if (columnName) {
+          columnIndices[columnName] = Object.keys(columnIndices).length;
+        }
+      }
+      continue;
+    }
+
+    // Filter atom records by chain ID
+    if (inAtomSite && line.startsWith('ATOM')) {
+      const fields = line.split(/\s+/);
+      
+      // Try to find chain ID in auth_asym_id or label_asym_id
+      const authAsymIdx = columnIndices['auth_asym_id'];
+      const labelAsymIdx = columnIndices['label_asym_id'];
+      
+      let chainId = '';
+      if (authAsymIdx !== undefined && fields[authAsymIdx]) {
+        chainId = fields[authAsymIdx];
+      } else if (labelAsymIdx !== undefined && fields[labelAsymIdx]) {
+        chainId = fields[labelAsymIdx];
+      }
+      
+      if (chainId === targetChainId) {
+        atomLines.push(lines[i]);
+      }
+      continue;
+    }
+
+    // End of atom site section
+    if (inAtomSite && line.startsWith('#')) {
+      inAtomSite = false;
+    }
+  }
+
+  return [...headerLines, ...atomLines].join('\n');
+};
+
 // Parse PDB file format
 export const parsePDBFile = (content: string, fileName: string): StructureData[] => {
   const lines = content.split('\n');
@@ -78,13 +171,16 @@ export const parsePDBFile = (content: string, fileName: string): StructureData[]
       // Build descriptor
       const descriptor = `pdb|${pdbId || 'UNKNOWN'}|${chainId} Chain ${chainId} from ${fileName}`;
 
+      // Extract only this chain's content from the full file
+      const chainContent = extractPDBChain(content, chainId);
+
       results.push({
         sequence,
         descriptor,
         pdbId: pdbId,
         chainId,
         fileName,
-        fileContent: content,
+        fileContent: chainContent,
         fileType: 'pdb'
       });
     }
@@ -180,13 +276,16 @@ export const parseCIFFile = (content: string, fileName: string): StructureData[]
       // Build descriptor
       const descriptor = `pdb|${pdbId || 'UNKNOWN'}|${chainId} Chain ${chainId} from ${fileName}`;
 
+      // Extract only this chain's content from the full file
+      const chainContent = extractCIFChain(content, chainId);
+
       results.push({
         sequence,
         descriptor,
         pdbId: pdbId,
         chainId,
         fileName,
-        fileContent: content,
+        fileContent: chainContent,
         fileType: 'cif'
       });
     }

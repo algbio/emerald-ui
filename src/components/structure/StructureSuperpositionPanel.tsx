@@ -107,6 +107,7 @@ export const StructureSuperpositionPanel: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [tmStats, setTmStats] = useState<TMAlignStats | null>(null);
+  const [useSecondaryColors, setUseSecondaryColors] = useState(true);
   const [showSafetyWindows, setShowSafetyWindows] = useState(true);
   const [hasSuperpositionLoaded, setHasSuperpositionLoaded] = useState(false);
 
@@ -129,7 +130,7 @@ export const StructureSuperpositionPanel: React.FC = () => {
   ) => {
     const items: Array<{ label_seq_id: number }> = [];
     for (const window of windows) {
-      for (let residueId = window.startPosition; residueId < window.endPosition; residueId++) {
+      for (let residueId = window.startPosition; residueId <= window.endPosition; residueId++) {
         items.push({ label_seq_id: residueId });
       }
     }
@@ -306,11 +307,19 @@ export const StructureSuperpositionPanel: React.FC = () => {
           const trajectory = await plugin.builders.structure.parseTrajectory(data, format);
           const model = await plugin.builders.structure.createModel(trajectory);
           const structure = await plugin.builders.structure.createStructure(model);
-          await plugin.builders.structure.representation.addRepresentation(structure, {
-            type: 'cartoon',
-            color: 'uniform' as any,
-            colorParams: { value: color },
-          });
+
+          const representationParams = useSecondaryColors
+            ? {
+                type: 'cartoon' as const,
+                color: 'uniform' as const,
+                colorParams: { value: color },
+              }
+            : {
+                type: 'cartoon' as const,
+                color: 'uniform' as const,
+              };
+
+          await plugin.builders.structure.representation.addRepresentation(structure, representationParams);
           return structure;
         };
 
@@ -396,6 +405,7 @@ export const StructureSuperpositionPanel: React.FC = () => {
     structureB?.uniprotId,
     structureB?.pdbId,
     structureB?.fileContent,
+    useSecondaryColors,
   ]);
 
   useEffect(() => {
@@ -415,14 +425,24 @@ export const StructureSuperpositionPanel: React.FC = () => {
     <div className="structure-superposition-panel">
       <div className="superposition-header">
         <h2 className="structures-title">TM-align Structure Superposition</h2>
-        <button
-          type="button"
-          className={`structure-panel-toggle ${showSafetyWindows ? 'active' : ''}`}
-          onClick={() => setShowSafetyWindows(prev => !prev)}
-          title={showSafetyWindows ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
-        >
-          Safety Windows (merged): {showSafetyWindows ? 'On' : 'Off'}
-        </button>
+        <div className="superposition-controls">
+          <button
+            type="button"
+            className={`structure-panel-toggle ${useSecondaryColors ? 'active' : ''}`}
+            onClick={() => setUseSecondaryColors(prev => !prev)}
+            title={useSecondaryColors ? 'Switch to basic gray coloring' : 'Switch to two-protein coloring'}
+          >
+            Colors: {useSecondaryColors ? 'On' : 'Off'}
+          </button>
+          <button
+            type="button"
+            className={`structure-panel-toggle ${showSafetyWindows ? 'active' : ''}`}
+            onClick={() => setShowSafetyWindows(prev => !prev)}
+            title={showSafetyWindows ? 'Hide safety window highlighting' : 'Show safety window highlighting'}
+          >
+            Safety Windows (merged): {showSafetyWindows ? 'On' : 'Off'}
+          </button>
+        </div>
       </div>
       <p className="structures-subtitle">
         Structural superposition computed using TM-align.{' '}

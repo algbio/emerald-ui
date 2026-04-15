@@ -469,7 +469,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         const window = optimizedWindows[i];
         
         // Add all residues from this window to the combined list
-        for (let residueId = window.startPosition; residueId < window.endPosition; residueId++) {
+        for (let residueId = window.startPosition; residueId <= window.endPosition; residueId++) {
           allResidues.push({ label_seq_id: residueId });
         }
       }

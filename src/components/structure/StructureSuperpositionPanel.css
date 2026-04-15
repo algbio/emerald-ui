@@ -15,6 +15,12 @@
   gap: 1rem;
 }
 
+.superposition-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .superposition-viewer {
   width: 100%;
   aspect-ratio: 16 / 9;
