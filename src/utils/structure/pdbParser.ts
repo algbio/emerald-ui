@@ -25,7 +25,6 @@ const threeToOneLetter: { [key: string]: string } = {
 const extractPDBChain = (content: string, targetChainId: string): string => {
   const lines = content.split('\n');
   const result: string[] = [];
-  let hasAtoms = false;
 
   for (const line of lines) {
     // Keep header/remark lines
@@ -39,7 +38,6 @@ const extractPDBChain = (content: string, targetChainId: string): string => {
       const chainId = line.substring(21, 22).trim();
       if (chainId === targetChainId) {
         result.push(line);
-        hasAtoms = true;
       }
       continue;
     }
@@ -59,7 +57,6 @@ const extractPDBChain = (content: string, targetChainId: string): string => {
  */
 const extractCIFChain = (content: string, targetChainId: string): string => {
   const lines = content.split('\n');
-  const result: string[] = [];
   let inAtomSite = false;
   let headerLines: string[] = [];
   let atomLines: string[] = [];
