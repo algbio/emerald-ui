@@ -45,6 +45,14 @@ export interface PointGridPlotRef {
       showAlignmentDots: boolean;
       showOptimalPath: boolean;
     };
+    exportState: {
+      selectedSafetyWindow: Alignment | null;
+      hoveredSafetyWindow: Alignment | null;
+      highlightedGap: {type: 'representative' | 'member'; start: number; end: number} | null;
+      selectedPath: SelectedPath | null;
+      selectedIndividualEdges: import('../../types/PointGrid').Edge[];
+      enablePathSelection: boolean;
+    };
   };
   /**
    * Render the graph to a high-resolution offscreen canvas
@@ -231,6 +239,16 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showAlignmentEdges,
         showAlignmentDots,
         showOptimalPath
+      },
+      exportState: {
+        selectedSafetyWindow: selectedWindow || null,
+        hoveredSafetyWindow: hoveredSafetyWindowId
+          ? safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) || null
+          : null,
+        highlightedGap: highlightedGap || null,
+        selectedPath: enablePathSelection ? (selectedPath || null) : null,
+        selectedIndividualEdges: enablePathSelection ? selectedIndividualEdges : [],
+        enablePathSelection
       }
     }),
     renderHighResCanvas: (scale: number) => {
@@ -377,7 +395,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       
       return offscreenCanvas;
     }
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath, width, height, marginTop, marginRight, marginBottom, marginLeft, safetyWindows, selectedWindow, representativeDescriptor, memberDescriptor, enablePathSelection, selectedPath, selectedIndividualEdges]);
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath, width, height, marginTop, marginRight, marginBottom, marginLeft, safetyWindows, selectedWindow, hoveredSafetyWindowId, highlightedGap, representativeDescriptor, memberDescriptor, enablePathSelection, selectedPath, selectedIndividualEdges]);
     
   const hoveredWindow = hoveredSafetyWindowId ? 
     safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) : 

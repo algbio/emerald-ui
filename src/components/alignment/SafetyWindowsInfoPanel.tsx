@@ -414,6 +414,10 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (safetyWindowsInfo.length === 0) return;
+
+      // Don't intercept arrow keys when the user is focused on an editable element
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
       
       if (event.key === 'ArrowLeft') {
         onNavigateToPrevious?.();

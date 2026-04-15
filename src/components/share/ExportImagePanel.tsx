@@ -136,7 +136,8 @@ const ExportImagePanel: React.FC<ExportImagePanelProps> = ({
           exportData.visualizationSettings,
           filename,
           exportData.representativeDescriptor || descriptorA,
-          exportData.memberDescriptor || descriptorB
+          exportData.memberDescriptor || descriptorB,
+          exportData.exportState
         );
         
         const successMsg = `Graph exported as ${filename}`;
