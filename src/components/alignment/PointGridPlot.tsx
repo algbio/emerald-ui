@@ -847,31 +847,38 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     setIsMinimapDragging(false);
   };
 
-  // Effects - Split rendering effects to prevent unnecessary rerenders
-  
-  // This effect handles static/structural changes that require full redraws
-  useEffect(() => {
-    drawCanvas();
-  }, [transform, alignments, fontSize, showMinimap, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, representativeDescriptor, memberDescriptor, width, height, marginTop, marginRight, marginBottom, marginLeft]);
-  
-  // This effect handles hover state changes
-  useEffect(() => {
-    if (hoveredCell) {
-      requestAnimationFrame(drawCanvas);
-    }
-  }, [hoveredCell]);
-  
-  // This effect handles gap highlight changes
-  useEffect(() => {
-    if (highlightedGap) {
-      requestAnimationFrame(drawCanvas);
-    }
-  }, [highlightedGap]);
-  
-  // Redraw immediately when external safety-window selection/hover changes.
+  // Consolidated redraw effect for plot visuals.
   useEffect(() => {
     requestAnimationFrame(drawCanvas);
-  }, [selectedWindow, hoveredWindow]);
+  }, [
+    transform,
+    alignments,
+    fontSize,
+    showMinimap,
+    showAxes,
+    showSequenceCharacters,
+    showSequenceIndices,
+    showGrid,
+    showSafetyWindows,
+    showAlignmentEdges,
+    showAlignmentDots,
+    showOptimalPath,
+    representativeDescriptor,
+    memberDescriptor,
+    width,
+    height,
+    marginTop,
+    marginRight,
+    marginBottom,
+    marginLeft,
+    hoveredCell,
+    hoveredEdge,
+    highlightedGap,
+    selectedWindow,
+    hoveredWindow,
+    selectedPath,
+    selectedIndividualEdges
+  ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -417,9 +417,11 @@ export function buildPathThroughSelectedEdges(
     pathPoints.push(currentPoint);
     console.log('Added target edge, current point now:', currentPoint);
   }  
-  // Complete the path to the bottom-right corner if we know the dimensions
+  // Complete the path to the bottom-right corner if we know the dimensions.
+  // Graph coordinates represent boundary positions [0..sequenceLength],
+  // so the terminal point is (graphWidth, graphHeight), not (length - 1).
   if (pathIsValid && graphWidth && graphHeight) {
-    const finalTarget = { x: graphWidth - 1, y: graphHeight - 1 };
+    const finalTarget = { x: graphWidth, y: graphHeight };
     console.log(`Completing path to final target: (${finalTarget.x}, ${finalTarget.y})`);
     
     if (currentPoint.x !== finalTarget.x || currentPoint.y !== finalTarget.y) {
@@ -514,9 +516,10 @@ function buildCompletePathThroughEdge(
   currentPoint = { x: selectedEdge.to[0], y: selectedEdge.to[1] };
   pathPoints.push(currentPoint);
   
-  // Complete path to bottom-right if dimensions are known
+  // Complete path to bottom-right if dimensions are known.
+  // Graph coordinates include the terminal boundary node at sequence length.
   if (graphWidth && graphHeight) {
-    const finalTarget = { x: graphWidth - 1, y: graphHeight - 1 };
+    const finalTarget = { x: graphWidth, y: graphHeight };
     if (currentPoint.x !== finalTarget.x || currentPoint.y !== finalTarget.y) {
       const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validEdges);
       if (finalPath.length > 0) {
