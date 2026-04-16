@@ -168,6 +168,11 @@ function AppContent() {
       {/* Alignment Counter */}
       
       <h1 className="app-title">
+        <img
+          src={`${import.meta.env.BASE_URL}emerald-icon.png`}
+          alt="EMERALD icon"
+          className="app-title-icon"
+        />
         EMERALD-UI
       </h1>
       <div className="getting-started-section">
