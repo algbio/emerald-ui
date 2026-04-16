@@ -296,12 +296,14 @@ export function drawAxisLabels(
   // Draw X axis descriptor (centered above axis)
   if (representativeDescriptor) {
     ctx.save();
-    ctx.font = `bold ${Math.max(13, fontSize * 1.1)}px sans-serif`;
+    const descriptorFontSize = Math.max(13, fontSize * 1.1);
+    ctx.font = `bold ${descriptorFontSize}px sans-serif`;
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const xAxisCenter = marginLeft + (ctx.canvas.width - marginLeft) / 2;
-    ctx.fillText(representativeDescriptor, xAxisCenter, 8);
+    const descriptorTopOffset = Math.max(8, Math.round(descriptorFontSize * 1.1));
+    ctx.fillText(representativeDescriptor, xAxisCenter, descriptorTopOffset);
     ctx.restore();
   }
   

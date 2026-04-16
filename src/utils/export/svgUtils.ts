@@ -1,592 +1,352 @@
 /**
- * Utility functions for exporting canvas content as SVG
+ * Utility functions for exporting canvas content as true vector SVG.
  */
 
-import * as d3 from "d3";
-import type { ScaleLinear } from 'd3-scale';
-import type { Alignment } from '../../types/PointGrid';
+import * as d3 from 'd3';
+import C2S from 'canvas2svg';
+import { jsPDF } from 'jspdf';
+import { svg2pdf } from 'svg2pdf.js';
+import type { Alignment, Edge } from '../../types/PointGrid';
+import type { SelectedPath } from '../canvas/pathSelection';
+import type { SafetyWindowBounds } from '../canvas';
+import {
+  drawSafetyWindows,
+  drawAxes,
+  drawAxisLabels,
+  drawGridLines,
+  drawHoverHighlight,
+  drawSafetyWindowHighlight,
+  drawGapHighlightOptimized,
+  findSafetyWindowsForCell,
+  drawMinimap
+} from '../canvas';
+import { renderGraph } from '../canvas/graphRenderer';
 
-// Interface for SVG export context - similar to canvas drawing functions
-interface SVGContext {
-  svg: d3.Selection<any, any, null, undefined>;
+type TickX = { value: number; label: string; xOffset?: number };
+type TickY = { value: number; label: string; yOffset?: number };
+
+interface VisualizationSettings {
+  showAxes: boolean;
+  showSequenceCharacters: boolean;
+  showSequenceIndices: boolean;
+  showGrid: boolean;
+  showMinimap: boolean;
+  showSafetyWindows: boolean;
+  showAlignmentEdges: boolean;
+  showAlignmentDots: boolean;
+  showOptimalPath: boolean;
+}
+
+interface ExportState {
+  selectedSafetyWindow: Alignment | null;
+  hoveredSafetyWindow: Alignment | null;
+  highlightedGap: { type: 'representative' | 'member'; start: number; end: number } | null;
+  selectedPath: SelectedPath | null;
+  hoveredCell: { x: number; y: number } | null;
+  hoveredEdge: Edge | null;
+  selectedIndividualEdges: Edge[];
+  enablePathSelection: boolean;
+}
+
+interface ExportLayout {
   width: number;
   height: number;
   marginTop: number;
   marginRight: number;
   marginBottom: number;
   marginLeft: number;
-  x: ScaleLinear<number, number>;
-  y: ScaleLinear<number, number>;
-  fontSize: number;
+  minimapSize: number;
+  minimapPadding: number;
 }
 
-// Interface for safety window bounds
-// interface SafetyWindowBounds {
-//   xStart?: number;
-//   xEnd?: number;
-//   yStart?: number;
-//   yEnd?: number;
-// }
+type SVGCanvasContext = CanvasRenderingContext2D & {
+  getSerializedSvg: (fixNamedEntities?: boolean) => string;
+  getSvg?: () => SVGElement;
+  canvas: any;
+};
 
-/**
- * Draw SVG axes (equivalent to canvas drawAxes)
- */
-function drawSVGAxes(ctx: SVGContext) {
-  const { svg, marginTop, marginLeft, width, height } = ctx;
-  
-  // X axis line
-  svg.append('line')
-    .attr('x1', marginLeft)
-    .attr('y1', marginTop)
-    .attr('x2', width)
-    .attr('y2', marginTop)
-    .attr('stroke', 'black')
-    .attr('stroke-width', 1);
-    
-  // Y axis line  
-  svg.append('line')
-    .attr('x1', marginLeft)
-    .attr('y1', marginTop)
-    .attr('x2', marginLeft)
-    .attr('y2', height)
-    .attr('stroke', 'black')
-    .attr('stroke-width', 1);
-}
+const defaultVisualizationSettings: VisualizationSettings = {
+  showAxes: true,
+  showSequenceCharacters: true,
+  showSequenceIndices: true,
+  showGrid: true,
+  showMinimap: true,
+  showSafetyWindows: true,
+  showAlignmentEdges: true,
+  showAlignmentDots: true,
+  showOptimalPath: true
+};
 
-/**
- * Draw SVG grid lines (equivalent to canvas drawGridLines)
- */
-function drawSVGGrid(
-  ctx: SVGContext,
-  xTicks: Array<{value: number; label: string}>,
-  yTicks: Array<{value: number; label: string}>
-) {
-  const { svg, x, y, marginTop, marginLeft, width, height, marginRight, marginBottom } = ctx;
-  
-  const gridGroup = svg.append('g').attr('class', 'grid');
-  
-  // Vertical grid lines (X ticks)
-  xTicks.forEach(tick => {
-    const xPos = x(tick.value + 0.5);
-    if (xPos >= marginLeft && xPos <= width - marginRight) {
-      gridGroup.append('line')
-        .attr('x1', xPos)
-        .attr('y1', marginTop)
-        .attr('x2', xPos)
-        .attr('y2', height - marginBottom)
-        .attr('stroke', '#f0f0f0')
-        .attr('stroke-width', 0.5);
-    }
-  });
-  
-  // Horizontal grid lines (Y ticks)
-  yTicks.forEach(tick => {
-    const yPos = y(tick.value + 0.5);
-    if (yPos >= marginTop && yPos <= height - marginBottom) {
-      gridGroup.append('line')
-        .attr('x1', marginLeft)
-        .attr('y1', yPos)
-        .attr('x2', width - marginRight)
-        .attr('y2', yPos)
-        .attr('stroke', '#f0f0f0')
-        .attr('stroke-width', 0.5);
-    }
-  });
-}
+const defaultExportState: ExportState = {
+  selectedSafetyWindow: null,
+  hoveredSafetyWindow: null,
+  highlightedGap: null,
+  selectedPath: null,
+  hoveredCell: null,
+  hoveredEdge: null,
+  selectedIndividualEdges: [],
+  enablePathSelection: false
+};
 
-/**
- * Draw SVG axis labels (equivalent to canvas drawAxisLabels)
- */
-function drawSVGAxisLabels(
-  ctx: SVGContext,
-  xTicks: Array<{value: number; label: string}>,
-  yTicks: Array<{value: number; label: string}>,
-  isInSafetyWindow: (position: number, axis: 'x' | 'y') => boolean,
-  showSequenceCharacters: boolean = true,
-  showSequenceIndices: boolean = true,
-  representativeDescriptor?: string,
-  memberDescriptor?: string
-) {
-  const { svg, x, y, marginTop, marginLeft, fontSize, width, height } = ctx;
-  
-  const labelsGroup = svg.append('g').attr('class', 'axis-labels');
-  
-  // Draw axis descriptors (titles) if provided
-  if (representativeDescriptor) {
-    const xAxisCenter = marginLeft + (width - marginLeft) / 2;
-    labelsGroup.append('text')
-      .attr('x', xAxisCenter)
-      .attr('y', 18)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'top')
-      .attr('font-family', 'sans-serif')
-      .attr('font-size', `${Math.max(13, fontSize * 1.1)}px`)
-      .attr('font-weight', 'bold')
-      .attr('fill', '#333')
-      .text(representativeDescriptor);
-  }
-  
-  if (memberDescriptor) {
-    const yAxisCenter = marginTop + (height - marginTop) / 2;
-    labelsGroup.append('text')
-      .attr('x', 18)
-      .attr('y', yAxisCenter)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'top')
-      .attr('font-family', 'sans-serif')
-      .attr('font-size', `${Math.max(13, fontSize * 1.1)}px`)
-      .attr('font-weight', 'bold')
-      .attr('fill', '#333')
-      .attr('transform', `rotate(-90, 18, ${yAxisCenter})`)
-      .text(memberDescriptor);
-  }
-  
-  // Draw X axis labels (sequence characters) if enabled
-  if (showSequenceCharacters) {
-    const xLabelsGroup = labelsGroup.append('g').attr('class', 'x-labels');
-    xTicks.forEach(tick => {
-      if (tick.label && tick.value >= 0) {
-        const xPos = x(tick.value + 0.5);
-        if (xPos >= marginLeft && xPos <= width) {
-          const isInSafety = isInSafetyWindow(tick.value, 'x');
-          xLabelsGroup.append('text')
-            .attr('x', xPos)
-            .attr('y', marginTop - 10)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'bottom')
-            .attr('font-family', 'monospace')
-            .attr('font-size', `${Math.max(10, fontSize * 0.9)}px`)
-            .attr('font-weight', isInSafety ? 'bold' : 'normal')
-            .attr('fill', isInSafety ? 'green' : '#333')
-            .text(tick.label);
-        }
-      }
-    });
-    
-    // Y axis labels (sequence characters)
-    const yLabelsGroup = labelsGroup.append('g').attr('class', 'y-labels');
-    yTicks.forEach(tick => {
-      if (tick.label && tick.value >= 0) {
-        const yPos = y(tick.value + 0.5);
-        if (yPos >= marginTop && yPos <= height) {
-          const isInSafety = isInSafetyWindow(tick.value, 'y');
-          yLabelsGroup.append('text')
-            .attr('x', marginLeft - 10)
-            .attr('y', yPos)
-            .attr('text-anchor', 'end')
-            .attr('dominant-baseline', 'middle')
-            .attr('font-family', 'monospace')
-            .attr('font-size', `${Math.max(10, fontSize * 0.9)}px`)
-            .attr('font-weight', isInSafety ? 'bold' : 'normal')
-            .attr('fill', isInSafety ? 'green' : '#333')
-            .text(tick.label);
-        }
-      }
-    });
-  }
-  
-  // Draw index markers if enabled
-  if (showSequenceIndices) {
-    // X axis index markers (position numbers)
-    const xIndexGroup = labelsGroup.append('g').attr('class', 'x-indices');
-    const xStart = Math.max(0, Math.floor(x.invert(marginLeft)));
-    const xEnd = Math.min(xTicks.length, Math.ceil(x.invert(width)));
-    const xMiddle = Math.floor((xStart + xEnd) / 2);
-    
-    [xStart, xMiddle, xEnd].forEach((index) => {
-      if (index >= 0 && index < xTicks.length && index >= xStart && index < xEnd) {
-        const xPos = x(index + 0.5);
-        if (xPos >= marginLeft && xPos <= width) {
-          const isInSafety = isInSafetyWindow(index, 'x');
-          xIndexGroup.append('text')
-            .attr('x', xPos)
-            .attr('y', marginTop - 30)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'bottom')
-            .attr('font-family', 'monospace')
-            .attr('font-size', `${Math.max(10, fontSize * 0.8)}px`)
-            .attr('font-weight', isInSafety ? 'bold' : 'normal')
-            .attr('fill', isInSafety ? 'green' : '#555')
-            .text((index + 1).toString());
-        }
-      }
-    });
-    
-    // Y axis index markers (position numbers)
-    const yIndexGroup = labelsGroup.append('g').attr('class', 'y-indices');
-    const yStart = Math.max(0, Math.floor(y.invert(marginTop)));
-    const yEnd = Math.min(yTicks.length, Math.ceil(y.invert(height)));
-    const yMiddle = Math.floor((yStart + yEnd) / 2);
-    
-    [yStart, yMiddle, yEnd].forEach((index) => {
-      if (index >= 0 && index < yTicks.length && index >= yStart && index < yEnd) {
-        const yPos = y(index + 0.5);
-        if (yPos >= marginTop && yPos <= height) {
-          const isInSafety = isInSafetyWindow(index, 'y');
-          yIndexGroup.append('text')
-            .attr('x', marginLeft - 30)
-            .attr('y', yPos)
-            .attr('text-anchor', 'end')
-            .attr('dominant-baseline', 'middle')
-            .attr('font-family', 'monospace')
-            .attr('font-size', `${Math.max(10, fontSize * 0.8)}px`)
-            .attr('font-weight', isInSafety ? 'bold' : 'normal')
-            .attr('fill', isInSafety ? 'green' : '#555')
-            .text((index + 1).toString());
-        }
-      }
-    });
-  }
-}
+const EXPORT_TOP_PADDING = 24;
 
-/**
- * Draw SVG safety windows (equivalent to canvas drawSafetyWindows)
- */
-function drawSVGSafetyWindows(
-  ctx: SVGContext,
-  safetyWindows: Alignment[]
-) {
-  const { svg, x, y, marginTop, marginLeft, fontSize } = ctx;
-  
-  const safetyGroup = svg.append('g').attr('class', 'safety-windows');
-  
-  safetyWindows.forEach((window, index) => {
-    if (!window.startDot || !window.endDot) return;
-    
-    const startX = x(window.startDot.x);
-    const endX = x(window.endDot.x);
-    const startY = y(window.startDot.y);
-    const endY = y(window.endDot.y);
-    
-    const bracketHeight = fontSize * 1.5;
-    const bracketWidth = fontSize * 0.8;
-    const bracketThickness = Math.max(1, fontSize * 0.1);
-    
-    const windowGroup = safetyGroup.append('g').attr('class', `safety-window-${index}`);
-    
-    // X axis bracket (top)
-    const xBracketGroup = windowGroup.append('g').attr('class', 'x-bracket');
-    
-    // Horizontal line
-    xBracketGroup.append('line')
-      .attr('x1', startX)
-      .attr('y1', marginTop - bracketHeight - 5)
-      .attr('x2', endX)
-      .attr('y2', marginTop - bracketHeight - 5)
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-    
-    // Left vertical line
-    xBracketGroup.append('line')
-      .attr('x1', startX)
-      .attr('y1', marginTop - 5)
-      .attr('x2', startX)
-      .attr('y2', marginTop - bracketHeight - 5)
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-    
-    // Right vertical line
-    xBracketGroup.append('line')
-      .attr('x1', endX)
-      .attr('y1', marginTop - 5)
-      .attr('x2', endX)
-      .attr('y2', marginTop - bracketHeight - 5)
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-    
-    // Y axis bracket (left)
-    const yBracketGroup = windowGroup.append('g').attr('class', 'y-bracket');
-    
-    // Background rectangle for better visibility
-    const rectLeft = Math.max(0, marginLeft - bracketWidth - 5);
-    const rectWidth = Math.min(bracketWidth, marginLeft - 5);
-    
-    yBracketGroup.append('rect')
-      .attr('x', rectLeft)
-      .attr('y', startY)
-      .attr('width', rectWidth)
-      .attr('height', endY - startY)
-      .attr('fill', 'rgba(144, 238, 144, 0.6)')
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-    
-    // Vertical line
-    yBracketGroup.append('line')
-      .attr('x1', marginLeft - 5 - bracketThickness/2)
-      .attr('y1', startY)
-      .attr('x2', marginLeft - 5 - bracketThickness/2)
-      .attr('y2', endY)
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-    
-    // Top horizontal line
-    yBracketGroup.append('line')
-      .attr('x1', rectLeft)
-      .attr('y1', startY)
-      .attr('x2', marginLeft - 5)
-      .attr('y2', startY)
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-    
-    // Bottom horizontal line
-    yBracketGroup.append('line')
-      .attr('x1', rectLeft)
-      .attr('y1', endY)
-      .attr('x2', marginLeft - 5)
-      .attr('y2', endY)
-      .attr('stroke', 'green')
-      .attr('stroke-width', bracketThickness);
-  });
-}
-
-/**
- * Draw SVG alignment edges (equivalent to canvas drawAlignmentEdges)
- */
-function drawSVGAlignmentEdges(
-  ctx: SVGContext,
-  alignments: Alignment[]
-) {
-  const { svg, x, y } = ctx;
-  
-  const edgesGroup = svg.append('g').attr('class', 'alignment-edges');
-  
-  alignments.forEach((alignment, alignIndex) => {
-    alignment.edges.forEach((edge, edgeIndex) => {
-      const [fromX, fromY] = edge.from;
-      const [toX, toY] = edge.to;
-      
-      // Special styling for the optimal path (blue)
-      let strokeColor, strokeWidth, opacity;
-      if (alignment.color === 'blue') {
-        strokeColor = 'rgba(30, 144, 255, 0.8)'; // Dodger blue with good visibility
-        strokeWidth = 1.5; // Slightly thicker but still thin
-        opacity = 0.85; // Higher opacity for visibility
-      } else {
-        // Default styling for other alignments with subtle variations
-        opacity = Math.max(0.5, Math.min(0.7, edge.probability));
-        strokeWidth = Math.max(0.8, Math.min(2.2, edge.probability * 2.5));
-        strokeColor = alignment.color || '#666';
-      }
-      
-      edgesGroup.append('line')
-        .attr('x1', x(fromX))
-        .attr('y1', y(fromY))
-        .attr('x2', x(toX))
-        .attr('y2', y(toY))
-        .attr('stroke', strokeColor)
-        .attr('stroke-width', strokeWidth)
-        .attr('opacity', opacity)
-        .attr('class', `alignment-${alignIndex}-edge-${edgeIndex}`);
-    });
-  });
-}
-
-/**
- * Draw SVG alignment dots (equivalent to canvas drawAlignmentDots)
- */
-function drawSVGAlignmentDots(
-  ctx: SVGContext,
-  alignments: Alignment[]
-) {
-  const { svg, x, y } = ctx;
-  
-  const dotsGroup = svg.append('g').attr('class', 'alignment-dots');
-  
-  alignments.forEach((alignment, index) => {
-    const color = alignment.color || "orange";
-    
-    if (alignment.startDot) {
-      dotsGroup.append('circle')
-        .attr('cx', x(alignment.startDot.x))
-        .attr('cy', y(alignment.startDot.y))
-        .attr('r', 5)
-        .attr('fill', color)
-        .attr('class', `alignment-${index}-start-dot`);
-    }
-    
-    if (alignment.endDot) {
-      dotsGroup.append('circle')
-        .attr('cx', x(alignment.endDot.x))
-        .attr('cy', y(alignment.endDot.y))
-        .attr('r', 5)
-        .attr('fill', color)
-        .attr('class', `alignment-${index}-end-dot`);
-    }
-  });
-}
-
-/**
- * Draw SVG minimap (equivalent to canvas drawMinimap)
- */
-function drawSVGMinimap(
-  ctx: SVGContext,
-  alignments: Alignment[],
-  safetyWindows: Alignment[],
-  representative: string,
-  member: string,
-  minimapSize: number,
-  minimapPadding: number
-) {
-  const { svg, x, y, width, height, marginTop, marginRight } = ctx;
-  
-  const minimapGroup = svg.append('g').attr('class', 'minimap');
-  
-  const minimapX = width - minimapSize - minimapPadding;
-  const minimapY = marginTop + 20;
-  
-  // Background
-  minimapGroup.append('rect')
-    .attr('x', minimapX)
-    .attr('y', minimapY)
-    .attr('width', minimapSize)
-    .attr('height', minimapSize)
-    .attr('fill', 'white')
-    .attr('stroke', '#ccc')
-    .attr('stroke-width', 1);
-  
-  // Minimap scales
-  const minimapXScale = d3.scaleLinear()
-    .domain([0, representative.length])
-    .range([0, minimapSize]);
-    
-  const minimapYScale = d3.scaleLinear()
-    .domain([0, member.length])
-    .range([0, minimapSize]);
-  
-  // Draw safety windows in minimap
-  const minimapSafetyGroup = minimapGroup.append('g').attr('class', 'minimap-safety-windows');
-  safetyWindows.forEach((window, index) => {
-    if (!window.startDot || !window.endDot) return;
-    
-    const startX = minimapX + minimapXScale(window.startDot.x);
-    const startY = minimapY + minimapYScale(window.startDot.y);
-    const endX = minimapX + minimapXScale(window.endDot.x);
-    const endY = minimapY + minimapYScale(window.endDot.y);
-    
-    minimapSafetyGroup.append('rect')
-      .attr('x', startX)
-      .attr('y', startY)
-      .attr('width', endX - startX)
-      .attr('height', endY - startY)
-      .attr('fill', 'rgba(0, 180, 0, 0.5)')
-      .attr('class', `minimap-safety-window-${index}`);
-  });
-  
-  // Draw alignment lines in minimap
-  const minimapAlignmentGroup = minimapGroup.append('g').attr('class', 'minimap-alignments');
-  alignments.forEach((alignment, index) => {
-    if (!alignment.startDot || !alignment.endDot) return;
-    
-    const startX = minimapX + minimapXScale(alignment.startDot.x);
-    const startY = minimapY + minimapYScale(alignment.startDot.y);
-    const endX = minimapX + minimapXScale(alignment.endDot.x);
-    const endY = minimapY + minimapYScale(alignment.endDot.y);
-    
-    // Line
-    minimapAlignmentGroup.append('line')
-      .attr('x1', startX)
-      .attr('y1', startY)
-      .attr('x2', endX)
-      .attr('y2', endY)
-      .attr('stroke', 'rgba(100, 100, 100, 1)')
-      .attr('stroke-width', 1)
-      .attr('class', `minimap-alignment-${index}`);
-    
-    // Dots
-    minimapAlignmentGroup.append('circle')
-      .attr('cx', startX)
-      .attr('cy', startY)
-      .attr('r', 2)
-      .attr('fill', 'rgba(0, 0, 0, 0.7)')
-      .attr('class', `minimap-alignment-${index}-start`);
-      
-    minimapAlignmentGroup.append('circle')
-      .attr('cx', endX)
-      .attr('cy', endY)
-      .attr('r', 2)
-      .attr('fill', 'rgba(0, 0, 0, 0.7)')
-      .attr('class', `minimap-alignment-${index}-end`);
-  });
-  
-  // Draw viewport indicator
-  const xMin = x.invert(marginTop);
-  const yMin = y.invert(marginTop);
-  const xMax = x.invert(width - marginRight);
-  const yMax = y.invert(height);
-  
-  const viewportX = minimapX + minimapXScale(Math.max(0, xMin));
-  const viewportY = minimapY + minimapYScale(Math.max(0, yMin));
-  const viewportWidth = minimapXScale(Math.min(representative.length, xMax)) - minimapXScale(Math.max(0, xMin));
-  const viewportHeight = minimapYScale(Math.min(member.length, yMax)) - minimapYScale(Math.max(0, yMin));
-  
-  minimapGroup.append('rect')
-    .attr('x', viewportX)
-    .attr('y', viewportY)
-    .attr('width', viewportWidth)
-    .attr('height', viewportHeight)
-    .attr('fill', 'none')
-    .attr('stroke', 'red')
-    .attr('stroke-width', 2)
-    .attr('class', 'minimap-viewport');
-}
-
-/**
- * Export the current canvas state as an SVG
- */
-export const exportCanvasAsSVG = (
+const generateSVGContent = (
   canvas: HTMLCanvasElement,
   alignments: Alignment[],
   representative: string,
   member: string,
-  xTicks: Array<{value: number; label: string}>,
-  yTicks: Array<{value: number; label: string}>,
+  xTicks: TickX[],
+  yTicks: TickY[],
   currentTransform: any,
-  visualizationSettings: any,
-  filename: string = 'alignment-graph.svg',
+  visualizationSettings: Partial<VisualizationSettings>,
+  exportState: Partial<ExportState> = {},
+  layout?: Partial<ExportLayout>,
   representativeDescriptor?: string,
   memberDescriptor?: string
-): void => {
-  try {
-    const width = canvas.width;
-    const height = canvas.height;
-    // Use the same margins as the canvas component
-    const marginTop = 80;
-    const marginRight = 20;
-    const marginBottom = 30;
-    const marginLeft = 80;
-    const minimapSize = 250;
-    const minimapPadding = 100;
 
-    // Create SVG element
-    const svg = d3.create('svg')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('viewBox', `0 0 ${width} ${height}`)
-      .attr('xmlns', 'http://www.w3.org/2000/svg');
+): { svgString: string; width: number; height: number } => {
+  const baseWidth = layout?.width ?? canvas.width;
+  const baseHeight = layout?.height ?? canvas.height;
+  const width = baseWidth;
+  const height = baseHeight + EXPORT_TOP_PADDING;
+  const marginTop = (layout?.marginTop ?? 80) + EXPORT_TOP_PADDING;
+  const marginRight = layout?.marginRight ?? 20;
+  const marginBottom = layout?.marginBottom ?? 30;
+  const marginLeft = layout?.marginLeft ?? 80;
+  const minimapSize = layout?.minimapSize ?? 250;
+  const minimapPadding = layout?.minimapPadding ?? 100;
 
-    // Set up scales exactly like the canvas - this is critical for matching the view
-    let x = d3.scaleLinear()
-      .domain([0, representative.length])
-      .range([marginLeft, width - marginRight]);
-    
-    let y = d3.scaleLinear()
-      .domain([0, member.length])
-      .range([marginTop, height - marginBottom]);
+  if (baseWidth <= 0 || baseHeight <= 0) {
+    throw new Error('Canvas has invalid dimensions and cannot be exported.');
+  }
 
-    // Apply current transform exactly as in canvas to match the current view
-    if (currentTransform) {
-      // Apply transform to get the same zoom/pan as canvas
-      x = currentTransform.rescaleX(x);
-      y = currentTransform.rescaleY(y);
+  const svgCtx = new C2S(width, height) as unknown as SVGCanvasContext;
+  const svgCtxInternal = svgCtx as unknown as {
+    __applyStyleToCurrentElement?: (type: string) => void;
+    __currentElement?: Element;
+    __lineDash?: number[];
+    save: () => void;
+    restore: () => void;
+    setLineDash?: (segments: number[]) => void;
+    getLineDash?: () => number[];
+  };
+
+  const dashStack: number[][] = [];
+  const nativeApplyStyle = svgCtxInternal.__applyStyleToCurrentElement?.bind(svgCtxInternal);
+  const nativeSave = svgCtxInternal.save.bind(svgCtxInternal);
+  const nativeRestore = svgCtxInternal.restore.bind(svgCtxInternal);
+
+  svgCtxInternal.__lineDash = [];
+  svgCtxInternal.setLineDash = (segments: number[]) => {
+    svgCtxInternal.__lineDash = [...segments];
+  };
+  svgCtxInternal.getLineDash = () => [...(svgCtxInternal.__lineDash ?? [])];
+  svgCtxInternal.save = () => {
+    dashStack.push([...(svgCtxInternal.__lineDash ?? [])]);
+    nativeSave();
+  };
+  svgCtxInternal.restore = () => {
+    nativeRestore();
+    svgCtxInternal.__lineDash = dashStack.pop() ?? [];
+  };
+  if (nativeApplyStyle) {
+    svgCtxInternal.__applyStyleToCurrentElement = (type: string) => {
+      nativeApplyStyle(type);
+
+      if (type !== 'stroke' || !svgCtxInternal.__currentElement) {
+        return;
+      }
+
+      const dash = svgCtxInternal.__lineDash ?? [];
+      if (dash.length > 0) {
+        svgCtxInternal.__currentElement.setAttribute('stroke-dasharray', dash.join(','));
+      } else {
+        svgCtxInternal.__currentElement.removeAttribute('stroke-dasharray');
+      }
+    };
+  }
+
+  const settings: VisualizationSettings = {
+    ...defaultVisualizationSettings,
+    ...visualizationSettings
+  };
+
+  const state: ExportState = {
+    ...defaultExportState,
+    ...exportState
+  };
+
+  const zoomTransform = currentTransform && typeof currentTransform.rescaleX === 'function'
+    ? currentTransform
+    : d3.zoomIdentity;
+
+  const padding = 0.5;
+  const xBase = d3.scaleLinear(
+    [-padding, representative.length + padding],
+    [marginLeft, width - marginRight]
+  );
+  const yBase = d3.scaleLinear(
+    [-padding, member.length + padding],
+    [marginTop, height - marginBottom]
+  );
+
+  const x = zoomTransform.rescaleX(xBase);
+  const y = zoomTransform.rescaleY(yBase);
+
+  const cellWidth = Math.abs(x(1) - x(0));
+  const cellHeight = Math.abs(y(1) - y(0));
+  const fontSize = Math.max(8, Math.min(cellWidth, cellHeight) * 0.6);
+
+  const safetyWindows = alignments.filter((alignment) => alignment.startDot && alignment.endDot);
+
+  const isInSafetyWindow = (position: number, axis: 'x' | 'y') => {
+    return safetyWindows.some((window) => {
+      if (!window.startDot || !window.endDot) return false;
+      const start = axis === 'x' ? window.startDot.x : window.startDot.y;
+      const end = axis === 'x' ? window.endDot.x : window.endDot.y;
+      return position >= start && position < end;
+    });
+  };
+
+  const selectedWindow = state.selectedSafetyWindow;
+  const hoveredWindow = state.hoveredSafetyWindow;
+
+  const safetyWindowBounds: SafetyWindowBounds | undefined = (settings.showSafetyWindows && selectedWindow)
+    ? {
+        xStart: selectedWindow.startDot?.x,
+        xEnd: selectedWindow.endDot?.x,
+        yStart: selectedWindow.startDot?.y,
+        yEnd: selectedWindow.endDot?.y
+      }
+    : undefined;
+
+  const gridXTicks = xTicks.map((tick) => ({
+    xOffset: x(tick.value)
+  }));
+  const gridYTicks = yTicks.map((tick) => ({
+    yOffset: y(tick.value)
+  }));
+
+  svgCtx.fillStyle = 'white';
+  svgCtx.fillRect(0, 0, width, height);
+
+  if (settings.showSafetyWindows) {
+    drawSafetyWindows(svgCtx, safetyWindows, x, y, fontSize, marginTop, marginLeft);
+
+    if (selectedWindow) {
+      drawSafetyWindowHighlight(svgCtx, x, y, marginTop, marginLeft, selectedWindow);
     }
 
-    // Calculate fontSize based on transform scale (same logic as usePointGridScales)
-    const baseSize = 12;
-    const scale = currentTransform ? currentTransform.k : 1;
-    const fontSize = Math.max(8, Math.min(24, baseSize * Math.sqrt(scale)));
+    if (hoveredWindow && hoveredWindow !== selectedWindow) {
+      svgCtx.save();
+      svgCtx.globalAlpha = 0.5;
+      drawSafetyWindowHighlight(svgCtx, x, y, marginTop, marginLeft, hoveredWindow);
+      svgCtx.restore();
+    }
+  }
 
-    const ctx: SVGContext = {
-      svg,
+  if (state.highlightedGap) {
+    const gapAsAlignment: Alignment = {
+      startDot: state.highlightedGap.type === 'representative'
+        ? { x: state.highlightedGap.start, y: 0 }
+        : { x: 0, y: state.highlightedGap.start },
+      endDot: state.highlightedGap.type === 'representative'
+        ? { x: state.highlightedGap.end, y: member.length }
+        : { x: representative.length, y: state.highlightedGap.end },
+      edges: [],
+      color: 'rgba(255, 107, 71, 0.4)'
+    };
+
+    drawGapHighlightOptimized(
+      svgCtx,
+      x,
+      y,
+      marginTop,
+      marginLeft,
+      gapAsAlignment,
+      state.highlightedGap.type
+    );
+  }
+
+  if (settings.showAxes) {
+    drawAxes(svgCtx, x, y, marginTop, marginLeft);
+  }
+
+  if (settings.showSequenceCharacters || settings.showSequenceIndices) {
+    drawAxisLabels(
+      svgCtx,
+      xTicks,
+      yTicks,
+      x,
+      y,
+      fontSize,
+      marginTop,
+      marginLeft,
+      isInSafetyWindow,
+      safetyWindowBounds,
+      representativeDescriptor,
+      memberDescriptor,
+      settings.showSequenceCharacters,
+      settings.showSequenceIndices
+    );
+  }
+
+  svgCtx.save();
+  svgCtx.beginPath();
+  svgCtx.rect(marginLeft, marginTop, width - marginLeft - marginRight, height - marginTop - marginBottom);
+  svgCtx.clip();
+
+  if (settings.showGrid) {
+    drawGridLines(svgCtx, gridXTicks, gridYTicks, x, y);
+  }
+
+  renderGraph(
+    {
+      ctx: svgCtx,
+      x,
+      y,
+      width,
+      height,
+      marginTop,
+      marginLeft
+    },
+    alignments,
+    {
+      showAlignmentEdges: settings.showAlignmentEdges,
+      showAlignmentDots: settings.showAlignmentDots,
+      showOptimalPath: settings.showOptimalPath,
+      showSelectedPath: state.enablePathSelection && state.selectedPath !== null,
+      selectedPath: state.selectedPath || undefined,
+      hoveredEdge: state.hoveredEdge || undefined,
+      selectedIndividualEdges: state.enablePathSelection ? state.selectedIndividualEdges : undefined
+    }
+  );
+
+  if (state.hoveredCell) {
+    if (settings.showSafetyWindows) {
+      const matchingWindows = findSafetyWindowsForCell(state.hoveredCell, safetyWindows);
+      matchingWindows.forEach((window) => {
+        drawSafetyWindowHighlight(svgCtx, x, y, marginTop, marginLeft, window);
+      });
+    }
+
+    drawHoverHighlight(
+      svgCtx,
+      state.hoveredCell,
+      x,
+      y,
+      marginTop,
+      marginLeft,
+      representative,
+      member,
+      alignments
+    );
+  }
+
+  svgCtx.restore();
+
+  if (settings.showMinimap) {
+    drawMinimap(svgCtx, {
       width,
       height,
       marginTop,
@@ -595,117 +355,87 @@ export const exportCanvasAsSVG = (
       marginLeft,
       x,
       y,
-      fontSize
-    };
+      representative,
+      member,
+      alignments,
+      safetyWindows,
+      minimapSize,
+      minimapPadding,
+      showMinimap: settings.showMinimap
+    });
+  }
 
-    // Set background
-    svg.append('rect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('fill', 'white');
+  const rawSvg = typeof svgCtx.getSerializedSvg === 'function'
+    ? svgCtx.getSerializedSvg(true)
+    : (svgCtx.getSvg ? svgCtx.getSvg().outerHTML : '');
 
-    // Apply clipping for the main plot area
-    svg.append('defs')
-      .append('clipPath')
-      .attr('id', 'plot-area')
-      .append('rect')
-      .attr('x', marginLeft)
-      .attr('y', marginTop)
-      .attr('width', width - marginLeft - marginRight)
-      .attr('height', height - marginTop - marginBottom);
+  if (!rawSvg) {
+    throw new Error('Failed to generate SVG content.');
+  }
 
-    // Filter safety windows
-    const safetyWindows = alignments.filter(alignment => 
-      alignment.startDot && alignment.endDot
+  let svgString = rawSvg;
+
+  if (!svgString.startsWith('<?xml')) {
+    svgString = `<?xml version="1.0" encoding="UTF-8"?>\n${svgString}`;
+  }
+
+  svgString = svgString.replace(
+    /<svg([^>]*?)>/,
+    () => `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="overflow: visible; background: white;">`
+  );
+
+  svgString = svgString.replace(/style="[^"]*display\s*:\s*none[^"]*"/gi, '');
+  svgString = svgString.replace(/style="[^"]*visibility\s*:\s*hidden[^"]*"/gi, '');
+  svgString = svgString.replace(/overflow\s*:\s*hidden/gi, 'overflow: visible');
+
+  svgString = svgString.replace(/<clipPath[^>]*><path[^>]*\/><\/clipPath>/g, '');
+  svgString = svgString.replace(/\s+clip-path="[^"]*"/g, '');
+
+  return { svgString, width, height };
+};
+
+export const exportCanvasAsSVG = (
+  canvas: HTMLCanvasElement,
+  alignments: Alignment[],
+  representative: string,
+  member: string,
+  xTicks: TickX[],
+  yTicks: TickY[],
+  currentTransform: any,
+  visualizationSettings: Partial<VisualizationSettings>,
+  exportState: Partial<ExportState> = {},
+  layout?: Partial<ExportLayout>,
+  filename: string = 'alignment-graph.svg',
+  representativeDescriptor?: string,
+  memberDescriptor?: string
+): void => {
+  try {
+    const { svgString } = generateSVGContent(
+      canvas,
+      alignments,
+      representative,
+      member,
+      xTicks,
+      yTicks,
+      currentTransform,
+      visualizationSettings,
+      exportState,
+      layout,
+      representativeDescriptor,
+      memberDescriptor
     );
 
-    // Helper function to check if position is in safety window
-    const isInSafetyWindow = (position: number, axis: 'x' | 'y'): boolean => {
-      return safetyWindows.some(window => {
-        if (!window.startDot || !window.endDot) return false;
-        if (axis === 'x') {
-          return position >= window.startDot.x && position <= window.endDot.x;
-        } else {
-          return position >= window.startDot.y && position <= window.endDot.y;
-        }
-      });
-    };
-
-    // Draw elements based on visualization settings
-    if (visualizationSettings.showSafetyWindows) {
-      drawSVGSafetyWindows(ctx, safetyWindows);
-    }
-
-    if (visualizationSettings.showAxes) {
-      drawSVGAxes(ctx);
-    }
-
-    // Draw axis labels if either sequence characters or indices are enabled
-    if (visualizationSettings.showSequenceCharacters || visualizationSettings.showSequenceIndices) {
-      drawSVGAxisLabels(
-        ctx,
-        xTicks,
-        yTicks,
-        isInSafetyWindow,
-        visualizationSettings.showSequenceCharacters,
-        visualizationSettings.showSequenceIndices,
-        representativeDescriptor,
-        memberDescriptor
-      );
-    }
-
-    // Create a group with clipping for main plot elements
-    const plotGroup = svg.append('g').attr('clip-path', 'url(#plot-area)');
-
-    if (visualizationSettings.showGrid) {
-      drawSVGGrid({...ctx, svg: plotGroup}, xTicks, yTicks);
-    }
-
-    if (visualizationSettings.showAlignmentEdges) {
-      // Filter alignments based on settings
-      const filteredAlignments = alignments.filter(alignment => {
-        // If showOptimalPath is false, exclude blue (optimal path) alignments
-        if (!visualizationSettings.showOptimalPath && alignment.color === 'blue') {
-          return false;
-        }
-        return true;
-      });
-      drawSVGAlignmentEdges({...ctx, svg: plotGroup}, filteredAlignments);
-    }
-
-    if (visualizationSettings.showAlignmentDots) {
-      // Apply same filtering for dots
-      const filteredAlignments = alignments.filter(alignment => {
-        if (!visualizationSettings.showOptimalPath && alignment.color === 'blue') {
-          return false;
-        }
-        return true;
-      });
-      drawSVGAlignmentDots({...ctx, svg: plotGroup}, filteredAlignments);
-    }
-
-    if (visualizationSettings.showMinimap) {
-      drawSVGMinimap(ctx, alignments, safetyWindows, representative, member, minimapSize, minimapPadding);
-    }
-
-    // Create download link
-    const svgString = svg.node()?.outerHTML;
-    if (!svgString) {
-      throw new Error('Failed to generate SVG content');
-    }
-
-    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.download = filename;
     link.href = url;
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Clean up
+
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Failed to export canvas as SVG:', error);
@@ -713,21 +443,80 @@ export const exportCanvasAsSVG = (
   }
 };
 
+export const exportCanvasAsPDF = async (
+  canvas: HTMLCanvasElement,
+  alignments: Alignment[],
+  representative: string,
+  member: string,
+  xTicks: TickX[],
+  yTicks: TickY[],
+  currentTransform: any,
+  visualizationSettings: Partial<VisualizationSettings>,
+  exportState: Partial<ExportState> = {},
+  layout?: Partial<ExportLayout>,
+  filename: string = 'alignment-graph.pdf',
+  representativeDescriptor?: string,
+  memberDescriptor?: string
+): Promise<void> => {
+  try {
+    const { svgString, width, height } = generateSVGContent(
+      canvas,
+      alignments,
+      representative,
+      member,
+      xTicks,
+      yTicks,
+      currentTransform,
+      visualizationSettings,
+      exportState,
+      layout,
+      representativeDescriptor,
+      memberDescriptor
+    );
+
+    const parser = new DOMParser();
+    const svgDocument = parser.parseFromString(svgString, 'image/svg+xml');
+    const parseError = svgDocument.querySelector('parsererror');
+
+    if (parseError) {
+      throw new Error('Failed to parse generated SVG for PDF export.');
+    }
+
+    const svgElement = svgDocument.documentElement;
+    const pdf = new jsPDF({
+      orientation: width >= height ? 'landscape' : 'portrait',
+      unit: 'pt',
+      format: [width, height]
+    });
+
+    await svg2pdf(svgElement as unknown as Element, pdf, {
+      x: 0,
+      y: 0,
+      width,
+      height
+    });
+
+    pdf.save(filename);
+  } catch (error) {
+    console.error('Failed to export canvas as PDF:', error);
+    throw new Error('Failed to export vector PDF. Please try again.');
+  }
+};
+
 /**
- * Generate a filename for SVG export
+ * Generate a filename for SVG export.
  */
 export const generateSVGFilename = (
-  descriptorA?: string, 
+  descriptorA?: string,
   descriptorB?: string
 ): string => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  
+
   if (descriptorA && descriptorB) {
-    // Clean descriptors for filename (remove special characters)
     const cleanA = descriptorA.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
     const cleanB = descriptorB.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
     return `emerald_alignment_${cleanA}_vs_${cleanB}_${timestamp}.svg`;
   }
-  
+
   return `emerald_alignment_${timestamp}.svg`;
 };

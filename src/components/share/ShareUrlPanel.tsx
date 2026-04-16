@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { generateShareableUrl, isAlignmentShareable, checkBrowserCompatibility } from '../../utils/export/urlSharing';
+import {
+  DEFAULT_ALPHA,
+  DEFAULT_DELTA,
+  DEFAULT_GAP_COST,
+  DEFAULT_START_GAP,
+  DEFAULT_COST_MATRIX_TYPE
+} from '../../utils/sequence/defaultEmeraldParams';
 import '../shared/Panel.css';
 import './ShareUrlPanel.css';
 
-// Helper function to get cost matrix name
 const getCostMatrixName = (matrixType: number): string => {
   const names = {
     0: 'BLOSUM45',
-    1: 'BLOSUM50', 
+    1: 'BLOSUM50',
     2: 'BLOSUM62',
     3: 'BLOSUM80',
     4: 'BLOSUM90',
@@ -16,7 +22,8 @@ const getCostMatrixName = (matrixType: number): string => {
     7: 'PAM250',
     8: 'IDENTITY'
   };
-  return names[matrixType as keyof typeof names] || 'Unknown';
+
+  return names[matrixType as keyof typeof names] || `Matrix ${matrixType}`;
 };
 
 interface ShareUrlPanelProps {
@@ -138,22 +145,25 @@ const ShareUrlPanel: React.FC<ShareUrlPanelProps> = ({
             ⚠️ {copyError}
           </div>
         )}
-        
+
         <div className="panel-info">
           <p>Share this URL to let others reproduce this exact alignment with:</p>
           <ul>
             <li>UniProt sequences A & B</li>
-            <li>Alpha = {alpha}</li>
-            <li>Delta = {delta}</li>
-            {gapCost !== undefined && gapCost !== -1 && (
-              <li>Gap Cost = {gapCost}</li>
-            )}
-            {startGap !== undefined && startGap !== -11 && (
-              <li>Start Gap = {startGap}</li>
-            )}
-            {costMatrixType !== undefined && costMatrixType !== 2 && (
+            {alpha !== DEFAULT_ALPHA && <li>Alpha = {alpha}</li>}
+            {delta !== DEFAULT_DELTA && <li>Delta = {delta}</li>}
+            {gapCost !== undefined && gapCost !== DEFAULT_GAP_COST && <li>Gap Cost = {gapCost}</li>}
+            {startGap !== undefined && startGap !== DEFAULT_START_GAP && <li>Start Gap = {startGap}</li>}
+            {costMatrixType !== undefined && costMatrixType !== DEFAULT_COST_MATRIX_TYPE && (
               <li>Cost Matrix = {getCostMatrixName(costMatrixType)}</li>
             )}
+            {alpha === DEFAULT_ALPHA &&
+              delta === DEFAULT_DELTA &&
+              (gapCost === undefined || gapCost === DEFAULT_GAP_COST) &&
+              (startGap === undefined || startGap === DEFAULT_START_GAP) &&
+              (costMatrixType === undefined || costMatrixType === DEFAULT_COST_MATRIX_TYPE) && (
+                <li>Default Emerald parameters</li>
+              )}
           </ul>
         </div>
       </div>

@@ -29,8 +29,8 @@ export interface PointGridPlotRef {
     alignments: Alignment[];
     representative: string;
     member: string;
-    xTicks: Array<{value: number; label: string}>;
-    yTicks: Array<{value: number; label: string}>;
+    xTicks: Array<{value: number; label: string; xOffset?: number}>;
+    yTicks: Array<{value: number; label: string; yOffset?: number}>;
     transform: any;
     representativeDescriptor?: string;
     memberDescriptor?: string;
@@ -50,8 +50,20 @@ export interface PointGridPlotRef {
       hoveredSafetyWindow: Alignment | null;
       highlightedGap: {type: 'representative' | 'member'; start: number; end: number} | null;
       selectedPath: SelectedPath | null;
+      hoveredCell: {x: number; y: number} | null;
+      hoveredEdge: import('../../types/PointGrid').Edge | null;
       selectedIndividualEdges: import('../../types/PointGrid').Edge[];
       enablePathSelection: boolean;
+    };
+    layout: {
+      width: number;
+      height: number;
+      marginTop: number;
+      marginRight: number;
+      marginBottom: number;
+      marginLeft: number;
+      minimapSize: number;
+      minimapPadding: number;
     };
   };
   /**
@@ -224,8 +236,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       alignments,
       representative,
       member,
-      xTicks: xTicks.map(tick => ({ value: tick.value, label: tick.label })),
-      yTicks: yTicks.map(tick => ({ value: tick.value, label: tick.label })),
+      xTicks: xTicks.map(tick => ({ value: tick.value, label: tick.label, xOffset: tick.xOffset })),
+      yTicks: yTicks.map(tick => ({ value: tick.value, label: tick.label, yOffset: tick.yOffset })),
       transform,
       representativeDescriptor,
       memberDescriptor,
@@ -247,8 +259,20 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
           : null,
         highlightedGap: highlightedGap || null,
         selectedPath: enablePathSelection ? (selectedPath || null) : null,
+        hoveredCell: hoveredCell || null,
+        hoveredEdge: hoveredEdge || null,
         selectedIndividualEdges: enablePathSelection ? selectedIndividualEdges : [],
         enablePathSelection
+      },
+      layout: {
+        width,
+        height,
+        marginTop,
+        marginRight,
+        marginBottom,
+        marginLeft,
+        minimapSize,
+        minimapPadding
       }
     }),
     renderHighResCanvas: (scale: number) => {
@@ -395,7 +419,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       
       return offscreenCanvas;
     }
-  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath, width, height, marginTop, marginRight, marginBottom, marginLeft, safetyWindows, selectedWindow, hoveredSafetyWindowId, highlightedGap, representativeDescriptor, memberDescriptor, enablePathSelection, selectedPath, selectedIndividualEdges]);
+  }), [alignments, representative, member, xTicks, yTicks, transform, showAxes, showSequenceCharacters, showSequenceIndices, showGrid, showMinimap, showSafetyWindows, showAlignmentEdges, showAlignmentDots, showOptimalPath, clearSelectedPath, width, height, marginTop, marginRight, marginBottom, marginLeft, safetyWindows, selectedWindow, hoveredSafetyWindowId, highlightedGap, representativeDescriptor, memberDescriptor, enablePathSelection, selectedPath, selectedIndividualEdges, hoveredCell, hoveredEdge, minimapSize, minimapPadding]);
     
   const hoveredWindow = hoveredSafetyWindowId ? 
     safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) : 

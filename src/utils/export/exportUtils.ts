@@ -206,7 +206,7 @@ export const copyCanvasToClipboard = async (
 export const generateExportFilename = (
   descriptorA?: string, 
   descriptorB?: string, 
-  format: 'png' | 'jpeg' | 'svg' = 'png'
+  format: 'png' | 'jpeg' | 'svg' | 'pdf' = 'png'
 ): string => {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   

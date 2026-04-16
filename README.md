@@ -16,17 +16,17 @@ EMERALD goes beyond traditional pairwise sequence alignment by identifying not j
 - **Customizable Parameters:** Fine-tune the suboptimal alignment space by adjusting the suboptimality threshold (Δ delta), and fine-tune the robustness measure by adjusting the safety parameter (α alpha)
 - **3D Structure Integration:** Overlay protein structure information when available    
 - **Export & Sharing:** Generate publication-ready images and shareable URLs
-- **Private & Local:** All analyses are performed locally in your browser and remain private, no data is uploaded to any server. 
+- **Local-First with API Integrations:** Alignment computation runs locally in your browser (WASM). External APIs are used for optional sequence/structure retrieval (UniProt, AlphaFold/RCSB), and an optional aggregate run counter is updated when analyses are run.
 
 ## Technical Implementation
 
 This application is built with:
 
-- **Frontend**: React 18 + TypeScript + Vite
+- **Frontend**: React 19 + TypeScript + Vite
 - **Algorithm**: WebAssembly (WASM) implementation of EMERALD
 - **Visualization**: Custom Canvas-based interactive plotting
 - **Styling**: CSS with CSS custom properties for theming
-- **Data Sources**: UniProt REST API integration
+- **Data Sources**: UniProt REST API, AlphaFold API, and RCSB PDB
 
 ## Citation
 
