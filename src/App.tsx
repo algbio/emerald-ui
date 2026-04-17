@@ -169,7 +169,7 @@ function AppContent() {
       
       <h1 className="app-title">
         <img
-          src={`${import.meta.env.BASE_URL}emerald-icon.png`}
+          src={`${import.meta.env.BASE_URL}emerald-icon-medium.png`}
           alt="EMERALD icon"
           className="app-title-icon"
         />
