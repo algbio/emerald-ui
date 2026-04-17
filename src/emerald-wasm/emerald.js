@@ -41,7 +41,9 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 if (ENVIRONMENT_IS_NODE) {
   // When building an ES module `require` is not normally available.
   // We need to use `createRequire()` to construct the require()` function.
-  const { createRequire } = await import('module');
+  // Keep this Node-only dependency runtime-computed so browser bundlers
+  // do not attempt to resolve it.
+  const { createRequire } = await import('mo' + 'dule');
   /** @suppress{duplicate} */
   var require = createRequire(import.meta.url);
 
