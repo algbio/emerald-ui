@@ -221,9 +221,11 @@ const generateSVGContent = (
     : undefined;
 
   const gridXTicks = xTicks.map((tick) => ({
+    value: tick.value,
     xOffset: x(tick.value)
   }));
   const gridYTicks = yTicks.map((tick) => ({
+    value: tick.value,
     yOffset: y(tick.value)
   }));
 
@@ -297,7 +299,12 @@ const generateSVGContent = (
   svgCtx.clip();
 
   if (settings.showGrid) {
-    drawGridLines(svgCtx, gridXTicks, gridYTicks, x, y);
+    drawGridLines(svgCtx, gridXTicks, gridYTicks, x, y, {
+      xMin: 0,
+      xMax: representative.length,
+      yMin: 0,
+      yMax: member.length
+    });
   }
 
   renderGraph(
@@ -388,8 +395,8 @@ const generateSVGContent = (
   svgString = svgString.replace(/style="[^"]*visibility\s*:\s*hidden[^"]*"/gi, '');
   svgString = svgString.replace(/overflow\s*:\s*hidden/gi, 'overflow: visible');
 
-  svgString = svgString.replace(/<clipPath[^>]*><path[^>]*\/><\/clipPath>/g, '');
-  svgString = svgString.replace(/\s+clip-path="[^"]*"/g, '');
+  // Preserve clip paths: export rendering relies on them to constrain graph content
+  // to the main plot viewport in both SVG and PDF conversion.
 
   return { svgString, width, height };
 };

@@ -12,8 +12,8 @@ import { SafetyWindowExplanation } from './components/information'
 import { FaGithub, FaStar } from 'react-icons/fa'
 import { generateShareableUrl } from './utils/export/urlSharing'
 
-const GRAPH_WIDTH = 800;
-const GRAPH_HEIGHT = 800;
+const GRAPH_WIDTH = 900;
+const GRAPH_HEIGHT = 900;
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {

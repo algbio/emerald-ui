@@ -425,8 +425,6 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             alignments={alignments}
             width={width}
             height={height}
-            xDomain={[0, representative.length]}
-            yDomain={[0, member.length]}
             showMinimap={visualizationSettings.showMinimap}
             showAxes={visualizationSettings.showAxes}
             showSequenceCharacters={visualizationSettings.showSequenceCharacters}

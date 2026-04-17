@@ -84,8 +84,6 @@ interface PointGridProps {
   representative: string;
   member: string;
   alignments: Alignment[];
-  xDomain: number[];
-  yDomain: number[];
   showMinimap?: boolean;  
   minimapSize?: number;    
   minimapPadding?: number; 
@@ -127,8 +125,6 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   representative = "MSFDLKSKFLG",
   member = "MSKLKDFLFKS",
   alignments = [],
-  xDomain,
-  yDomain,
   showMinimap = true,       // Default to showing minimap
   minimapSize = 250,         // Default size of minimap
   minimapPadding = 100,      // Padding around minimap
@@ -199,14 +195,21 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enablePathSelection, selectedPath, clearSelectedPath]);
 
-  const { x, y, fontSize } = usePointGridScales({
+  const { x, y, xDomain: currentXDomainRaw, yDomain: currentYDomainRaw, fontSize } = usePointGridScales({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
     representative, member, transform
   });
 
-  // Now for usePointGridTicks, create proper tuples:
-  const xDomainTuple: [number, number] = [xDomain[0], xDomain[1]];
-  const yDomainTuple: [number, number] = [yDomain[0], yDomain[1]];
+  // Use live zoom/pan domains for ticks and clamp to valid sequence coordinates.
+  // This prevents grid lines from being generated outside [0, sequence length].
+  const xDomainTuple: [number, number] = [
+    Math.max(0, currentXDomainRaw[0]),
+    Math.min(representative.length, currentXDomainRaw[1])
+  ];
+  const yDomainTuple: [number, number] = [
+    Math.max(0, currentYDomainRaw[0]),
+    Math.min(member.length, currentYDomainRaw[1])
+  ];
 
   const { xTicks, yTicks } = usePointGridTicks({
     xDomain: xDomainTuple,
@@ -387,7 +390,12 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       
       // Draw grid if enabled
       if (showGrid) {
-        drawGridLines(ctx, scaledXTicks, scaledYTicks, xScaled, yScaled);
+        drawGridLines(ctx, scaledXTicks, scaledYTicks, xScaled, yScaled, {
+          xMin: 0,
+          xMax: representative.length,
+          yMin: 0,
+          yMax: member.length
+        });
       }
       
       // Draw alignment elements
@@ -572,7 +580,12 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
 
     // Draw grid if enabled
     if (showGrid) {
-      drawGridLines(ctx, xTicks, yTicks, x, y);
+      drawGridLines(ctx, xTicks, yTicks, x, y, {
+        xMin: 0,
+        xMax: representative.length,
+        yMin: 0,
+        yMax: member.length
+      });
     }
     
     // Draw alignment elements using new simplified renderer

@@ -117,16 +117,22 @@ export function usePrerenderedSafetyWindows(
 export function usePrerenderedGrid(
   width: number,
   height: number,
-  xTicks: Array<{xOffset: number}>,
-  yTicks: Array<{yOffset: number}>,
+  xTicks: Array<{value: number; xOffset: number}>,
+  yTicks: Array<{value: number; yOffset: number}>,
   x: ScaleLinear<number, number>,
   y: ScaleLinear<number, number>,
   drawGridLines: (
     ctx: CanvasRenderingContext2D,
-    xTicks: Array<{xOffset: number}>,
-    yTicks: Array<{yOffset: number}>,
+    xTicks: Array<{value: number; xOffset: number}>,
+    yTicks: Array<{value: number; yOffset: number}>,
     x: ScaleLinear<number, number>,
-    y: ScaleLinear<number, number>
+    y: ScaleLinear<number, number>,
+    bounds?: {
+      xMin: number;
+      xMax: number;
+      yMin: number;
+      yMax: number;
+    }
   ) => void,
   enabled: boolean = true
 ): HTMLCanvasElement | OffscreenCanvas | null {
