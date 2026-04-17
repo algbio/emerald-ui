@@ -734,8 +734,8 @@ export function drawIndexedAxisLabels(
   const canvasHeight = ctx.canvas.height;
   
   // Calculate string lengths
-  const xStringLength = getStringLength(xTicks);
-  const yStringLength = getStringLength(yTicks);
+  const xStringLength = getSequenceLength(xTicks);
+  const yStringLength = getSequenceLength(yTicks);
   
   // Apply clipping for X axis index markers
   ctx.save();
