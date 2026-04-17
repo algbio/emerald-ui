@@ -168,7 +168,12 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
       `- start gap cost: ${startGap ?? 'N/A'}`,
       `- accessionA: ${resolvedAccessionA}`,
       `- accessionB: ${resolvedAccessionB}`,
-      `- shareable URL: ${shareableUrlForIssue || 'N/A (requires valid UniProt accessions)'}`,
+      `- shareable URL: ${shareableUrlForIssue || 'N/A'}`,
+      ...(!shareableUrlForIssue
+        ? [
+            '<!-- custom input files: if you used your own FASTA sequences or PDB/CIF files that are not from UniProt, please attach them to this issue if they can be made public -->'
+          ]
+        : []),
       '',
       '## Additional Details',
       '<!-- Add browser, screenshots, and exact steps to reproduce -->'
