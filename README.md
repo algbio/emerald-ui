@@ -10,7 +10,7 @@ EMERALD-UI provides advanced visualization of optimal and suboptimal protein seq
 
 ## About EMERALD
 
-EMERALD goes beyond traditional pairwise sequence alignment by identifying not just the optimal alignment, but also suboptimal alignments and regions (_safety windows_) where alignments are consistently reliable across different scoring schemes. This has been described in Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu, Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD, Genome Biology 24, 168 (2023), [https://doi.org/10.1186/s13059-023-03008-6](https://doi.org/10.1186/s13059-023-03008-6).
+EMERALD goes beyond traditional pairwise sequence alignment by identifying not just the optimal alignment, but also suboptimal alignments and regions (_safety windows_) where alignments are consistently reliable across different scoring schemes. This has been described in [Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD, Genome Biology 2023](https://doi.org/10.1186/s13059-023-03008-6).
 
 ### Key Features
 
@@ -32,7 +32,7 @@ This application is built with:
 - **Styling**: CSS with CSS custom properties for theming
 - **Data Sources**: UniProt REST API, AlphaFold API, and RCSB PDB
 
-### Dependencies (current)
+### Dependencies
 
 #### Runtime dependencies
 
@@ -64,12 +64,24 @@ This application is built with:
 - `typescript-eslint` `^8.30.1`
 - `vite` `^6.3.5`
 
+## Acknowledgements
+
+EMERALD-UI gratefully builds on two open-source visualization ecosystems:
+
+- **Mol\*** for interactive macromolecular 3D structure rendering and analysis. Project: [https://molstar.org/](https://molstar.org/) | Repository: [https://github.com/molstar/molstar](https://github.com/molstar/molstar)
+- **D3.js** for visualization primitives used in our alignment plots. Project: [https://d3js.org/](https://d3js.org/) | Repository: [https://github.com/d3/d3](https://github.com/d3/d3)
+
 ## Citation
 
 Please cite the following reference when using EMERALD-UI for your research:
 
 - Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost, [EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space](https://doi.org/10.48550/arXiv.2602.12730) *arXiv* (2026) https://doi.org/10.48550/arXiv.2602.12730 
 - Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu, [Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD](https://doi.org/10.1186/s13059-023-03008-6) *Genome Biology* 24, 168 (2023). https://doi.org/10.1186/s13059-023-03008-6
+
+If your analysis includes protein structures, you may consider also citing the **Mol\*** viewer used by EMERALD-UI:
+
+- David Sehnal, Sebastian Bittrich, Mandar Deshpande, Radka Svobodová, Karel Berka, Václav Bazgier, Sameer Velankar, Stephen K. Burley, Jaroslav Koča, Alexander S. Rose. *Mol* Viewer: modern web app for 3D visualization and analysis of large biomolecular structures*. *Nucleic Acids Research* 49(W1):W431-W437 (2021). https://doi.org/10.1093/nar/gkab314
+
 
 ## Development Getting Started
 
