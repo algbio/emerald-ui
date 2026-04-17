@@ -11,16 +11,29 @@ export const fetchUniProtSequence = async (accession: string): Promise<{
   // Clean the accession (remove whitespace, convert to uppercase)
   const cleanAccession = accession.trim().toUpperCase();
 
+  if (!isValidUniProtAccession(cleanAccession)) {
+    throw new Error(
+      `"${cleanAccession}" does not look like a valid UniProt accession. Use an accession like P04637, Q9Y6K9, or A0A023GPI8.`
+    );
+  }
+
   try {
     const response = await fetch(
       `https://rest.uniprot.org/uniprotkb/${cleanAccession}?fields=accession,id,protein_name,organism_name,sequence&format=json`
     );
 
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`UniProt entry not found for accession: ${cleanAccession}`);
+      if (response.status === 400) {
+        throw new Error(
+          `UniProt could not process accession "${cleanAccession}". Please check the format and try an accession like P04637.`
+        );
       }
-      throw new Error(`UniProt API error: ${response.status} ${response.statusText}`);
+      if (response.status === 404) {
+        throw new Error(
+          `No UniProt entry was found for accession "${cleanAccession}". Please verify the accession and try again.`
+        );
+      }
+      throw new Error(`Unable to fetch UniProt accession "${cleanAccession}" (${response.status} ${response.statusText}).`);
     }
 
     const data = await response.json();

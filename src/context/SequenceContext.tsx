@@ -473,8 +473,8 @@ interface SequenceContextType {
   state: SequenceState;
   dispatch: React.Dispatch<SequenceAction>;
   runAlignment: () => Promise<{ success: boolean; submittedSequences?: Pick<SequenceData, 'sequenceA' | 'sequenceB' | 'descriptorA' | 'descriptorB'> }>;
-  fetchSequenceA: (accession: string) => Promise<void>;
-  fetchSequenceB: (accession: string) => Promise<void>;
+  fetchSequenceA: (accession: string) => Promise<{ success: boolean; error?: string }>;
+  fetchSequenceB: (accession: string) => Promise<{ success: boolean; error?: string }>;
   loadStructureFileA: (structureData: StructureData) => void;
   loadStructureFileB: (structureData: StructureData) => void;
   canRunAlignment: () => boolean;
@@ -915,11 +915,14 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'FETCH_SEQUENCE_A_SUCCESS', 
         payload: result 
       });
+      return { success: true as const };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sequence';
       dispatch({ 
         type: 'FETCH_SEQUENCE_A_ERROR', 
-        payload: error instanceof Error ? error.message : 'Failed to fetch sequence' 
+        payload: errorMessage
       });
+      return { success: false as const, error: errorMessage };
     }
   };
 
@@ -932,11 +935,14 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         type: 'FETCH_SEQUENCE_B_SUCCESS', 
         payload: result 
       });
+      return { success: true as const };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sequence';
       dispatch({ 
         type: 'FETCH_SEQUENCE_B_ERROR', 
-        payload: error instanceof Error ? error.message : 'Failed to fetch sequence' 
+        payload: errorMessage
       });
+      return { success: false as const, error: errorMessage };
     }
   };
 

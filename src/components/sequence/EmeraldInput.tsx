@@ -132,17 +132,14 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     notifyInfo('Fetching Sequence A', `Retrieving sequence for accession ${sequences.accessionA}`);
     
     try {
-      await fetchSequenceA(sequences.accessionA);
-      
-      // Check if fetch was successful by looking at the state after fetch
-      // We'll need to wait a bit for the state to update
-      setTimeout(() => {
-        if (state.fetchErrorA) {
-          notifyError('Fetch Failed', `Failed to fetch Sequence A: ${state.fetchErrorA}`);
-        } else if (state.sequences.sequenceA) {
-          notifySuccess('Sequence A Loaded', `Successfully loaded ${sequences.accessionA} from UniProt`);
-        }
-      }, 100);
+      const result = await fetchSequenceA(sequences.accessionA);
+
+      if (!result.success) {
+        notifyError('Fetch Failed', result.error || 'Failed to fetch Sequence A from UniProt');
+        return;
+      }
+
+      notifySuccess('Sequence A Loaded', `Successfully loaded ${sequences.accessionA} from UniProt`);
     } catch (error) {
       notifyError('Fetch Failed', `Error fetching Sequence A: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -157,17 +154,14 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     notifyInfo('Fetching Sequence B', `Retrieving sequence for accession ${sequences.accessionB}`);
     
     try {
-      await fetchSequenceB(sequences.accessionB);
-      
-      // Check if fetch was successful by looking at the state after fetch
-      // We'll need to wait a bit for the state to update
-      setTimeout(() => {
-        if (state.fetchErrorB) {
-          notifyError('Fetch Failed', `Failed to fetch Sequence B: ${state.fetchErrorB}`);
-        } else if (state.sequences.sequenceB) {
-          notifySuccess('Sequence B Loaded', `Successfully loaded ${sequences.accessionB} from UniProt`);
-        }
-      }, 100);
+      const result = await fetchSequenceB(sequences.accessionB);
+
+      if (!result.success) {
+        notifyError('Fetch Failed', result.error || 'Failed to fetch Sequence B from UniProt');
+        return;
+      }
+
+      notifySuccess('Sequence B Loaded', `Successfully loaded ${sequences.accessionB} from UniProt`);
     } catch (error) {
       notifyError('Fetch Failed', `Error fetching Sequence B: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

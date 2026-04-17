@@ -196,7 +196,7 @@ const UniProtSearch: React.FC = () => {
         <div className="search-examples">
           <strong>Example searches:</strong>
           <ul>
-            <li><code>P53_HUMAN</code> - UniProt ID</li>
+            <li><code>P04637</code> - UniProt ID</li>
             <li><code>insulin</code> - Protein name</li>
             <li><code>BRCA1</code> - Gene name</li>
             <li><code>hemoglobin homo sapiens</code> - Protein + organism</li>
