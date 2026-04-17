@@ -1,4 +1,8 @@
-# EMERALD-UI
+# <img src="public/emerald-icon-medium.png" alt="EMERALD-UI logo" height="40" /> EMERALD-UI
+
+## Live Application
+
+### https://algbio.github.io/emerald-ui/
 
 **Interactive Protein Sequence Alignment Visualization Tool**, available at [algbio.github.io/emerald-ui](https://algbio.github.io/emerald-ui/)
 
@@ -27,6 +31,38 @@ This application is built with:
 - **Visualization**: Custom Canvas-based interactive plotting
 - **Styling**: CSS with CSS custom properties for theming
 - **Data Sources**: UniProt REST API, AlphaFold API, and RCSB PDB
+
+### Dependencies (current)
+
+#### Runtime dependencies
+
+- `@emotion/styled` `^11.14.0`
+- `@mui/material` `^7.1.2`
+- `canvas2svg` `^1.0.16`
+- `d3` `^7.9.0`
+- `jspdf` `^4.2.1`
+- `molstar` `^5.8.0`
+- `react` `^19.1.0`
+- `react-dom` `^19.1.0`
+- `react-icons` `^5.5.0`
+- `svg2pdf.js` `^2.7.0`
+
+#### Development dependencies
+
+- `@eslint/js` `^9.25.0`
+- `@types/d3` `^7.4.3`
+- `@types/react` `^19.1.2`
+- `@types/react-dom` `^19.1.2`
+- `@vitejs/plugin-react` `^4.4.1`
+- `eslint` `^9.25.0`
+- `eslint-plugin-react-hooks` `^5.2.0`
+- `eslint-plugin-react-refresh` `^0.4.19`
+- `gh-pages` `^6.3.0`
+- `globals` `^16.0.0`
+- `sass` `^1.89.2`
+- `typescript` `~5.8.3`
+- `typescript-eslint` `^8.30.1`
+- `vite` `^6.3.5`
 
 ## Citation
 
@@ -71,20 +107,35 @@ npm run deploy
 ### Project Structure
 
 ```
-src/
-├── components/          # React components
-│   ├── alignment/      # Alignment visualization components
-│   ├── sequence/       # Sequence input components  
-│   ├── structure/      # 3D structure components
-│   ├── share/          # Export and sharing components
-│   └── ui/             # UI feedback components
-├── context/            # React context for state management
-├── hooks/              # Custom React hooks
-├── utils/              # Utility functions
-│   ├── api/           # API integration utilities
-│   ├── canvas/        # Canvas drawing utilities
-│   └── export/        # Export utilities
-└── emerald-wasm/      # WebAssembly EMERALD implementation
+.
+├── docs/                         # Documentation and design assets
+├── public/                       # Static assets served by Vite
+├── src/
+│   ├── assets/                   # App bundled assets
+│   ├── components/
+│   │   ├── alignment/            # Alignment graphs and parameter panels
+│   │   ├── information/          # Informational content components
+│   │   ├── sequence/             # Sequence input and listing UI
+│   │   ├── share/                # URL sharing and export UI
+│   │   ├── shared/               # Reusable shared components
+│   │   ├── structure/            # 3D structure visualization/superposition
+│   │   └── ui/                   # Generic UI primitives and feedback
+│   ├── context/                  # React context providers
+│   ├── emerald-wasm/             # WASM wrapper and type declarations
+│   ├── hooks/                    # Custom hooks
+│   ├── temp/                     # Temporary/debug data
+│   ├── types/                    # Project-level type declarations
+│   ├── utils/
+│   │   ├── api/                  # External API helpers
+│   │   ├── canvas/               # Canvas rendering and plotting logic
+│   │   ├── export/               # Export helpers (PNG/SVG/PDF)
+│   │   ├── sequence/             # Sequence processing helpers
+│   │   └── structure/            # Structure parsing/processing helpers
+│   ├── App.tsx
+│   └── main.tsx
+├── index.html
+├── package.json
+└── vite.config.ts
 ```
 
 ### Available Scripts
