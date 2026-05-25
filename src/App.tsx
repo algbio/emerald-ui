@@ -400,11 +400,11 @@ function AppContent() {
             <p className="citation-text">
               Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost.
               <br />
-              <a href="https://doi.org/10.48550/arXiv.2602.12730" target="_blank" rel="noopener noreferrer">
+              <a href="https://doi.org/10.1093/bioinformatics/btag305" target="_blank" rel="noopener noreferrer">
                 EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space.
               </a>
               <br />
-              <strong>arXiv</strong>
+              <strong>Bioinformatics</strong> 42, Issue 5, btag305 (2026)
               <br />
               <a href="https://github.com/algbio/emerald-ui" target="_blank" rel="noopener noreferrer" className="github-link">
                 <FaGithub className="github-icon" />
@@ -420,7 +420,7 @@ function AppContent() {
                 Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD.
               </a>
               <br />
-              <strong>Genome Biology</strong> 24, 168 (2023).
+              <strong>Genome Biology</strong> 24, 168, article number 168 (2023).
               <br />
               <a href="https://github.com/algbio/emerald" target="_blank" rel="noopener noreferrer" className="github-link">
                 <FaGithub className="github-icon" />
