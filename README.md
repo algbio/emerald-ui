@@ -75,7 +75,7 @@ EMERALD-UI gratefully builds on two open-source visualization ecosystems:
 
 Please cite the following reference when using EMERALD-UI for your research:
 
-- Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost, [EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space](https://doi.org/10.48550/arXiv.2602.12730) *arXiv* (2026) https://doi.org/10.48550/arXiv.2602.12730 
+- Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost, [EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space](https://doi.org/10.1093/bioinformatics/btag305) *Bioinformatics* 42, Issue 5, btag305 (2026) https://doi.org/10.1093/bioinformatics/btag305
 - Andreas Grigorjew, Artur Gynter, Fernando H.C. Dias, Benjamin Buchfink, Hajk-Georg Drost, Alexandru I. Tomescu, [Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD](https://doi.org/10.1186/s13059-023-03008-6) *Genome Biology* 24, 168 (2023). https://doi.org/10.1186/s13059-023-03008-6
 
 If your analysis includes protein structures, you may consider also citing the **Mol\*** viewer used by EMERALD-UI:
