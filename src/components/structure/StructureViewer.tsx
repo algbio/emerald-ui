@@ -597,6 +597,25 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       }
     };
   }, []);
+  
+  // Ligysis Search through prompting
+  const openLigysisSearch = (uniprotId: string) => {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://www.compbio.dundee.ac.uk/ligysis/';
+    form.target = '_blank';
+    form.style.display = 'none';
+  
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'proteinId';
+    input.value = uniprotId;
+  
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+  };
 
   // Load structure when plugin is ready and props change
   useEffect(() => {
@@ -745,9 +764,9 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           
           {uniprotId && (
             <button
-              onClick={() => window.open(`https://www.compbio.dundee.ac.uk/ligysis/results/${uniprotId}/1`, '_blank')}
+              onClick={() => openLigysisSearch(uniprotId)}
               className="external-link-button external-link-ligsys"
-              title={`View ${uniprotId} in LIGSYS Database`}
+              title={`View ${uniprotId} in LIGYSIS Database`}
             >
               💊 LIGYSIS
             </button>
