@@ -168,12 +168,14 @@ function AppContent() {
       {/* Alignment Counter */}
       
       <h1 className="app-title">
-        <img
-          src={`${import.meta.env.BASE_URL}emerald-icon-medium.png`}
-          alt="EMERALD icon"
-          className="app-title-icon"
-        />
-        EMERALD-UI
+        <a href={import.meta.env.BASE_URL} className="app-title-link">
+          <img
+            src={`${import.meta.env.BASE_URL}emerald-icon-medium.png`}
+            alt="EMERALD icon"
+            className="app-title-icon"
+          />
+          EMERALD-UI
+        </a>
       </h1>
       <div className="getting-started-section">
         <div className="getting-started-header" onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
@@ -401,7 +403,7 @@ function AppContent() {
               Andrei Preoteasa, Andreas Grigorjew, Alexandru I. Tomescu, Hajk-Georg Drost.
               <br />
               <a href="https://doi.org/10.1093/bioinformatics/btag305" target="_blank" rel="noopener noreferrer">
-                EMERALD-UI: An interactive web application to unveil novel protein biology hidden in the suboptimal-alignment space.
+                EMERALD-UI: an interactive web application to unveil novel protein biology hidden in the alternative alignment space
               </a>
               <br />
               <strong>Bioinformatics</strong> 42, Issue 5, btag305 (2026)
