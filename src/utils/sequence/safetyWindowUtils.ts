@@ -68,6 +68,107 @@ export function extractSafetyWindowsFromAlignments(
 }
 
 /**
+ * Checks if an aligned pair falls ON the diagonal line of a safety window.
+ * A safety window is a diagonal from (repStart, memStart) to (repEnd, memEnd).
+ * A point is on this diagonal if the offset from start is the same for both sequences.
+ */
+function isOnSafetyWindowDiagonal(
+  repPos: number,
+  memPos: number,
+  repWindow: SequenceSafetyWindow,
+  memWindow: SequenceSafetyWindow
+): boolean {
+  // Check if position is within bounds of both windows
+  if (repPos < repWindow.startPosition || repPos > repWindow.endPosition) return false;
+  if (memPos < memWindow.startPosition || memPos > memWindow.endPosition) return false;
+
+  // Check if the offset from start is the same (point is on the diagonal)
+  const repOffset = repPos - repWindow.startPosition;
+  const memOffset = memPos - memWindow.startPosition;
+
+  return repOffset === memOffset;
+}
+
+/**
+ * Filters and clips safety windows to only include the portions that a gapped alignment
+ * actually traverses. A safety window is "traversed" if there's at least one alignment
+ * position where both sequences have a non-gap character that falls ON the diagonal line
+ * of the safety window; the returned window is clipped to only that traversed range.
+ *
+ * Note: repSafetyWindows[i] and memSafetyWindows[i] are paired - they come from the same
+ * alignment entry and represent the same diagonal line in the alignment plot.
+ *
+ * The output arrays are always the same length as the input arrays: index i in the output
+ * always corresponds to the i-th input window. A window with zero on-diagonal aligned pairs
+ * (nothing to clip to) is represented as `null` at that index rather than being dropped, so
+ * callers can reliably look up "the clipped version of safety window i" by index.
+ *
+ * This is the single source of truth for "what does safety window i actually cover in this
+ * alignment" - used both for the "Safety Windows (merged)" highlight in the Sequence
+ * Alignment panel and for the Safety Windows tab's copy/extraction, so the two can't disagree.
+ */
+export function filterSafetyWindowsByPath(
+  repSeq: string,
+  memSeq: string,
+  repSafetyWindows: SequenceSafetyWindow[],
+  memSafetyWindows: SequenceSafetyWindow[]
+): { filteredRepWindows: (SequenceSafetyWindow | null)[]; filteredMemWindows: (SequenceSafetyWindow | null)[] } {
+  // Build a set of (repCharPos, memCharPos) pairs that represent diagonal moves in the alignment
+  // These are positions where the path goes through a cell (both sequences align)
+  const alignedPairs: Array<{ repPos: number; memPos: number }> = [];
+
+  let repCharPos = 0;
+  let memCharPos = 0;
+
+  for (let i = 0; i < repSeq.length; i++) {
+    const repChar = repSeq[i];
+    const memChar = memSeq[i];
+    const repIsGap = repChar === '-';
+    const memIsGap = memChar === '-';
+
+    if (!repIsGap) repCharPos++;
+    if (!memIsGap) memCharPos++;
+
+    // A diagonal move (match/mismatch) is when neither sequence has a gap
+    if (!repIsGap && !memIsGap) {
+      alignedPairs.push({ repPos: repCharPos, memPos: memCharPos });
+    }
+  }
+
+  const filteredRepWindows: (SequenceSafetyWindow | null)[] = [];
+  const filteredMemWindows: (SequenceSafetyWindow | null)[] = [];
+
+  // The windows are paired by index - check each pair together
+  const numPairs = Math.min(repSafetyWindows.length, memSafetyWindows.length);
+
+  for (let i = 0; i < numPairs; i++) {
+    const repWindow = repSafetyWindows[i];
+    const memWindow = memSafetyWindows[i];
+
+    // Find all aligned pairs that fall ON the diagonal line of this safety window
+    const pairsOnDiagonal = alignedPairs.filter(pair =>
+      isOnSafetyWindowDiagonal(pair.repPos, pair.memPos, repWindow, memWindow)
+    );
+
+    if (pairsOnDiagonal.length > 0) {
+      // Clip the windows to only the range that the path actually traverses
+      const minRepPos = Math.min(...pairsOnDiagonal.map(p => p.repPos));
+      const maxRepPos = Math.max(...pairsOnDiagonal.map(p => p.repPos));
+      const minMemPos = Math.min(...pairsOnDiagonal.map(p => p.memPos));
+      const maxMemPos = Math.max(...pairsOnDiagonal.map(p => p.memPos));
+
+      filteredRepWindows.push({ startPosition: minRepPos, endPosition: maxRepPos, color: repWindow.color });
+      filteredMemWindows.push({ startPosition: minMemPos, endPosition: maxMemPos, color: memWindow.color });
+    } else {
+      filteredRepWindows.push(null);
+      filteredMemWindows.push(null);
+    }
+  }
+
+  return { filteredRepWindows, filteredMemWindows };
+}
+
+/**
  * Merge overlapping safety windows to avoid redundant highlighting
  * @param windows Array of safety windows to merge
  * @returns Array of merged safety windows

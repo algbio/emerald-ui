@@ -1,6 +1,9 @@
 // Path selection utilities for alignment graph
 import type { ScaleLinear } from 'd3-scale';
-import type { Alignment, Edge } from '../../types/PointGrid';
+import type { Alignment, Edge, RectangleSelection } from '../../types/PointGrid';
+import type { CostMatrixTypeValue } from '../api/EmeraldService';
+import { getSubstitutionScore } from '../sequence/substitutionMatrices';
+import { resolveGapCosts } from '../sequence/alignmentScoring';
 
 export interface PathPoint {
   x: number;
@@ -316,7 +319,8 @@ export function buildPathThroughSelectedEdges(
   selectedEdges: Edge[],
   allEdges: Edge[],
   graphWidth?: number,
-  graphHeight?: number
+  graphHeight?: number,
+  optimalEdgeKeys?: Set<string>
 ): SelectedPath {
   console.log('buildPathThroughSelectedEdges called with:');
   console.log('- selectedEdges count:', selectedEdges.length);
@@ -338,7 +342,7 @@ export function buildPathThroughSelectedEdges(
   // If only one edge selected, build a complete path that goes through it
   if (selectedEdges.length === 1) {
     console.log('Single edge selected, building complete path through it');
-    const result = buildCompletePathThroughEdge(selectedEdges[0], validAllEdges, graphWidth, graphHeight);
+    const result = buildCompletePathThroughEdge(selectedEdges[0], validAllEdges, graphWidth, graphHeight, optimalEdgeKeys);
     console.log('Single edge path result:', result);
     return result;
   }
@@ -374,7 +378,7 @@ export function buildPathThroughSelectedEdges(
     // If we're not already at the target edge start, find path to it
     if (currentPoint.x !== targetStart.x || currentPoint.y !== targetStart.y) {
       console.log('Need to find intermediate path from current point to target edge start');
-      const intermediatePath = findPathBetweenPoints(currentPoint, targetStart, validAllEdges);
+      const intermediatePath = findPathBetweenPoints(currentPoint, targetStart, validAllEdges, optimalEdgeKeys);
       console.log('Intermediate path found:', intermediatePath.length, 'edges');
       
       if (intermediatePath.length > 0) {
@@ -425,7 +429,7 @@ export function buildPathThroughSelectedEdges(
     console.log(`Completing path to final target: (${finalTarget.x}, ${finalTarget.y})`);
     
     if (currentPoint.x !== finalTarget.x || currentPoint.y !== finalTarget.y) {
-      const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validAllEdges);
+      const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validAllEdges, optimalEdgeKeys);
       console.log('Final path found:', finalPath.length, 'edges');
       
       if (finalPath.length > 0) {
@@ -486,7 +490,8 @@ function buildCompletePathThroughEdge(
   selectedEdge: Edge,
   allEdges: Edge[],
   graphWidth?: number,
-  graphHeight?: number
+  graphHeight?: number,
+  optimalEdgeKeys?: Set<string>
 ): SelectedPath {
   // Filter out self-loop edges
   const validEdges = allEdges.filter(edge => 
@@ -503,7 +508,7 @@ function buildCompletePathThroughEdge(
   // Find path to the selected edge
   const edgeStart = { x: selectedEdge.from[0], y: selectedEdge.from[1] };
   if (currentPoint.x !== edgeStart.x || currentPoint.y !== edgeStart.y) {
-    const pathToEdge = findPathBetweenPoints(currentPoint, edgeStart, validEdges);
+    const pathToEdge = findPathBetweenPoints(currentPoint, edgeStart, validEdges, optimalEdgeKeys);
     if (pathToEdge.length > 0) {
       pathEdges.push(...pathToEdge);
       pathPoints.push(...pathToEdge.map(edge => ({ x: edge.to[0], y: edge.to[1] })));
@@ -521,14 +526,14 @@ function buildCompletePathThroughEdge(
   if (graphWidth && graphHeight) {
     const finalTarget = { x: graphWidth, y: graphHeight };
     if (currentPoint.x !== finalTarget.x || currentPoint.y !== finalTarget.y) {
-      const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validEdges);
+      const finalPath = findPathBetweenPoints(currentPoint, finalTarget, validEdges, optimalEdgeKeys);
       if (finalPath.length > 0) {
         pathEdges.push(...finalPath);
         pathPoints.push(...finalPath.map(edge => ({ x: edge.to[0], y: edge.to[1] })));
       }
     }
   }
-  
+
   const result = {
     points: pathPoints,
     edges: pathEdges,
@@ -567,22 +572,23 @@ function buildCompletePathThroughEdge(
 function findQuickPath(
   start: PathPoint,
   target: PathPoint,
-  validEdges: Edge[]
+  validEdges: Edge[],
+  optimalEdgeKeys?: Set<string>
 ): Edge[] {
   console.log(`findQuickPath: from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
-  
+
   // If we're already at the target, no path needed
   if (start.x === target.x && start.y === target.y) {
     console.log('  Already at target, no path needed');
     return [];
   }
-  
+
   // Validate that the target is reachable (must be to the right and/or down)
   if (target.x < start.x || target.y < start.y) {
     console.error(`  Invalid target: cannot move backwards from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
     return [];
   }
-  
+
   // Create a map of available edges for quick lookup
   const edgeMap = new Map<string, Edge[]>();
   for (const edge of validEdges) {
@@ -592,7 +598,22 @@ function findQuickPath(
     }
     edgeMap.get(key)!.push(edge);
   }
-  
+
+  // Prefer edges that are actually on the reference optimal (blue) path whenever a point has
+  // more than one way forward - not edge.probability, which measures consensus across the
+  // whole Δ-suboptimal ensemble and can disagree with the single true optimal-score alignment.
+  // The BFS below still guarantees the shortest hop count (no pointless detours); this only
+  // breaks ties/branches so the path hugs the optimal path wherever it actually passes through.
+  if (optimalEdgeKeys && optimalEdgeKeys.size > 0) {
+    for (const edges of edgeMap.values()) {
+      edges.sort((a, b) => {
+        const aOnOptimal = optimalEdgeKeys.has(`${a.from[0]},${a.from[1]}->${a.to[0]},${a.to[1]}`) ? 1 : 0;
+        const bOnOptimal = optimalEdgeKeys.has(`${b.from[0]},${b.from[1]}->${b.to[0]},${b.to[1]}`) ? 1 : 0;
+        return bOnOptimal - aOnOptimal;
+      });
+    }
+  }
+
   // Use BFS to find the shortest path that only moves right/down
   const queue: Array<{point: PathPoint, path: Edge[]}> = [
     {point: start, path: []}
@@ -647,19 +668,497 @@ function findQuickPath(
 function findPathBetweenPoints(
   start: PathPoint,
   target: PathPoint,
-  allEdges: Edge[]
+  allEdges: Edge[],
+  optimalEdgeKeys?: Set<string>
 ): Edge[] {
   console.log(`findPathBetweenPoints: from (${start.x}, ${start.y}) to (${target.x}, ${target.y})`);
-  
+
   // CRITICAL FIX: Filter out self-loop edges that don't actually move anywhere
-  const validEdges = allEdges.filter(edge => 
+  const validEdges = allEdges.filter(edge =>
     !(edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1])
   );
-  
+
   console.log(`Filtered out ${allEdges.length - validEdges.length} self-loop edges`);
-  
+
   // Use the new quick pathfinding algorithm
-  return findQuickPath(start, target, validEdges);
+  return findQuickPath(start, target, validEdges, optimalEdgeKeys);
+}
+
+export interface PathEnumerationResult {
+  paths: SelectedPath[];
+  /** True when the maxVisits budget was hit before the search space was fully explored */
+  truncated: boolean;
+}
+
+/**
+ * Enumerates distinct alignment paths through the sub-DAG bounded to a selected rectangular
+ * region of the graph, by walking the graph's own edges (the Δ-suboptimal alignment envelope
+ * already computed by the WASM backend) rather than re-deriving alignments some other way.
+ * Used by the "Extracted Windows" tool to let a user cycle through every optimal/suboptimal
+ * alignment variant that passes through a hand-selected window.
+ *
+ * The region is bounded to the top-left ("entry") and bottom-right ("exit") node actually
+ * present in the filtered subgraph, and results are capped (maxPaths) and search-bounded
+ * (maxVisits) to avoid combinatorial blow-up in dense regions.
+ */
+export function enumeratePathsThroughRegion(
+  allEdges: Edge[],
+  region: RectangleSelection,
+  options: { maxPaths?: number; maxVisits?: number } = {}
+): PathEnumerationResult {
+  const { maxPaths = 50, maxVisits = 20000 } = options;
+
+  // Restrict to edges fully contained in the region (both endpoints inside), deduped by
+  // from->to key (keep the highest-probability edge if the same edge appears more than once
+  // across alignments).
+  const edgeMap = new Map<string, Edge>();
+  for (const edge of allEdges) {
+    if (edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1]) continue; // skip self-loops
+
+    if (
+      edge.from[0] >= region.xStart && edge.from[0] <= region.xEnd &&
+      edge.from[1] >= region.yStart && edge.from[1] <= region.yEnd &&
+      edge.to[0] >= region.xStart && edge.to[0] <= region.xEnd &&
+      edge.to[1] >= region.yStart && edge.to[1] <= region.yEnd
+    ) {
+      const key = `${edge.from[0]},${edge.from[1]}->${edge.to[0]},${edge.to[1]}`;
+      const existing = edgeMap.get(key);
+      if (!existing || edge.probability > existing.probability) {
+        edgeMap.set(key, edge);
+      }
+    }
+  }
+
+  const edges = Array.from(edgeMap.values());
+  if (edges.length === 0) {
+    return { paths: [], truncated: false };
+  }
+
+  // Build adjacency map: "x,y" -> outgoing edges
+  const adjacency = new Map<string, Edge[]>();
+  for (const edge of edges) {
+    const key = `${edge.from[0]},${edge.from[1]}`;
+    if (!adjacency.has(key)) adjacency.set(key, []);
+    adjacency.get(key)!.push(edge);
+  }
+
+  // Entry/exit nodes: the nodes actually present in the filtered subgraph closest to the
+  // region's top-left and bottom-right corners (edges rarely line up exactly with the raw
+  // drag rectangle, so we snap to what the graph actually has).
+  const nodeKeys = new Set<string>();
+  for (const edge of edges) {
+    nodeKeys.add(`${edge.from[0]},${edge.from[1]}`);
+    nodeKeys.add(`${edge.to[0]},${edge.to[1]}`);
+  }
+  const nodes = Array.from(nodeKeys, key => {
+    const [xs, ys] = key.split(',');
+    return { x: parseInt(xs, 10), y: parseInt(ys, 10) };
+  });
+  const entryNode = nodes.reduce((best, n) => (n.x + n.y < best.x + best.y ? n : best));
+  const exitNode = nodes.reduce((best, n) => (n.x + n.y > best.x + best.y ? n : best));
+
+  const results: SelectedPath[] = [];
+  let visits = 0;
+  let truncated = false;
+
+  const dfs = (current: PathPoint, pathEdges: Edge[], pathPoints: PathPoint[]) => {
+    if (truncated || results.length >= maxPaths) return;
+    visits++;
+    if (visits > maxVisits) {
+      truncated = true;
+      return;
+    }
+
+    if (current.x === exitNode.x && current.y === exitNode.y) {
+      results.push({ points: [...pathPoints], edges: [...pathEdges], isValid: true });
+      return;
+    }
+
+    const outgoing = adjacency.get(`${current.x},${current.y}`) || [];
+    for (const edge of outgoing) {
+      if (results.length >= maxPaths || truncated) break;
+      const nextPoint = { x: edge.to[0], y: edge.to[1] };
+      pathEdges.push(edge);
+      pathPoints.push(nextPoint);
+      dfs(nextPoint, pathEdges, pathPoints);
+      pathPoints.pop();
+      pathEdges.pop();
+    }
+  };
+
+  dfs(entryNode, [], [{ x: entryNode.x, y: entryNode.y }]);
+
+  // Best-first: highest summed edge probability first
+  results.sort((a, b) => {
+    const sumA = a.edges.reduce((s, e) => s + e.probability, 0);
+    const sumB = b.edges.reduce((s, e) => s + e.probability, 0);
+    return sumB - sumA;
+  });
+
+  return { paths: results.slice(0, maxPaths), truncated };
+}
+
+// DP states, matching the EMERALD algorithm's own 3-state affine-gap recurrence exactly
+// (verified against optimal_paths.cpp's build_dp_matrix): 0 = just matched/substituted,
+// 1 = mid gap-run in the member (representative just advanced alone), 2 = mid gap-run in the
+// representative (member just advanced alone). Opening a gap (leaving state 0) costs
+// startGap + gapCost; continuing one (staying in state 1 or 2) costs gapCost only.
+const DP_STATE_MATCH = 0;
+const DP_STATE_GAP_MEMBER = 1;
+const DP_STATE_GAP_REPRESENTATIVE = 2;
+
+/**
+ * Finds the true maximum-alignment-score path from `start` to `target`, using only the edges
+ * already present in the Δ-suboptimal DAG within that bounded region. Scores diagonal moves
+ * with the real substitution matrix and gap moves with the real affine gap formula - the same
+ * scoring already used for the displayed alignment statistics (substitutionMatrices.ts /
+ * alignmentScoring.ts) - so the result is the actual best-scoring alignment through this
+ * region, not a heuristic. Intended to be called on small, local regions only (see
+ * buildOptimalPathThroughSelectedEdges), since it processes every node/edge in the bounding box.
+ */
+function findBestScoringPathInRegion(
+  start: PathPoint,
+  target: PathPoint,
+  allEdges: Edge[],
+  representative: string,
+  member: string,
+  matrixType: CostMatrixTypeValue,
+  gapCost?: number,
+  startGap?: number
+): Edge[] {
+  if (start.x === target.x && start.y === target.y) return [];
+
+  const { gapCost: extend, startGap: open } = resolveGapCosts(gapCost, startGap);
+
+  // Restrict to edges fully within the bounding box, and only genuine single-step moves
+  // (diagonal/gap-member/gap-representative) - self-loops and any stray multi-step edges are
+  // excluded since they don't correspond to a single DP transition.
+  const regionEdges = allEdges.filter(edge => {
+    const dx = edge.to[0] - edge.from[0];
+    const dy = edge.to[1] - edge.from[1];
+    const isSingleStep = (dx === 1 && dy === 1) || (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    if (!isSingleStep) return false;
+    return (
+      edge.from[0] >= start.x && edge.from[0] <= target.x &&
+      edge.from[1] >= start.y && edge.from[1] <= target.y &&
+      edge.to[0] >= start.x && edge.to[0] <= target.x &&
+      edge.to[1] >= start.y && edge.to[1] <= target.y
+    );
+  });
+  if (regionEdges.length === 0) return [];
+
+  const adjacency = new Map<string, Edge[]>();
+  const nodeKeys = new Set<string>();
+  for (const edge of regionEdges) {
+    const key = `${edge.from[0]},${edge.from[1]}`;
+    if (!adjacency.has(key)) adjacency.set(key, []);
+    adjacency.get(key)!.push(edge);
+    nodeKeys.add(key);
+    nodeKeys.add(`${edge.to[0]},${edge.to[1]}`);
+  }
+
+  // Topological order: edges only ever increase x and/or y by 1, so sorting by x+y ascending
+  // is always a valid processing order for this DAG.
+  const orderedNodes = Array.from(nodeKeys, key => {
+    const [x, y] = key.split(',').map(Number);
+    return { key, x, y };
+  }).sort((a, b) => (a.x + a.y) - (b.x + b.y));
+
+  const NEG_INF = -Infinity;
+  const dp = new Map<string, [number, number, number]>();
+  const back = new Map<string, [BackPointer | null, BackPointer | null, BackPointer | null]>();
+  interface BackPointer { fromKey: string; fromState: number; edge: Edge; }
+
+  const startKey = `${start.x},${start.y}`;
+  dp.set(startKey, [0, NEG_INF, NEG_INF]);
+  back.set(startKey, [null, null, null]);
+
+  for (const node of orderedNodes) {
+    const scores = dp.get(node.key);
+    if (!scores) continue;
+    const outgoing = adjacency.get(node.key) || [];
+    for (const edge of outgoing) {
+      const toKey = `${edge.to[0]},${edge.to[1]}`;
+      const dx = edge.to[0] - edge.from[0];
+      const dy = edge.to[1] - edge.from[1];
+      if (!dp.has(toKey)) {
+        dp.set(toKey, [NEG_INF, NEG_INF, NEG_INF]);
+        back.set(toKey, [null, null, null]);
+      }
+      const toScores = dp.get(toKey)!;
+      const toBack = back.get(toKey)!;
+
+      const relax = (fromState: number, newState: number, cost: number) => {
+        const fromScore = scores[fromState];
+        if (fromScore === NEG_INF) return;
+        const candidate = fromScore + cost;
+        if (candidate > toScores[newState]) {
+          toScores[newState] = candidate;
+          toBack[newState] = { fromKey: node.key, fromState, edge };
+        }
+      };
+
+      if (dx === 1 && dy === 1) {
+        // Diagonal: substitution, always resets to "just matched"
+        const score = getSubstitutionScore(representative[edge.from[0]], member[edge.from[1]], matrixType);
+        for (let s = 0; s < 3; s++) relax(s, DP_STATE_MATCH, score);
+      } else if (dx === 1 && dy === 0) {
+        // Representative advances alone -> gap in the member
+        relax(DP_STATE_MATCH, DP_STATE_GAP_MEMBER, open + extend);
+        relax(DP_STATE_GAP_MEMBER, DP_STATE_GAP_MEMBER, extend);
+        relax(DP_STATE_GAP_REPRESENTATIVE, DP_STATE_GAP_MEMBER, open + extend);
+      } else if (dx === 0 && dy === 1) {
+        // Member advances alone -> gap in the representative
+        relax(DP_STATE_MATCH, DP_STATE_GAP_REPRESENTATIVE, open + extend);
+        relax(DP_STATE_GAP_REPRESENTATIVE, DP_STATE_GAP_REPRESENTATIVE, extend);
+        relax(DP_STATE_GAP_MEMBER, DP_STATE_GAP_REPRESENTATIVE, open + extend);
+      }
+    }
+  }
+
+  const targetKey = `${target.x},${target.y}`;
+  const targetScores = dp.get(targetKey);
+  if (!targetScores) return [];
+
+  let bestState = 0;
+  for (let s = 1; s < 3; s++) {
+    if (targetScores[s] > targetScores[bestState]) bestState = s;
+  }
+  if (targetScores[bestState] === NEG_INF) return [];
+
+  // Walk backpointers from target to start
+  const edges: Edge[] = [];
+  let curKey = targetKey;
+  let curState = bestState;
+  while (curKey !== startKey) {
+    const bp = back.get(curKey)?.[curState];
+    if (!bp) return []; // Shouldn't happen if targetScores[bestState] is finite, but guard anyway
+    edges.push(bp.edge);
+    curKey = bp.fromKey;
+    curState = bp.fromState;
+  }
+  edges.reverse();
+  return edges;
+}
+
+/**
+ * Builds a path through the selected edge(s) that hugs the reference optimal (blue) path
+ * everywhere possible, and only spends computation on the small local detours actually forced
+ * by the selection: wherever the path can follow blue, it does so directly (free); wherever it
+ * must leave blue to pass through a selected edge, findBestScoringPathInRegion computes the
+ * true best-scoring detour bounded to just that local region, then rejoins blue as soon as
+ * possible afterward.
+ */
+export function buildOptimalPathThroughSelectedEdges(
+  selectedEdges: Edge[],
+  allEdges: Edge[],
+  optimalPathEdges: Edge[],
+  representative: string,
+  member: string,
+  matrixType: CostMatrixTypeValue,
+  gapCost: number | undefined,
+  startGap: number | undefined,
+  graphWidth: number,
+  graphHeight: number
+): SelectedPath {
+  if (selectedEdges.length === 0 || optimalPathEdges.length === 0) {
+    return { points: [], edges: [], isValid: false };
+  }
+
+  const validAllEdges = allEdges.filter(edge => !(edge.from[0] === edge.to[0] && edge.from[1] === edge.to[1]));
+
+  // The blue path as an ordered list of points, e.g. [(0,0), (1,1), (1,2), ...]
+  const bluePoints: PathPoint[] = [{ x: optimalPathEdges[0].from[0], y: optimalPathEdges[0].from[1] }];
+  for (const edge of optimalPathEdges) {
+    bluePoints.push({ x: edge.to[0], y: edge.to[1] });
+  }
+
+  const sortedSelected = [...selectedEdges].sort((a, b) => (a.from[0] + a.from[1]) - (b.from[0] + b.from[1]));
+  const requiredPoints: PathPoint[] = [
+    ...sortedSelected.map(e => ({ x: e.from[0], y: e.from[1] })),
+    { x: graphWidth, y: graphHeight }
+  ];
+
+  // The Δ-suboptimal DAG is sparse - it only contains edges within the delta threshold of
+  // optimal, not a dense grid of every geometrically-possible move. So the "obvious" nearest
+  // divergence/rejoin point sometimes has no actual connecting path at all (e.g. a node with
+  // only one forced outgoing edge, several steps before anything reconnects). Both helpers
+  // below try the nearest candidate first (keeping the region as small as possible) and only
+  // widen the search when that specific bounded region genuinely has no path.
+
+  // Finds a path from some point at-or-before `searchFromIdx` on blue to `target`, preferring
+  // the point closest to target and retreating further back along blue only if needed.
+  const connectToTarget = (searchFromIdx: number, target: PathPoint): { edges: Edge[]; blueIdx: number } | null => {
+    let divergeIdx = searchFromIdx;
+    while (
+      divergeIdx + 1 < bluePoints.length &&
+      bluePoints[divergeIdx + 1].x <= target.x &&
+      bluePoints[divergeIdx + 1].y <= target.y
+    ) {
+      divergeIdx++;
+    }
+    for (let idx = divergeIdx; idx >= searchFromIdx; idx--) {
+      const p = bluePoints[idx];
+      if (p.x === target.x && p.y === target.y) {
+        return { edges: [], blueIdx: idx };
+      }
+      const detour = findBestScoringPathInRegion(p, target, validAllEdges, representative, member, matrixType, gapCost, startGap);
+      if (detour.length > 0) {
+        return { edges: detour, blueIdx: idx };
+      }
+    }
+    return null;
+  };
+
+  // Finds a path from `point` back onto blue, preferring the nearest reachable blue point and
+  // advancing further along blue only if that nearest candidate has no connecting path.
+  const connectFromPointToBlue = (point: PathPoint, searchFromIdx: number): { edges: Edge[]; blueIdx: number } | null => {
+    for (let idx = searchFromIdx; idx < bluePoints.length; idx++) {
+      const p = bluePoints[idx];
+      if (p.x < point.x || p.y < point.y) continue;
+      if (p.x === point.x && p.y === point.y) {
+        return { edges: [], blueIdx: idx };
+      }
+      const detour = findBestScoringPathInRegion(point, p, validAllEdges, representative, member, matrixType, gapCost, startGap);
+      if (detour.length > 0) {
+        return { edges: detour, blueIdx: idx };
+      }
+    }
+    return null;
+  };
+
+  // Same as connectFromPointToBlue, but never considers a blue candidate beyond `bound` (the
+  // next required point). Without this bound, rejoining blue after one selected edge can detour
+  // past the very next selected edge before finding a reachable rejoin point, leaving that next
+  // edge unreachable from where the search left off - the root cause of "Path Generation Failed"
+  // for two adjacent selected edges with no optimal-path touch between them.
+  const connectFromPointToBlueBounded = (
+    point: PathPoint,
+    searchFromIdx: number,
+    bound: PathPoint
+  ): { edges: Edge[]; blueIdx: number } | null => {
+    for (let idx = searchFromIdx; idx < bluePoints.length; idx++) {
+      const p = bluePoints[idx];
+      if (p.x > bound.x || p.y > bound.y) break; // would overshoot the next required point
+      if (p.x < point.x || p.y < point.y) continue;
+      if (p.x === point.x && p.y === point.y) {
+        return { edges: [], blueIdx: idx };
+      }
+      const detour = findBestScoringPathInRegion(point, p, validAllEdges, representative, member, matrixType, gapCost, startGap);
+      if (detour.length > 0) {
+        return { edges: detour, blueIdx: idx };
+      }
+    }
+    return null;
+  };
+
+  const pathEdges: Edge[] = [];
+  let currentPos: PathPoint = { x: 0, y: 0 };
+  let blueIdx = 0; // last confirmed-on-blue index, used as the search lower bound
+  let onBlue = true;
+  let isValid = true;
+
+  const appendBlueUpTo = (idx: number) => {
+    for (let i = blueIdx; i < idx; i++) pathEdges.push(optimalPathEdges[i]);
+  };
+
+  for (let r = 0; r < requiredPoints.length && isValid; r++) {
+    const target = requiredPoints[r];
+
+    // Step A: reach `target` from wherever the path currently is.
+    if (onBlue) {
+      const toTarget = connectToTarget(blueIdx, target);
+      if (!toTarget) {
+        isValid = false;
+        break;
+      }
+      appendBlueUpTo(toTarget.blueIdx);
+      pathEdges.push(...toTarget.edges);
+      blueIdx = toTarget.blueIdx;
+      currentPos = target;
+      onBlue = toTarget.edges.length === 0; // exact blue match vs. a detour that landed off-blue
+    } else if (currentPos.x === target.x && currentPos.y === target.y) {
+      // Already there (can happen when a selected edge lands exactly on the next required point).
+    } else {
+      // Off blue: the nearer route (chosen when the previous selected edge was processed) was a
+      // direct hop to this required point - try it first, and only fall back to rejoining blue
+      // if the sparse graph genuinely has nothing in that specific bounding box.
+      const direct = findBestScoringPathInRegion(currentPos, target, validAllEdges, representative, member, matrixType, gapCost, startGap);
+      if (direct.length > 0) {
+        pathEdges.push(...direct);
+        currentPos = target;
+        onBlue = false;
+      } else {
+        const toBlue = connectFromPointToBlue(currentPos, blueIdx);
+        if (!toBlue) {
+          isValid = false;
+          break;
+        }
+        pathEdges.push(...toBlue.edges);
+        blueIdx = toBlue.blueIdx;
+        const toTarget = connectToTarget(blueIdx, target);
+        if (!toTarget) {
+          isValid = false;
+          break;
+        }
+        appendBlueUpTo(toTarget.blueIdx);
+        pathEdges.push(...toTarget.edges);
+        blueIdx = toTarget.blueIdx;
+        currentPos = target;
+        onBlue = toTarget.edges.length === 0;
+      }
+    }
+
+    // If this "required point" is a selected edge's start (not the final target), append the
+    // edge itself, then decide whether rejoining blue or heading straight for the next required
+    // point is the shorter hop - in this DAG (every edge advances x and/or y by exactly 1),
+    // max(dx, dy) is an exact lower bound on graph distance, so this comparison is sound, not a
+    // heuristic. Picking the genuinely nearer target up front (rather than always attempting a
+    // blue rejoin and falling back after failure) is both simpler and cheaper.
+    if (r < sortedSelected.length) {
+      const selectedEdge = sortedSelected[r];
+      pathEdges.push(selectedEdge);
+      const afterEdge = { x: selectedEdge.to[0], y: selectedEdge.to[1] };
+      currentPos = afterEdge;
+
+      const nextRequired = requiredPoints[r + 1];
+
+      let nearestBlueIdx = -1;
+      for (let idx = blueIdx; idx < bluePoints.length; idx++) {
+        const p = bluePoints[idx];
+        if (p.x >= afterEdge.x && p.y >= afterEdge.y) {
+          nearestBlueIdx = idx;
+          break;
+        }
+      }
+      const blueDist = nearestBlueIdx >= 0
+        ? Math.max(bluePoints[nearestBlueIdx].x - afterEdge.x, bluePoints[nearestBlueIdx].y - afterEdge.y)
+        : Infinity;
+      const nextReqDist = Math.max(0, nextRequired.x - afterEdge.x, nextRequired.y - afterEdge.y);
+
+      if (nearestBlueIdx >= 0 && blueDist <= nextReqDist) {
+        const toBlue = connectFromPointToBlueBounded(afterEdge, blueIdx, nextRequired);
+        if (toBlue) {
+          pathEdges.push(...toBlue.edges);
+          blueIdx = toBlue.blueIdx;
+          onBlue = true;
+        } else {
+          onBlue = false; // no bounded rejoin - next iteration heads straight for nextRequired
+        }
+      } else {
+        onBlue = false; // the next selected edge (or final target) is the nearer hop
+      }
+    }
+  }
+
+  if (!isValid || pathEdges.length === 0) {
+    return { points: [], edges: [], isValid: false };
+  }
+
+  const points: PathPoint[] = [{ x: pathEdges[0].from[0], y: pathEdges[0].from[1] }];
+  for (const edge of pathEdges) points.push({ x: edge.to[0], y: edge.to[1] });
+
+  return { points, edges: pathEdges, isValid: true };
 }
 
 /**

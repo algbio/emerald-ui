@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import './App.css'
 import EmeraldInput from './components/sequence/EmeraldInput'
 import { SequenceProvider, useSequence } from './context/SequenceContext'
@@ -11,6 +11,11 @@ import type { Alignment, PointGridPlotRef } from './components/alignment/PointGr
 import { SafetyWindowExplanation } from './components/information'
 import { FaGithub, FaStar } from 'react-icons/fa'
 import { generateShareableUrl } from './utils/export/urlSharing'
+import { useStructureData } from './hooks/useStructureData'
+import { extractResidueBFactors } from './utils/structure/plddtParser'
+import { PLDDT_BINS } from './utils/colors/confidenceColorScale'
+import { useProteinDomains } from './hooks/useProteinDomains'
+import { extractUniProtId } from './utils/api/uniprotUtils'
 
 const GRAPH_WIDTH = 900;
 const GRAPH_HEIGHT = 900;
@@ -29,8 +34,52 @@ function AppContent() {
   const [isGettingStartedExpanded, setIsGettingStartedExpanded] = useState(false);
   const [isInterpretationExpanded, setIsInterpretationExpanded] = useState(false);
   const [isSequenceLinkCopied, setIsSequenceLinkCopied] = useState(false);
+  const [confidenceMode, setConfidenceMode] = useState<'plddt' | 'iupred' | 'off'>('plddt');
+  const [domainMode, setDomainMode] = useState<'on' | 'off'>('off');
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointGridRef = useRef<PointGridPlotRef | null>(null);
+
+  // Shared AlphaFold structure fetch, reused by both the 3D structure viewer and the pLDDT
+  // confidence strip on the alignment graph, so the file is only downloaded once.
+  const structureDataA = useStructureData(state.structureA?.uniprotId);
+  const structureDataB = useStructureData(state.structureB?.uniprotId);
+
+  // UniProt domain/feature annotations for the "Domain" strip on the alignment graph axes,
+  // keyed by the same UniProt accession used for the pLDDT structure fetch (independent of
+  // whether an AlphaFold structure is actually available for it).
+  const proteinDomainsA = useProteinDomains(state.structureA?.uniprotId);
+  const proteinDomainsB = useProteinDomains(state.structureB?.uniprotId);
+
+  // Both the pLDDT strip and the domain strip are fetched by UniProt accession, resolved from
+  // the sequence descriptor. With a plain pasted sequence there is no accession and therefore
+  // nothing to fetch, so those toggles are disabled rather than silently doing nothing when
+  // clicked. One accession is enough - that axis gets annotated, the other simply doesn't.
+  //
+  // Derived from the descriptors rather than structureA/B.uniprotId: the context only clears a
+  // stored accession when the sequence is cleared too (SequenceContext), so after editing a
+  // descriptor in place the stored id can still hold the previous entry's accession. The
+  // descriptor is what actually decides whether there is anything to look up.
+  const hasUniProtAccession = Boolean(
+    extractUniProtId(state.sequences.descriptorA) || extractUniProtId(state.sequences.descriptorB)
+  );
+  // The strips themselves are gated on the same flag, so a stale accession can never keep
+  // drawing UniProt-derived annotation after the descriptor stopped naming one.
+  const domainsRepresentative = hasUniProtAccession && domainMode === 'on' && proteinDomainsA.status === 'success' ? proteinDomainsA.domains : null;
+  const domainsMember = hasUniProtAccession && domainMode === 'on' && proteinDomainsB.status === 'success' ? proteinDomainsB.domains : null;
+
+  const plddtRepresentative = useMemo(() => {
+    if (!hasUniProtAccession || confidenceMode !== 'plddt' || structureDataA.status !== 'success' || !structureDataA.rawContent || !structureDataA.format) {
+      return null;
+    }
+    return extractResidueBFactors(structureDataA.rawContent, structureDataA.format);
+  }, [hasUniProtAccession, confidenceMode, structureDataA]);
+
+  const plddtMember = useMemo(() => {
+    if (!hasUniProtAccession || confidenceMode !== 'plddt' || structureDataB.status !== 'success' || !structureDataB.rawContent || !structureDataB.format) {
+      return null;
+    }
+    return extractResidueBFactors(structureDataB.rawContent, structureDataB.format);
+  }, [hasUniProtAccession, confidenceMode, structureDataB]);
 
   // Update local state when context state changes
   useEffect(() => {
@@ -363,7 +412,55 @@ function AppContent() {
                 </button>
               </div>
             )}
-            
+
+            <div className="confidence-mode-row">
+              <strong className="confidence-mode-label">Features:</strong>
+              <div className="confidence-mode-toggle">
+                <button
+                  type="button"
+                  className={`confidence-mode-button ${!hasUniProtAccession ? 'disabled' : (confidenceMode === 'plddt' ? 'active' : '')}`}
+                  onClick={() => setConfidenceMode(confidenceMode === 'plddt' ? 'off' : 'plddt')}
+                  disabled={!hasUniProtAccession}
+                  title={!hasUniProtAccession
+                    ? 'Available only when UniProt ID is provided'
+                    : (confidenceMode === 'plddt' ? 'Hide pLDDT confidence coloring on the axes' : 'Show pLDDT confidence coloring on the axes')}
+                >
+                  AlphaFold 2 pLDDT: {hasUniProtAccession && confidenceMode === 'plddt' ? 'On' : 'Off'}
+                </button>
+                <button
+                  type="button"
+                  className={`confidence-mode-button ${!hasUniProtAccession ? 'disabled' : (domainMode === 'on' ? 'active' : '')}`}
+                  onClick={() => setDomainMode(domainMode === 'on' ? 'off' : 'on')}
+                  disabled={!hasUniProtAccession}
+                  title={!hasUniProtAccession
+                    ? 'Available only when UniProt ID is provided'
+                    : (domainMode === 'on' ? 'Hide UniProt domain annotations on the axes' : 'Show UniProt domain annotations on the axes')}
+                >
+                  Domain: {hasUniProtAccession && domainMode === 'on' ? 'On' : 'Off'}
+                </button>
+                <button
+                  type="button"
+                  className="confidence-mode-button disabled"
+                  disabled
+                  title="IUPRED disorder prediction is coming soon"
+                >
+                  IUPRED (coming soon)
+                </button>
+              </div>
+              {!hasUniProtAccession && (
+                <span className="confidence-mode-note">Available only when UniProt ID is provided</span>
+              )}
+              {hasUniProtAccession && confidenceMode === 'plddt' && (
+                <div className="confidence-legend">
+                  {PLDDT_BINS.map(bin => (
+                    <span key={bin.label} className="confidence-legend-item">
+                      <span className="confidence-legend-swatch" style={{ backgroundColor: bin.color }}></span>
+                      {bin.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <AlignmentGraphWithInfoPanel
@@ -384,6 +481,14 @@ function AppContent() {
             gapCost={state.params.gapCost}
             startGap={state.params.startGap}
             costMatrixType={state.params.costMatrixType}
+            confidenceMode={confidenceMode}
+            plddtRepresentative={plddtRepresentative}
+            plddtMember={plddtMember}
+            domainMode={domainMode}
+            domainsRepresentative={domainsRepresentative}
+            domainsMember={domainsMember}
+            structureDataA={structureDataA}
+            structureDataB={structureDataB}
           />
         </div>
       )}

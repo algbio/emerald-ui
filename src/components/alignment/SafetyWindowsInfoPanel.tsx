@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import type { Alignment } from '../../types/PointGrid';
+import type { Alignment, TextAlignment, RectangleSelection } from '../../types/PointGrid';
 import VisualizationSettingsPanel from './VisualizationSettingsPanel';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import { ShareAndExportPanel } from '../share';
 import type { PointGridPlotRef } from './PointGridPlot';
 import { useSequence } from '../../context/SequenceContext';
+import { extractGappedSegment } from '../../utils/sequence/alignmentPositionMapping';
+import { generateAlignmentFromPath, type SelectedPath } from '../../utils/canvas/pathSelection';
+import type { SequenceSafetyWindow } from '../../utils/sequence/safetyWindowUtils';
 // import AlignmentParamsPanel from './AlignmentParamsPanel';
 import './SafetyWindowsInfoPanel.css';
 import './SequenceAlignmentViewer.css'; // Import for amino acid coloring classes
@@ -37,12 +40,26 @@ interface SafetyWindowsInfoPanelProps {
   onGapHighlight?: (gap: {type: 'representative' | 'member'; start: number; end: number} | null) => void;
   onWindowSelect?: (windowId: string | null) => void;
   pathSelectionResult?: import('../../types/PointGrid').PathSelectionResult | null;
+  optimalAlignment?: TextAlignment;
+  activeAlignmentTab?: 'optimal' | 'custom';
   selectedEdges?: import('../../types/PointGrid').MultipleSelectedEdgesState | null;
   onClearPath?: () => void;
   onGeneratePath?: () => void;
+  // "Extracted Windows" tool
+  rectangleSelectionMode?: boolean;
+  onToggleRectangleSelectionMode?: () => void;
+  extractedWindow?: RectangleSelection | null;
+  extractedWindowPaths?: SelectedPath[];
+  extractedWindowTruncated?: boolean;
+  extractedWindowPathIndex?: number;
+  onClearExtractedWindow?: () => void;
+  onPrevExtractedPath?: () => void;
+  onNextExtractedPath?: () => void;
+  representativeSafetyWindows?: SequenceSafetyWindow[];
+  memberSafetyWindows?: SequenceSafetyWindow[];
   // Tab state management
-  activeTab?: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export';
-  onActiveTabChange?: (tab: 'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export') => void;
+  activeTab?: 'general-info' | 'window-selection' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export';
+  onActiveTabChange?: (tab: 'general-info' | 'window-selection' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export') => void;
   // Export functionality props
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   pointGridRef?: React.RefObject<PointGridPlotRef | null>;
@@ -71,9 +88,20 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   onGapHighlight,
   onWindowSelect,
   pathSelectionResult,
+  optimalAlignment,
+  activeAlignmentTab = 'optimal',
   selectedEdges,
   onClearPath,
   onGeneratePath,
+  rectangleSelectionMode = false,
+  onToggleRectangleSelectionMode,
+  extractedWindow = null,
+  extractedWindowPaths = [],
+  extractedWindowTruncated = false,
+  extractedWindowPathIndex = 0,
+  onClearExtractedWindow,
+  onPrevExtractedPath,
+  onNextExtractedPath,
   activeTab: externalActiveTab,
   onActiveTabChange,
   canvasRef,
@@ -88,7 +116,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
 }) => {
   const { state } = useSequence();
   const [copyStatus, setCopyStatus] = useState<{id: string, success: boolean} | null>(null);
-  const [internalActiveTab, setInternalActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');  // Use external active tab if provided, otherwise use internal state
+  const [internalActiveTab, setInternalActiveTab] = useState<'general-info' | 'window-selection' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');  // Use external active tab if provided, otherwise use internal state
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab;
   const setActiveTab = onActiveTabChange || setInternalActiveTab;
   
@@ -470,8 +498,23 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     document.body.removeChild(form);
   };
 
-  const formatSequenceSegment = (sequence: string, start: number, end: number) => {
-    return sequence.slice(start, end);
+  // Gapped/aligned sequences matching whichever alignment (optimal or custom path) is
+  // currently shown in the Sequence Alignment panel, so window extraction can include '-'
+  // gap characters when the alignment calls for them (Feature 5: gap-aware copying).
+  const gappedRepresentative: string | null =
+    (activeAlignmentTab === 'custom' && pathSelectionResult?.alignedRepresentative) ||
+    optimalAlignment?.representative?.sequence ||
+    null;
+  const gappedMember: string | null =
+    (activeAlignmentTab === 'custom' && pathSelectionResult?.alignedMember) ||
+    optimalAlignment?.member?.sequence ||
+    null;
+
+  const formatSequenceSegment = (rawSequence: string, gappedSequence: string | null, start: number, end: number) => {
+    if (gappedSequence) {
+      return extractGappedSegment(gappedSequence, start, end);
+    }
+    return rawSequence.slice(start, end);
   };
 
   // Function to create full alignment display with highlighted safety window (DISABLED)
@@ -518,18 +561,25 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
   };
   */
 
-  // Simple gap sequence text (same as safety windows approach for performance)
+  // Gap sequence text, gap-aware when an alignment (optimal or custom path) is available
   const gapSequenceText = useMemo(() => {
     if (!currentGap) return '';
-    
-    const sequence = currentGapType === 'representative' 
-      ? representative.slice(currentGap.start, currentGap.end)
-      : member.slice(currentGap.start, currentGap.end);
-    
-    return sequence;
-  }, [currentGap, currentGapType, representative, member]);
+
+    const rawSequence = currentGapType === 'representative' ? representative : member;
+    const gappedSequence = currentGapType === 'representative' ? gappedRepresentative : gappedMember;
+
+    return formatSequenceSegment(rawSequence, gappedSequence, currentGap.start, currentGap.end);
+  }, [currentGap, currentGapType, representative, member, gappedRepresentative, gappedMember]);
 
   const currentWindow = currentWindowIndex >= 0 ? safetyWindowsInfo[currentWindowIndex] : null;
+
+  // Raw (graph-matching) boundaries for the current window - the same xStart/xEnd/yStart/yEnd
+  // the graph's own bracket annotations are drawn from, so this panel's coordinate range and
+  // extracted sequence can never disagree with what's highlighted on the graph, gaps included.
+  const effectiveXStart = currentWindow?.xStart ?? 0;
+  const effectiveXEnd = currentWindow?.xEnd ?? 0;
+  const effectiveYStart = currentWindow?.yStart ?? 0;
+  const effectiveYEnd = currentWindow?.yEnd ?? 0;
   useEffect(() => {
     if ((activeTab === 'visualization' || activeTab === 'general-info' || activeTab === 'safety-windows') && selectedWindowId && !currentSettings.enableSafetyWindowHighlighting) {
       onWindowHover?.(null);
@@ -572,7 +622,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     <div className="safety-windows-info-panel">
       {/* Tab Navigation */}
       <div className="tab-navigation">
-        <button 
+        <button
           className={`tab-button ${activeTab === 'general-info' ? 'active' : ''}`}
           onClick={() => setActiveTab('general-info')}
           title="View general alignment information and statistics"
@@ -580,7 +630,15 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           <span className="tab-icon">📊</span>
           General Info
         </button>
-        <button 
+        <button
+          className={`tab-button ${activeTab === 'window-selection' ? 'active' : ''}`}
+          onClick={() => setActiveTab('window-selection')}
+          title="Drag-select a window on the graph and extract its sequences"
+        >
+          <span className="tab-icon">🔲</span>
+          Window Selection
+        </button>
+        <button
           className={`tab-button ${activeTab === 'safety-windows' ? 'active' : ''}`}
           onClick={() => setActiveTab('safety-windows')}
           title="View and navigate safety windows"
@@ -591,7 +649,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
             <span className="tab-badge">{safetyWindowsInfo.length}</span>
           )}
         </button>
-         <button 
+        <button
           className={`tab-button ${activeTab === 'unsafe-windows' ? 'active' : ''}`}
           onClick={() => setActiveTab('unsafe-windows')}
           title="Analyze gap regions and non-safe areas"
@@ -599,15 +657,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           <span className="tab-icon">🔍</span>
           Unsafe Windows
         </button>
-        <button 
-          className={`tab-button ${activeTab === 'visualization' ? 'active' : ''}`}
-          onClick={() => setActiveTab('visualization')}
-          title="Customize visualization settings"
-        >
-          <span className="tab-icon">⚙️</span>
-          Settings
-        </button>
-        <button 
+        <button
           className={`tab-button ${activeTab === 'path-selection' ? 'active' : ''}`}
           onClick={() => setActiveTab('path-selection')}
           title="View path selection results and create custom alignments"
@@ -618,7 +668,15 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
             <span className="tab-badge">1</span>
           )}
         </button>
-        <button 
+        <button
+          className={`tab-button ${activeTab === 'visualization' ? 'active' : ''}`}
+          onClick={() => setActiveTab('visualization')}
+          title="Customize visualization settings"
+        >
+          <span className="tab-icon">⚙️</span>
+          Settings
+        </button>
+        <button
           className={`tab-button ${activeTab === 'export' ? 'active' : ''}`}
           onClick={() => setActiveTab('export')}
           title="Export images and share alignment links"
@@ -626,7 +684,6 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
           <span className="tab-icon">📤</span>
           Export
         </button>
-       
       </div>
 
       {/* Tab Content */}
@@ -708,7 +765,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
             {/* Help Text */}
             <div className="help-section">
               <div className="help-text">
-                <strong>Safety Windows</strong> are regions where the EMERALD algorithm has high confidence in the alignment. 
+                <strong>Safety Windows</strong> are regions where the EMERALD algorithm has high confidence in the alignment.
                 The safety percentage indicates what portion of each sequence is covered by these confident regions.
               </div>
               {safetyWindowsInfo.length > 0 && (
@@ -719,6 +776,158 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
               <div className="help-text">
                 Use the <strong>Gap Analysis</strong> tab to examine non-safe regions between safety windows.
               </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'window-selection' ? (
+        <div className="window-selection-content">
+          <div className="panel-header">
+            <h3>Window Selection{extractedWindow ? ' Result' : ''}</h3>
+            {extractedWindow ? (
+              <div className="panel-actions">
+                <button className="clear-button" onClick={onClearExtractedWindow}>
+                  Clear Selection
+                </button>
+              </div>
+            ) : (
+              <div className="panel-subtitle">Extract sequence alignment within a window</div>
+            )}
+          </div>
+          <div className="stats-container">
+            <div className="stat-section">
+              <h4>Extracted Windows</h4>
+              <button
+                type="button"
+                className={`safety-window-toggle ${rectangleSelectionMode ? 'active' : ''}`}
+                onClick={onToggleRectangleSelectionMode}
+              >
+                {rectangleSelectionMode ? 'Selecting… (drag on the plot)' : 'Enable Window Selection'}
+              </button>
+
+              {extractedWindow ? (
+                <div className="extracted-window-details">
+                  <div className="coordinate-info">
+                    <div className="axis-info">
+                      <span className="axis-label">X-axis ({representativeDescriptor || 'Reference'}):</span>
+                      <span className="coordinates">{extractedWindow.xStart + 1}-{extractedWindow.xEnd}</span>
+                    </div>
+                    <div className="axis-info">
+                      <span className="axis-label">Y-axis ({memberDescriptor || 'Member'}):</span>
+                      <span className="coordinates">{extractedWindow.yStart + 1}-{extractedWindow.yEnd}</span>
+                    </div>
+                  </div>
+
+                  <div className="sequence-preview">
+                    <div className="sequence-info">
+                      <div className="sequence-label">X-sequence:</div>
+                      <div className="sequence-container">
+                        <div className="sequence-segment">
+                          {representative.slice(extractedWindow.xStart, extractedWindow.xEnd)}
+                        </div>
+                        <button
+                          className="copy-button"
+                          onClick={() => copyToClipboard(representative.slice(extractedWindow.xStart, extractedWindow.xEnd), 'extracted-x-sequence')}
+                          title="Copy to clipboard"
+                        >
+                          {copyStatus?.id === 'extracted-x-sequence' ? (copyStatus.success ? '✓ Copied!' : '❌ Failed') : <span className="copy-icon">📋</span>}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="sequence-info">
+                      <div className="sequence-label">Y-sequence:</div>
+                      <div className="sequence-container">
+                        <div className="sequence-segment">
+                          {member.slice(extractedWindow.yStart, extractedWindow.yEnd)}
+                        </div>
+                        <button
+                          className="copy-button"
+                          onClick={() => copyToClipboard(member.slice(extractedWindow.yStart, extractedWindow.yEnd), 'extracted-y-sequence')}
+                          title="Copy to clipboard"
+                        >
+                          {copyStatus?.id === 'extracted-y-sequence' ? (copyStatus.success ? '✓ Copied!' : '❌ Failed') : <span className="copy-icon">📋</span>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {extractedWindowPaths.length > 0 && (
+                    <div className="extracted-window-paths">
+                      <h4>Alignment Variants</h4>
+                      <div className="window-navigation">
+                        <button className="nav-button prev-button" onClick={onPrevExtractedPath} disabled={extractedWindowPaths.length < 2}>
+                          <span className="nav-arrow">‹</span>
+                        </button>
+                        <div className="window-counter">
+                          <span className="current-window">{extractedWindowPathIndex + 1}</span>
+                          <span className="window-separator"> / </span>
+                          <span className="total-windows">{extractedWindowPaths.length}</span>
+                        </div>
+                        <button className="nav-button next-button" onClick={onNextExtractedPath} disabled={extractedWindowPaths.length < 2}>
+                          <span className="nav-arrow">›</span>
+                        </button>
+                      </div>
+                      {extractedWindowTruncated && (
+                        <p className="help-text">Showing top matches - more variants exist.</p>
+                      )}
+                      {(() => {
+                        const currentPath = extractedWindowPaths[extractedWindowPathIndex];
+                        if (!currentPath) return null;
+                        const { alignedRep, alignedMem } = generateAlignmentFromPath(currentPath, representative, member);
+                        return (
+                          <div className="sequence-preview">
+                            <div className="sequence-info">
+                              <div className="sequence-label">X-sequence:</div>
+                              <div className="sequence-container">
+                                <div className="sequence-segment">{alignedRep}</div>
+                                <button
+                                  className="copy-button"
+                                  onClick={() => copyToClipboard(alignedRep, 'extracted-aligned-x')}
+                                  title="Copy to clipboard"
+                                >
+                                  {copyStatus?.id === 'extracted-aligned-x' ? (copyStatus.success ? '✓ Copied!' : '❌ Failed') : <span className="copy-icon">📋</span>}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="sequence-info">
+                              <div className="sequence-label">Y-sequence:</div>
+                              <div className="sequence-container">
+                                <div className="sequence-segment">{alignedMem}</div>
+                                <button
+                                  className="copy-button"
+                                  onClick={() => copyToClipboard(alignedMem, 'extracted-aligned-y')}
+                                  title="Copy to clipboard"
+                                >
+                                  {copyStatus?.id === 'extracted-aligned-y' ? (copyStatus.success ? '✓ Copied!' : '❌ Failed') : <span className="copy-icon">📋</span>}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  {extractedWindowPaths.length === 0 && (
+                    <p className="help-text">No alignment paths found through this exact window - try a slightly different selection.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="no-selection">
+                  <div className="no-selection-message">
+                    <div className="no-selection-icon">🔲</div>
+                    <h4>No Window Selected</h4>
+                    <p>Left-click to drag a region on the alignment graph to extract its sequences and alignment.</p>
+                    <div className="help-text">
+                      <strong>How to use:</strong>
+                      <ul>
+                        <li>Click "Enable Window Selection" above to arm the tool.</li>
+                        <li>Left-click and drag a rectangle over the region of the graph you want to extract.</li>
+                        <li>Release to see the X/Y sequences for that window, plus every alignment variant that passes through it.</li>
+                        <li>Click "Clear Selection" to start over.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -797,7 +1006,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                         Window {currentWindowIndex + 1}
                       </div>
                       <div className="window-dimensions">
-                        {currentWindow.xLength} × {currentWindow.yLength}
+                        {effectiveXEnd - effectiveXStart} × {effectiveYEnd - effectiveYStart}
                       </div>
                     </div>
                     
@@ -805,25 +1014,25 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                       <div className="coordinate-info">
                         <div className="axis-info">
                           <span className="axis-label">X-axis ({representativeDescriptor || 'Reference'}):</span>
-                          <span className="coordinates">{currentWindow.xStart + 1}-{currentWindow.xEnd}</span>
+                          <span className="coordinates">{effectiveXStart + 1}-{effectiveXEnd}</span>
                         </div>
                         <div className="axis-info">
                           <span className="axis-label">Y-axis ({memberDescriptor || 'Member'}):</span>
-                          <span className="coordinates">{currentWindow.yStart + 1}-{currentWindow.yEnd}</span>
+                          <span className="coordinates">{effectiveYStart + 1}-{effectiveYEnd}</span>
                         </div>
                       </div>
-                      
+
                       <div className="sequence-preview">
                         <div className="sequence-info">
                           <div className="sequence-label">X-sequence:</div>
                           <div className="sequence-container">
                             <div className="sequence-segment">
-                              {formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd)}
+                              {formatSequenceSegment(representative, gappedRepresentative, effectiveXStart, effectiveXEnd)}
                             </div>
-                            <button 
+                            <button
                               className="copy-button"
                               onClick={() => {
-                                const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
+                                const sequence = formatSequenceSegment(representative, gappedRepresentative, effectiveXStart, effectiveXEnd);
                                 copyToClipboard(sequence, 'x-sequence');
                               }}
                               title="Copy to clipboard"
@@ -835,10 +1044,10 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                               )}
                             </button>
                           </div>
-                          <button 
+                          <button
                             className="uniprot-search-button"
                             onClick={() => {
-                              const sequence = formatSequenceSegment(representative, currentWindow.xStart, currentWindow.xEnd);
+                              const sequence = formatSequenceSegment(representative, gappedRepresentative, effectiveXStart, effectiveXEnd);
                               searchInUniProt(sequence);
                             }}
                             title="Search this sequence in UniProt BLAST (temporarily disabled)"
@@ -851,12 +1060,12 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                           <div className="sequence-label">Y-sequence:</div>
                           <div className="sequence-container">
                             <div className="sequence-segment">
-                              {formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd)}
+                              {formatSequenceSegment(member, gappedMember, effectiveYStart, effectiveYEnd)}
                             </div>
-                            <button 
+                            <button
                               className="copy-button"
                               onClick={() => {
-                                const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
+                                const sequence = formatSequenceSegment(member, gappedMember, effectiveYStart, effectiveYEnd);
                                 copyToClipboard(sequence, 'y-sequence');
                               }}
                               title="Copy to clipboard"
@@ -868,10 +1077,10 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                               )}
                             </button>
                           </div>
-                          <button 
+                          <button
                             className="uniprot-search-button"
                             onClick={() => {
-                              const sequence = formatSequenceSegment(member, currentWindow.yStart, currentWindow.yEnd);
+                              const sequence = formatSequenceSegment(member, gappedMember, effectiveYStart, effectiveYEnd);
                               searchInUniProt(sequence);
                             }}
                             title="Search this sequence in UniProt BLAST (temporarily disabled)"

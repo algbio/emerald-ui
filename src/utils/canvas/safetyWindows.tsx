@@ -5,117 +5,126 @@ import type { Alignment } from '../../types/PointGrid';
 export function drawSafetyWindows(
   ctx: CanvasRenderingContext2D,
   safetyWindows: Alignment[],
-  x: ScaleLinear<number, number>, 
-  y: ScaleLinear<number, number>, 
+  x: ScaleLinear<number, number>,
+  y: ScaleLinear<number, number>,
   fontSize: number,
   marginTop: number,
   marginLeft: number,
-  drawArrows: boolean = false
+  drawArrows: boolean = false,
+  // Extra space (in px) reserved outside marginTop/marginLeft for per-residue strips (pLDDT
+  // confidence, domain annotations) drawn closer to the axis - the bracket anchors shift out by
+  // this much so they never overlap those strips. Grid-boundary visibility clipping still uses
+  // the true marginTop/marginLeft, since that's unrelated to strip layout.
+  topStripOffset: number = 0,
+  leftStripOffset: number = 0
 ) {
+  const bracketMarginTop = marginTop - topStripOffset;
+  const bracketMarginLeft = marginLeft - leftStripOffset;
+
   safetyWindows.forEach(window => {
     if (!window.startDot || !window.endDot) return;
-    
+
     // X-axis safety window - draw bracket above
     const charStartX = x(window.startDot.x);
     const charEndX = x(window.endDot.x);
     const bracketHeight = Math.max(8, fontSize * 0.8);
     const bracketThickness = Math.max(2, fontSize * 0.15);
-    
+
     // Determine if start and end points are within visible area
     const startXVisible = charStartX >= marginLeft && charStartX <= x.range()[1];
     const endXVisible = charEndX >= marginLeft && charEndX <= x.range()[1];
-    
+
     // Only draw if any part of the bracket would be visible
     const clippedStartX = Math.max(marginLeft, charStartX);
     const clippedEndX = Math.min(x.range()[1], charEndX);
-    
+
     if (clippedEndX > clippedStartX) {
       // Draw bracket with square ends
       ctx.strokeStyle = 'green';
       ctx.lineWidth = bracketThickness;
       ctx.lineJoin = 'miter';
-      
+
       // Draw the horizontal line regardless
       ctx.beginPath();
-      ctx.moveTo(clippedStartX, marginTop - 5 - bracketThickness/2);
-      ctx.lineTo(clippedEndX, marginTop - 5 - bracketThickness/2);
+      ctx.moveTo(clippedStartX, bracketMarginTop - 5 - bracketThickness/2);
+      ctx.lineTo(clippedEndX, bracketMarginTop - 5 - bracketThickness/2);
       ctx.stroke();
-      
+
       // Only draw start vertical if it's visible
       if (startXVisible) {
         ctx.beginPath();
-        ctx.moveTo(clippedStartX, marginTop - bracketHeight - 5);
-        ctx.lineTo(clippedStartX, marginTop - 5);
+        ctx.moveTo(clippedStartX, bracketMarginTop - bracketHeight - 5);
+        ctx.lineTo(clippedStartX, bracketMarginTop - 5);
         ctx.stroke();
       }
-      
+
       // Only draw end vertical if it's visible
       if (endXVisible) {
         ctx.beginPath();
-        ctx.moveTo(clippedEndX, marginTop - 5);
-        ctx.lineTo(clippedEndX, marginTop - bracketHeight - 5);
+        ctx.moveTo(clippedEndX, bracketMarginTop - 5);
+        ctx.lineTo(clippedEndX, bracketMarginTop - bracketHeight - 5);
         ctx.stroke();
       }
-      
+
       // Add arrow showing direction only if we have enough space
       const arrowSize = Math.min(6, (clippedEndX - clippedStartX) / 4);
       if (((clippedEndX - clippedStartX) > arrowSize * 3 )&& drawArrows) {
         ctx.fillStyle = 'green';
         ctx.beginPath();
-        ctx.moveTo(clippedStartX + arrowSize * 2, marginTop - bracketHeight/2 - 5);
-        ctx.lineTo(clippedStartX + arrowSize, marginTop - bracketHeight/2 - 5 - arrowSize/2);
-        ctx.lineTo(clippedStartX + arrowSize, marginTop - bracketHeight/2 - 5 + arrowSize/2);
+        ctx.moveTo(clippedStartX + arrowSize * 2, bracketMarginTop - bracketHeight/2 - 5);
+        ctx.lineTo(clippedStartX + arrowSize, bracketMarginTop - bracketHeight/2 - 5 - arrowSize/2);
+        ctx.lineTo(clippedStartX + arrowSize, bracketMarginTop - bracketHeight/2 - 5 + arrowSize/2);
         ctx.fill();
       }
     }
-    
+
     // Y-axis safety window - draw bracket to the left
     const charStartY = y(window.startDot.y);
     const charEndY = y(window.endDot.y);
     const bracketWidth = Math.max(8, fontSize * 0.8);
-    
+
     // In canvas, Y increases downward, so we need to ensure the correct ordering
     const topY = Math.min(charStartY, charEndY);
     const bottomY = Math.max(charStartY, charEndY);
-    
+
     // Determine if top and bottom points are within visible area
     const topYVisible = topY >= marginTop && topY <= y.range()[1];
     const bottomYVisible = bottomY >= marginTop && bottomY <= y.range()[1];
-    
+
     // Only draw if the rectangle would be visible
     const clippedTopY = Math.max(marginTop, topY);
     const clippedBottomY = Math.min(y.range()[1], bottomY);
-    
+
     if (clippedBottomY > clippedTopY) {
-      const rectLeft = Math.max(5, marginLeft - bracketWidth - 5);
-      
+      const rectLeft = Math.max(5, bracketMarginLeft - bracketWidth - 5);
+
       // Draw bracket with square ends
       ctx.strokeStyle = 'green';
       ctx.lineWidth = bracketThickness;
       ctx.lineJoin = 'miter';
-      
+
       // Draw vertical line regardless
       ctx.beginPath();
-      ctx.moveTo(marginLeft - 5 - bracketThickness/2, clippedTopY);
-      ctx.lineTo(marginLeft - 5 - bracketThickness/2, clippedBottomY);
+      ctx.moveTo(bracketMarginLeft - 5 - bracketThickness/2, clippedTopY);
+      ctx.lineTo(bracketMarginLeft - 5 - bracketThickness/2, clippedBottomY);
       ctx.stroke();
-      
+
       // Only draw top horizontal if it's visible
       if (topYVisible) {
         ctx.beginPath();
         ctx.moveTo(rectLeft, clippedTopY);
-        ctx.lineTo(marginLeft - 5, clippedTopY);
+        ctx.lineTo(bracketMarginLeft - 5, clippedTopY);
         ctx.stroke();
       }
-      
+
       // Only draw bottom horizontal if it's visible
       if (bottomYVisible) {
         ctx.beginPath();
         ctx.moveTo(rectLeft, clippedBottomY);
-        ctx.lineTo(marginLeft - 5, clippedBottomY);
+        ctx.lineTo(bracketMarginLeft - 5, clippedBottomY);
         ctx.stroke();
       }
-      
+
       // Add arrow showing direction
       const arrowSize = Math.min(6, (clippedBottomY - clippedTopY) / 4);
       if ((clippedBottomY - clippedTopY) > arrowSize * 3 && drawArrows) {

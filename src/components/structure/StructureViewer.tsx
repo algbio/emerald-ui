@@ -3,8 +3,11 @@ import { createPluginUI } from 'molstar/lib/mol-plugin-ui';
 import { DefaultPluginUISpec, type PluginUISpec } from 'molstar/lib/mol-plugin-ui/spec';
 import { PluginCommands } from 'molstar/lib/mol-plugin/commands';
 import { renderReact18 } from 'molstar/lib/mol-plugin-ui/react18';
+import { AFConfidenceColorThemeProvider } from '../../utils/structure/afConfidenceColorTheme';
 import { Asset } from 'molstar/lib/mol-util/assets';
 import { StructureElement } from 'molstar/lib/mol-model/structure';
+import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
+import { createStructureColorThemeParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import { MarkerAction, MarkerActions } from 'molstar/lib/mol-util/marker-action';
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSafetyWindowsHighlighting } from '../../hooks/useSafetyWindowsHighlighting';
@@ -71,6 +74,13 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pluginRef = useRef<any>(null);
+  // The cartoon representation's own state-tree node, captured after each load so the color
+  // effect below can update its theme directly - the hierarchy manager's component list
+  // (`structures[i].components`) turned out to stay empty for structures loaded through the
+  // plain builders API used here (no preset applied), so updateRepresentationsTheme silently
+  // no-ops against it.
+  const reprRef = useRef<any>(null);
+  const structureRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [isPluginReady, setIsPluginReady] = useState<boolean>(false);
@@ -160,6 +170,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         spec: getPluginSpec()
       });
       
+      plugin.representation.structure.themes.colorThemeRegistry.add(AFConfidenceColorThemeProvider);
+
       pluginRef.current = plugin;
       setIsPluginReady(true);
       setInitAttempts(0); // Reset attempts on success
@@ -316,7 +328,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         if (cartoonColorScheme === 'secondary-structure') {
           colorScheme = 'secondary-structure';
         } else if (cartoonColorScheme === 'b-factor') {
-          colorScheme = 'uncertainty';
+          colorScheme = 'af-confidence';
         } else if (cartoonColorScheme === 'uniform') {
           colorScheme = 'uniform';
         } else {
@@ -331,6 +343,8 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
             size: 'uniform',
           }
         );
+        reprRef.current = repr;
+        structureRef.current = structure.cell?.obj?.data ?? null;
 
         // Ensure the representation is fully updated
         if (repr && pluginRef.current.managers.structure) {
@@ -639,6 +653,35 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
       }
     }
   }, [safetyWindows, enableSafetyWindowHighlighting, isPluginReady]);
+
+  // Apply the cartoon color scheme in place when it changes, without reloading the structure.
+  // Forcing a full reload (e.g. via a remounting `key` prop) to change just the color theme was
+  // tried first and found to throw inside Mol*'s updateRepresentations on remount ("Cannot read
+  // properties of undefined (reading 'indexOf')") - re-creating the whole plugin/structure just
+  // to flip a color is also wasteful. Updating via the hierarchy manager
+  // (updateRepresentationsTheme against structures[i].components) was tried next, but that
+  // component list stays empty for structures loaded through the plain builders API used here
+  // (no hierarchy preset applied), so it silently no-ops. Updating the representation's own
+  // state-tree node directly - the same node captured in reprRef when it was first created -
+  // is the mechanism both of those higher-level helpers ultimately go through, and works
+  // regardless of hierarchy/component tracking.
+  useEffect(() => {
+    if (!isPluginReady || !pluginRef.current || !reprRef.current || !structureRef.current) return;
+    const plugin = pluginRef.current;
+
+    let colorScheme: string = 'chain-id';
+    if (cartoonColorScheme === 'secondary-structure') colorScheme = 'secondary-structure';
+    else if (cartoonColorScheme === 'b-factor') colorScheme = 'af-confidence';
+    else if (cartoonColorScheme === 'uniform') colorScheme = 'uniform';
+
+    const colorTheme = createStructureColorThemeParams(plugin, structureRef.current, 'cartoon', colorScheme, {});
+    const update = plugin.state.data.build()
+      .to(reprRef.current)
+      .update(StateTransforms.Representation.StructureRepresentation3D, (old: any) => ({ ...old, colorTheme }));
+    plugin.runTask(plugin.state.data.updateTree(update)).catch((err: unknown) => {
+      console.warn('Could not update representation color theme:', err);
+    });
+  }, [cartoonColorScheme, isPluginReady]);
 
   const handleRetryInitialization = () => {
     setError('');

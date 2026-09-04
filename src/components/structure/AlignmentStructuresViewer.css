@@ -116,13 +116,20 @@
 .structure-header-top h3 {
   margin: 0;
   flex: 1 1 auto;
+  /* Allow the heading to shrink instead of pushing the controls past the panel edge */
+  min-width: 0;
 }
 
+/* The controls must be allowed to shrink below their max-content width (every button on a
+   single line). With flex-shrink: 0 the wrap below never took effect, so the last button
+   (e.g. "Download mmCIF") simply overflowed the panel's right edge. */
 .structure-panel-controls {
   display: flex;
   gap: 0.5rem;
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .structure-panel-toggle {
@@ -238,4 +245,17 @@
   border-radius: 4px;
   border: 1px solid #bee5eb;
   text-align: center;
+}
+
+.structure-loading-placeholder {
+  background: #d1ecf1;
+  color: #0c5460;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #bee5eb;
+  text-align: center;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

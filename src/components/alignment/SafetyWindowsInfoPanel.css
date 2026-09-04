@@ -11,17 +11,23 @@
   flex-direction: column;
 }
 
-/* Tab Navigation */
+/* Tab Navigation - explicit 2-column grid so the requested row pairing
+   (General Info/Window Selection, Safety Windows/Unsafe Windows,
+   Path Selection/Settings, Export) is exact and deterministic at every width,
+   independent of button label length. */
 .tab-navigation {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
 }
 
+/* Export is the lone 7th tab (row 4) - span the full row instead of leaving an empty cell */
+.tab-navigation .tab-button:last-child {
+  grid-column: 1 / -1;
+}
+
 .tab-button {
-  flex: 1;
-  min-width: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,30 +91,14 @@
   overflow-y: auto;
 }
 
-/* Responsive tab layout - force visualization tab to second row when panel is narrow */
+/* Stack to a single column on very narrow viewports */
 @media (max-width: 400px) {
   .tab-navigation {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
-  
-  .tab-button {
-    flex: none;
-    width: 100%;
-    min-width: auto;
-  }
-}
 
-/* For panels between 350px and 400px wide, move visualization to second row */
-@media (min-width: 350px) and (max-width: 450px) {
-  .tab-button:nth-child(3) {
-    flex-basis: 100%;
-    order: 3;
-  }
-  
-  .tab-button:nth-child(1),
-  .tab-button:nth-child(2) {
-    flex: 1;
-    min-width: 50%;
+  .tab-button {
+    width: 100%;
   }
 }
 
@@ -712,7 +702,8 @@
 }
 
 /* General Info Content */
-.general-info-content {
+.general-info-content,
+.window-selection-content {
   flex: 1;
   overflow-y: auto;
 }
@@ -735,6 +726,22 @@
 }
 
 .stat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.extracted-window-details {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.extracted-window-paths {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1328,39 +1335,21 @@
     width: 300px;
   }
   
-  /* At 300px width, arrange tabs in 2x2 grid */
-  .tab-navigation {
-    flex-wrap: wrap;
-  }
-  
-  .tab-button:nth-child(1),
-  .tab-button:nth-child(2) {
-    flex: 1;
-    min-width: 45%;
-  }
-  
-  .tab-button:nth-child(3),
-  .tab-button:nth-child(4) {
-    flex: 1;
-    min-width: 45%;
-    order: 3;
-  }
+  /* Grid layout already keeps tabs in a fixed 2-column arrangement at this width */
 }
 
 @media (max-width: 1200px) {
   .safety-windows-info-panel {
     width: 280px;
   }
-  
+
   /* At 280px width, stack all tabs vertically for better readability */
   .tab-navigation {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
-  
+
   .tab-button {
-    flex: none;
     width: 100%;
-    min-width: auto;
     padding: 8px 12px;
     font-size: 12px;
   }

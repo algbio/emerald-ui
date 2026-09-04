@@ -184,6 +184,76 @@
   filter: brightness(1.08);
 }
 
+.confidence-mode-row {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.confidence-mode-label {
+  white-space: nowrap;
+}
+
+.confidence-mode-toggle {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.confidence-mode-button {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.confidence-mode-button.active {
+  border-color: var(--accent-primary);
+  background-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.confidence-mode-button.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Shown in place of the pLDDT legend when no UniProt accession is available, so the reason
+   the feature toggles are greyed out is stated without needing to hover them. */
+.confidence-mode-note {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.confidence-legend {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.confidence-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.confidence-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
 .interpretation-guide {
   margin-top: 1rem;
   padding: 1rem;

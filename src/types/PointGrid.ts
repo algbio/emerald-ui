@@ -31,6 +31,14 @@ export interface PathSelectionResult {
   distanceFromOptimal: number; // Distance percentage from optimal path
 }
 
+/** A rectangular region of the alignment graph, in raw (ungapped) sequence coordinates. */
+export interface RectangleSelection {
+  xStart: number;
+  xEnd: number;
+  yStart: number;
+  yEnd: number;
+}
+
 export interface SelectedEdgeState {
   edges: Edge[];
   isValid: boolean;

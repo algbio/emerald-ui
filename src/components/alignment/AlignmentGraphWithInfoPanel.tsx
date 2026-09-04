@@ -1,13 +1,17 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import PointGridPlot from './PointGridPlot';
 import type { PointGridPlotRef } from './PointGridPlot';
 import SafetyWindowsInfoPanel from './SafetyWindowsInfoPanel';
 import SequenceAlignmentViewer from './SequenceAlignmentViewer';
 import type { Alignment, PathSelectionResult, MultipleSelectedEdgesState } from '../../types/PointGrid';
+import { CostMatrixType, type CostMatrixTypeValue } from '../../utils/api/EmeraldService';
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
 import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer';
-import { validatePath, generateAlignmentFromPath, buildPathThroughSelectedEdges, calculateDistanceFromOptimalPath } from '../../utils/canvas/pathSelection';
+import type { StructureDataResult } from '../../hooks/useStructureData';
+import { validatePath, generateAlignmentFromPath, buildOptimalPathThroughSelectedEdges, calculateDistanceFromOptimalPath, enumeratePathsThroughRegion } from '../../utils/canvas/pathSelection';
+import { getAllEdges } from '../../utils/canvas/graphRenderer';
+import type { RectangleSelection } from '../../types/PointGrid';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { extractSafetyWindowsFromAlignments } from '../../utils/sequence/safetyWindowUtils';
 import { extractUniProtId } from '../../utils/api/uniprotUtils';
@@ -33,7 +37,17 @@ interface AlignmentGraphWithInfoPanelProps {
   accessionB?: string;
   gapCost?: number;
   startGap?: number;
-  costMatrixType?: number;
+  costMatrixType?: CostMatrixTypeValue;
+  // pLDDT/IUPRED confidence display
+  confidenceMode?: 'plddt' | 'iupred' | 'off';
+  plddtRepresentative?: number[] | null;
+  plddtMember?: number[] | null;
+  // UniProt domain annotation display
+  domainMode?: 'on' | 'off';
+  domainsRepresentative?: import('../../hooks/useProteinDomains').ProteinDomain[] | null;
+  domainsMember?: import('../../hooks/useProteinDomains').ProteinDomain[] | null;
+  structureDataA?: StructureDataResult;
+  structureDataB?: StructureDataResult;
 }
 
 export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelProps> = ({
@@ -54,7 +68,15 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   accessionB,
   gapCost,
   startGap,
-  costMatrixType
+  costMatrixType,
+  confidenceMode = 'off',
+  plddtRepresentative,
+  plddtMember,
+  domainMode = 'off',
+  domainsRepresentative,
+  domainsMember,
+  structureDataA,
+  structureDataB
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
@@ -93,7 +115,56 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   const [generatedPath, setGeneratedPath] = useState<import('../../utils/canvas/pathSelection').SelectedPath | null>(null);
   
   // Active tab state for side panel
-  const [activeTab, setActiveTab] = useState<'general-info' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');
+  const [activeTab, setActiveTab] = useState<'general-info' | 'window-selection' | 'safety-windows' | 'unsafe-windows' | 'visualization' | 'path-selection' | 'export'>('general-info');
+
+  // Which alignment (optimal vs custom path) is currently shown in the Sequence Alignment
+  // panel, lifted here so SafetyWindowsInfoPanel's copy buttons can pull matching gapped
+  // sequences (see Feature 5: gap-aware copying).
+  const [activeAlignmentTab, setActiveAlignmentTab] = useState<'optimal' | 'custom'>('optimal');
+
+  // "Extracted Windows" tool: left-click-drag rectangle selection on the graph, then cycle
+  // through every optimal/suboptimal alignment path that passes through the selected window.
+  const [rectangleSelectionMode, setRectangleSelectionMode] = useState(false);
+  const [extractedWindow, setExtractedWindow] = useState<RectangleSelection | null>(null);
+  const [extractedWindowPaths, setExtractedWindowPaths] = useState<import('../../utils/canvas/pathSelection').SelectedPath[]>([]);
+  const [extractedWindowTruncated, setExtractedWindowTruncated] = useState(false);
+  const [extractedWindowPathIndex, setExtractedWindowPathIndex] = useState(0);
+
+  // Rectangle selection and the Path Selection tab both interpret left-click on the graph
+  // differently, so keep them mutually exclusive.
+  useEffect(() => {
+    if (activeTab === 'path-selection' && rectangleSelectionMode) {
+      setRectangleSelectionMode(false);
+    }
+  }, [activeTab, rectangleSelectionMode]);
+
+  const handleToggleRectangleSelectionMode = () => {
+    setRectangleSelectionMode(prev => !prev);
+  };
+
+  const handleRectangleSelected = (selection: RectangleSelection) => {
+    setExtractedWindow(selection);
+    const allEdges = getAllEdges(alignments);
+    const { paths, truncated } = enumeratePathsThroughRegion(allEdges, selection);
+    setExtractedWindowPaths(paths);
+    setExtractedWindowTruncated(truncated);
+    setExtractedWindowPathIndex(0);
+  };
+
+  const handleClearExtractedWindow = () => {
+    setExtractedWindow(null);
+    setExtractedWindowPaths([]);
+    setExtractedWindowTruncated(false);
+    setExtractedWindowPathIndex(0);
+  };
+
+  const handlePrevExtractedPath = () => {
+    setExtractedWindowPathIndex(i => (extractedWindowPaths.length === 0 ? 0 : (i - 1 + extractedWindowPaths.length) % extractedWindowPaths.length));
+  };
+
+  const handleNextExtractedPath = () => {
+    setExtractedWindowPathIndex(i => (extractedWindowPaths.length === 0 ? 0 : (i + 1) % extractedWindowPaths.length));
+  };
 
   // Extract safety windows from alignments
   const safetyWindows = alignments.filter(alignment => 
@@ -287,11 +358,23 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
     // Build path that goes through all selected edges
     const allEdges = alignments.flatMap(alignment => alignment.edges);
     console.log('Total available edges:', allEdges.length);
-    
-    const path = buildPathThroughSelectedEdges(
-      selectedEdges.selectedEdges, 
-      allEdges, 
-      representative.length, 
+
+    // The reference optimal (blue) path's edges. The auto-filled portions of the generated
+    // path follow this directly wherever possible (free), and only spend computation on the
+    // true best-scoring path (real substitution matrix + affine gap cost) within the small
+    // local detours actually forced by the selected edge(s) - see buildOptimalPathThroughSelectedEdges.
+    const optimalPathEdges = alignments.find(a => a.color === 'blue')?.edges ?? [];
+
+    const path = buildOptimalPathThroughSelectedEdges(
+      selectedEdges.selectedEdges,
+      allEdges,
+      optimalPathEdges,
+      representative,
+      member,
+      costMatrixType ?? CostMatrixType.BLOSUM62,
+      gapCost,
+      startGap,
+      representative.length,
       member.length
     );
     console.log('Generated path:', path);
@@ -446,6 +529,16 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             enablePathSelection={visualizationSettings.enablePathSelection && activeTab === 'path-selection'}
             onEdgeSelected={handleEdgeSelected}
             generatedPath={generatedPath}
+            confidenceMode={confidenceMode}
+            plddtRepresentative={plddtRepresentative}
+            plddtMember={plddtMember}
+            domainMode={domainMode}
+            domainsRepresentative={domainsRepresentative}
+            domainsMember={domainsMember}
+            enableRectangleSelection={rectangleSelectionMode}
+            onRectangleSelected={handleRectangleSelected}
+            extractedWindow={extractedWindow}
+            highlightedVariantPath={extractedWindowPaths[extractedWindowPathIndex] ?? null}
             ref={(pointGridElement) => {
               // Store the PointGridPlot ref
               pointGridRef.current = pointGridElement;
@@ -487,9 +580,22 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             onGapHighlight={setHighlightedGap}
             onWindowSelect={handleSafetyWindowSelect}
             pathSelectionResult={pathSelectionResult}
+            optimalAlignment={alignments.find(a => a.textAlignment)?.textAlignment}
+            activeAlignmentTab={activeAlignmentTab}
+            representativeSafetyWindows={safetyWindowMappings.sequenceA}
+            memberSafetyWindows={safetyWindowMappings.sequenceB}
             selectedEdges={selectedEdges}
             onClearPath={handleClearPath}
             onGeneratePath={handleGeneratePath}
+            rectangleSelectionMode={rectangleSelectionMode}
+            onToggleRectangleSelectionMode={handleToggleRectangleSelectionMode}
+            extractedWindow={extractedWindow}
+            extractedWindowPaths={extractedWindowPaths}
+            extractedWindowTruncated={extractedWindowTruncated}
+            extractedWindowPathIndex={extractedWindowPathIndex}
+            onClearExtractedWindow={handleClearExtractedWindow}
+            onPrevExtractedPath={handlePrevExtractedPath}
+            onNextExtractedPath={handleNextExtractedPath}
             activeTab={activeTab}
             onActiveTabChange={setActiveTab}
             canvasRef={canvasRef}
@@ -516,20 +622,26 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
         </div>
       </div>
       
-      <AlignmentStructuresViewer/>
       {/* Display sequence alignment if available OR path selection result exists */}
       {(alignments.some(a => a.textAlignment) || pathSelectionResult) && (
         <div className="sequence-alignment-viewer-container">
-          <SequenceAlignmentViewer 
-            alignment={alignments.find(a => a.textAlignment)?.textAlignment} 
+          <SequenceAlignmentViewer
+            alignment={alignments.find(a => a.textAlignment)?.textAlignment}
             pathSelectionResult={pathSelectionResult}
             representativeDescriptor={representativeDescriptor}
             memberDescriptor={memberDescriptor}
             representativeSafetyWindows={safetyWindowMappings.sequenceA}
             memberSafetyWindows={safetyWindowMappings.sequenceB}
+            costMatrixType={costMatrixType}
+            gapCost={gapCost}
+            startGap={startGap}
+            activeTab={activeAlignmentTab}
+            onActiveTabChange={setActiveAlignmentTab}
           />
         </div>
       )}
+
+      <AlignmentStructuresViewer structureDataA={structureDataA} structureDataB={structureDataB} />
     </div>
   );
 };
