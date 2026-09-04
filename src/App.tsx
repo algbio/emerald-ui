@@ -489,6 +489,8 @@ function AppContent() {
             domainsMember={domainsMember}
             structureDataA={structureDataA}
             structureDataB={structureDataB}
+            proteinDomainsA={hasUniProtAccession ? proteinDomainsA.domains : undefined}
+            proteinDomainsB={hasUniProtAccession ? proteinDomainsB.domains : undefined}
           />
         </div>
       )}

@@ -9,6 +9,7 @@ import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
 import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer';
 import type { StructureDataResult } from '../../hooks/useStructureData';
+import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { validatePath, generateAlignmentFromPath, buildOptimalPathThroughSelectedEdges, calculateDistanceFromOptimalPath, enumeratePathsThroughRegion } from '../../utils/canvas/pathSelection';
 import { getAllEdges } from '../../utils/canvas/graphRenderer';
 import type { RectangleSelection } from '../../types/PointGrid';
@@ -48,6 +49,9 @@ interface AlignmentGraphWithInfoPanelProps {
   domainsMember?: import('../../hooks/useProteinDomains').ProteinDomain[] | null;
   structureDataA?: StructureDataResult;
   structureDataB?: StructureDataResult;
+  /** UniProt domain annotations, passed through to the 3D panels' "Colour by domain" option */
+  proteinDomainsA?: ProteinDomain[];
+  proteinDomainsB?: ProteinDomain[];
 }
 
 export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelProps> = ({
@@ -76,7 +80,9 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   domainsRepresentative,
   domainsMember,
   structureDataA,
-  structureDataB
+  structureDataB,
+  proteinDomainsA,
+  proteinDomainsB
 }) => {
   const [selectedSafetyWindowId, setSelectedSafetyWindowId] = useState<string | null>(null);
   const [hoveredSafetyWindowId, setHoveredSafetyWindowId] = useState<string | null>(null);
@@ -641,7 +647,12 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
         </div>
       )}
 
-      <AlignmentStructuresViewer structureDataA={structureDataA} structureDataB={structureDataB} />
+      <AlignmentStructuresViewer
+        structureDataA={structureDataA}
+        structureDataB={structureDataB}
+        proteinDomainsA={proteinDomainsA}
+        proteinDomainsB={proteinDomainsB}
+      />
     </div>
   );
 };

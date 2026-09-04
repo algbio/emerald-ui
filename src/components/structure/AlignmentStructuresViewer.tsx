@@ -5,6 +5,7 @@ import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../ut
 import './AlignmentStructuresViewer.css';
 import { StructureSuperpositionPanel } from './StructureSuperpositionPanel';
 import type { StructureDataResult } from '../../hooks/useStructureData';
+import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { downloadRawStructureFile } from '../../utils/export/structureExport';
 
 function sanitizeForFilename(value: string): string {
@@ -21,11 +22,20 @@ interface AlignmentStructuresViewerProps {
   structureDataA?: StructureDataResult;
   /** Same as structureDataA, for sequence B. */
   structureDataB?: StructureDataResult;
+  /**
+   * UniProt domain annotations for each sequence, from the same useProteinDomains fetch that
+   * feeds the alignment graph's domain strip - so a domain keeps one color across the 2D strip
+   * and the 3D structure. Undefined/empty means the "Colour by domain" toggle isn't offered.
+   */
+  proteinDomainsA?: ProteinDomain[];
+  proteinDomainsB?: ProteinDomain[];
 }
 
 export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps> = ({
   structureDataA,
   structureDataB,
+  proteinDomainsA,
+  proteinDomainsB,
 }) => {
   const { state } = useSequence();
   const { sequences, alignments, structureA, structureB } = state;
@@ -37,6 +47,14 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
   // priority over "Color by Chain" for that structure.
   const [usePlddtColorsA, setUsePlddtColorsA] = useState(true);
   const [usePlddtColorsB, setUsePlddtColorsB] = useState(true);
+  // Domain coloring is off by default and mutually exclusive with pLDDT - both repaint every
+  // residue, so having both "on" would only ever show whichever won a silent priority contest.
+  // Turning one on explicitly turns the other off, keeping the buttons honest about what is
+  // actually being displayed.
+  const [useDomainColorsA, setUseDomainColorsA] = useState(false);
+  const [useDomainColorsB, setUseDomainColorsB] = useState(false);
+  const hasDomainsA = (proteinDomainsA?.length ?? 0) > 0;
+  const hasDomainsB = (proteinDomainsB?.length ?? 0) > 0;
 
   // Only show structures if we have alignments and at least one sequence has a structure
   const hasAlignments = alignments.length > 0;
@@ -107,10 +125,28 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                     <button
                       type="button"
                       className={`structure-panel-toggle ${usePlddtColorsA ? 'active' : ''}`}
-                      onClick={() => setUsePlddtColorsA((prev) => !prev)}
+                      onClick={() => {
+                        setUsePlddtColorsA((prev) => !prev);
+                        setUseDomainColorsA(false);
+                      }}
                       title={usePlddtColorsA ? 'Switch off pLDDT coloring' : 'Color the structure by AlphaFold pLDDT confidence'}
                     >
                       Colour by pLDDT score: {usePlddtColorsA ? 'On' : 'Off'}
+                    </button>
+                  )}
+                  {hasDomainsA && (
+                    <button
+                      type="button"
+                      className={`structure-panel-toggle ${useDomainColorsA ? 'active' : ''}`}
+                      onClick={() => {
+                        setUseDomainColorsA((prev) => !prev);
+                        setUsePlddtColorsA(false);
+                      }}
+                      title={useDomainColorsA
+                        ? 'Switch off domain coloring'
+                        : 'Color the structure by its UniProt domain annotations, using the same colors as the domain strip on the graph axes'}
+                    >
+                      Colour by domain: {useDomainColorsA ? 'On' : 'Off'}
                     </button>
                   )}
                   <button
@@ -184,7 +220,10 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                 showSequence={true}
                 safetyWindows={safetyWindowsA}
                 enableSafetyWindowHighlighting={highlightSafetyWindowsA && safetyWindowsA.length > 0}
-                cartoonColorScheme={usePlddtColorsA ? 'b-factor' : (useSecondaryColorsA ? 'chain-id' : 'uniform')}
+                cartoonColorScheme={useDomainColorsA
+                  ? 'domain'
+                  : (usePlddtColorsA ? 'b-factor' : (useSecondaryColorsA ? 'chain-id' : 'uniform'))}
+                domains={proteinDomainsA}
                 onStructureLoaded={() => console.log(`Structure A loaded`)}
                 onError={(error) => console.error(`Structure A error:`, error)}
               />
@@ -203,10 +242,28 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                     <button
                       type="button"
                       className={`structure-panel-toggle ${usePlddtColorsB ? 'active' : ''}`}
-                      onClick={() => setUsePlddtColorsB((prev) => !prev)}
+                      onClick={() => {
+                        setUsePlddtColorsB((prev) => !prev);
+                        setUseDomainColorsB(false);
+                      }}
                       title={usePlddtColorsB ? 'Switch off pLDDT coloring' : 'Color the structure by AlphaFold pLDDT confidence'}
                     >
                       Colour by pLDDT score: {usePlddtColorsB ? 'On' : 'Off'}
+                    </button>
+                  )}
+                  {hasDomainsB && (
+                    <button
+                      type="button"
+                      className={`structure-panel-toggle ${useDomainColorsB ? 'active' : ''}`}
+                      onClick={() => {
+                        setUseDomainColorsB((prev) => !prev);
+                        setUsePlddtColorsB(false);
+                      }}
+                      title={useDomainColorsB
+                        ? 'Switch off domain coloring'
+                        : 'Color the structure by its UniProt domain annotations, using the same colors as the domain strip on the graph axes'}
+                    >
+                      Colour by domain: {useDomainColorsB ? 'On' : 'Off'}
                     </button>
                   )}
                   <button
@@ -280,7 +337,10 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                 showSequence={true}
                 safetyWindows={safetyWindowsB}
                 enableSafetyWindowHighlighting={highlightSafetyWindowsB && safetyWindowsB.length > 0}
-                cartoonColorScheme={usePlddtColorsB ? 'b-factor' : (useSecondaryColorsB ? 'chain-id' : 'uniform')}
+                cartoonColorScheme={useDomainColorsB
+                  ? 'domain'
+                  : (usePlddtColorsB ? 'b-factor' : (useSecondaryColorsB ? 'chain-id' : 'uniform'))}
+                domains={proteinDomainsB}
                 onStructureLoaded={() => console.log(`Structure B loaded`)}
                 onError={(error) => console.error(`Structure B error:`, error)}
               />
