@@ -287,6 +287,26 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     representative, member, transform
   });
 
+  // How far out the safety-window brackets must sit to clear everything else in the margin.
+  //
+  // The residue letters are positioned relative to the *strip-enlarged* marginTop/marginLeft
+  // (drawXLabels draws at marginTop - 10, drawYLabels at marginLeft - 12, both in the axis
+  // font), so they move outward with the strips. Offsetting the bracket by the strip thickness
+  // alone therefore landed it right on top of the letters, striking through the very residues
+  // it marks. Clearance is a max() rather than a sum because the letters and the strips are
+  // both measured from the same margin and overlap each other - the bracket only has to clear
+  // whichever reaches furthest out.
+  const bracketGap = 4;
+  const bracketTopOffset = Math.max(
+    topStripThickness,
+    showSequenceCharacters ? 10 + fontSize + bracketGap : 0
+  );
+  const bracketLeftOffset = Math.max(
+    leftStripThickness,
+    // Monospace advance width is ~0.6em, and drawYLabels is right-aligned at marginLeft - 12.
+    showSequenceCharacters ? 12 + fontSize * 0.6 + bracketGap : 0
+  );
+
   // Use live zoom/pan domains for ticks and clamp to valid sequence coordinates.
   // This prevents grid lines from being generated outside [0, sequence length].
   const xDomainTuple: [number, number] = [
@@ -583,7 +603,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
 
     // Draw safety windows if enabled
     if (showSafetyWindows) {
-      drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false, topStripThickness, leftStripThickness);
+      drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false, bracketTopOffset, bracketLeftOffset);
       
       // Draw safety window highlight if applicable
       if (highlightedWindow) {

@@ -11,10 +11,13 @@ export function drawSafetyWindows(
   marginTop: number,
   marginLeft: number,
   drawArrows: boolean = false,
-  // Extra space (in px) reserved outside marginTop/marginLeft for per-residue strips (pLDDT
-  // confidence, domain annotations) drawn closer to the axis - the bracket anchors shift out by
-  // this much so they never overlap those strips. Grid-boundary visibility clipping still uses
-  // the true marginTop/marginLeft, since that's unrelated to strip layout.
+  // Extra space (in px) reserved outside marginTop/marginLeft for everything else living in the
+  // axis margin - the per-residue strips (pLDDT confidence, domain annotations) drawn closer to
+  // the axis, and the residue letters, which are themselves positioned relative to the
+  // strip-enlarged margin. The bracket anchors shift out by this much so they clear both; the
+  // caller works out the figure, since only it knows the font size and which strips are on.
+  // Grid-boundary visibility clipping still uses the true marginTop/marginLeft, since that's
+  // unrelated to margin layout.
   topStripOffset: number = 0,
   leftStripOffset: number = 0
 ) {
