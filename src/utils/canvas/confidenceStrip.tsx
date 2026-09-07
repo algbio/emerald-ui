@@ -18,15 +18,11 @@ function getVisibleResidueRange(
   return { start, end };
 }
 
-/**
- * Draws the pLDDT color strip along the top (X) axis. Takes the band's top edge rather than the
- * margin, since the caller stacks the annotation bands (residue letters, then domain, then
- * pLDDT) outward from the axis and their positions shift with the axis font size.
- */
+/** Draws the pLDDT color strip along the top (X) axis, just above the axis line. */
 export function drawConfidenceStripX(
   ctx: CanvasRenderingContext2D,
   x: ScaleLinear<number, number>,
-  stripTop: number,
+  marginTop: number,
   plddt: number[],
   sequenceLength: number
 ) {
@@ -34,6 +30,7 @@ export function drawConfidenceStripX(
   const visible = getVisibleResidueRange(x, pixelStart, pixelEnd, Math.min(sequenceLength, plddt.length));
   if (!visible) return;
 
+  const stripTop = marginTop - CONFIDENCE_STRIP_THICKNESS;
   for (let i = visible.start; i <= visible.end; i++) {
     const score = plddt[i];
     if (score === undefined || isNaN(score)) continue;
@@ -46,11 +43,11 @@ export function drawConfidenceStripX(
   }
 }
 
-/** Draws the pLDDT color strip along the left (Y) axis. See drawConfidenceStripX on stripLeft. */
+/** Draws the pLDDT color strip along the left (Y) axis, just left of the axis line. */
 export function drawConfidenceStripY(
   ctx: CanvasRenderingContext2D,
   y: ScaleLinear<number, number>,
-  stripLeft: number,
+  marginLeft: number,
   plddt: number[],
   sequenceLength: number
 ) {
@@ -58,6 +55,7 @@ export function drawConfidenceStripY(
   const visible = getVisibleResidueRange(y, pixelStart, pixelEnd, Math.min(sequenceLength, plddt.length));
   if (!visible) return;
 
+  const stripLeft = marginLeft - CONFIDENCE_STRIP_THICKNESS;
   for (let i = visible.start; i <= visible.end; i++) {
     const score = plddt[i];
     if (score === undefined || isNaN(score)) continue;

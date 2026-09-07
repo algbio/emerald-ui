@@ -23,7 +23,6 @@ import {
   findDomainAtResidue,
   DOMAIN_STRIP_THICKNESS
 } from '../../utils/canvas';
-import { wouldCharacterLabelsOverlap } from '../../utils/canvas/axes';
 import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { renderGraph, findClosestEdge, getAllEdges } from '../../utils/canvas/graphRenderer';
 import { buildPathFromEdge, generateAlignmentFromPath, validatePath, calculateDistanceFromOptimalPath, type SelectedPath } from '../../utils/canvas/pathSelection';
@@ -200,15 +199,12 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   const marginLeft = marginLeftProp
     + (showConfidenceStripY ? CONFIDENCE_STRIP_THICKNESS : 0)
     + (showDomainStripY ? DOMAIN_STRIP_THICKNESS : 0);
-  // Total space the strips consume beyond the base margin.
+  const domainStripTopX = marginTop - (showConfidenceStripX ? CONFIDENCE_STRIP_THICKNESS : 0) - DOMAIN_STRIP_THICKNESS;
+  const domainStripLeftY = marginLeft - (showConfidenceStripY ? CONFIDENCE_STRIP_THICKNESS : 0) - DOMAIN_STRIP_THICKNESS;
+  // Total space the strips consume beyond the base margin - other margin-relative annotations
+  // (e.g. safety window brackets) need to shift out by this much so they don't overlap the strips.
   const topStripThickness = marginTop - marginTopProp;
   const leftStripThickness = marginLeft - marginLeftProp;
-  // Offscreen context used only to measure the axis font, so the "will the residue letters
-  // actually be drawn at this zoom?" test below matches drawAxisLabels' own test exactly.
-  const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  if (!measureCanvasRef.current && typeof document !== 'undefined') {
-    measureCanvasRef.current = document.createElement('canvas');
-  }
   
   // Feedback notifications hook
   const { notifySuccess, notifyError } = useFeedbackNotifications();
@@ -290,41 +286,6 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
     representative, member, transform
   });
-
-  // ---- Axis annotation stack ---------------------------------------------------------------
-  // Bands are packed outward from the axis with nothing between them: residue letters first,
-  // then the domain strip, then the pLDDT strip, then the index numbers. The letter band is what
-  // makes the stack depth vary with zoom, since the axis font scales with cell size - and it
-  // collapses to zero when the letters are too dense to draw, so the strips close up against the
-  // axis instead of leaving a gap where the letters would have been.
-  const measureCtx = measureCanvasRef.current?.getContext('2d') ?? null;
-  const characterOverlap = measureCtx
-    ? wouldCharacterLabelsOverlap(measureCtx, x, y, fontSize)
-    : { xOverlap: true, yOverlap: true };
-  // Capped so the strips and index numbers still fit inside the margin at extreme zoom.
-  const xResidueBand = showSequenceCharacters && !characterOverlap.xOverlap
-    ? Math.min(fontSize + 4, Math.max(0, marginTopProp - 24))
-    : 0;
-  const yResidueBand = showSequenceCharacters && !characterOverlap.yOverlap
-    ? Math.min(fontSize * 0.6 + 6, Math.max(0, marginLeftProp - 24))
-    : 0;
-
-  const domainStripTopX = marginTop - xResidueBand - DOMAIN_STRIP_THICKNESS;
-  const domainStripLeftY = marginLeft - yResidueBand - DOMAIN_STRIP_THICKNESS;
-  const confidenceStripTopX = marginTop - xResidueBand
-    - (showDomainStripX ? DOMAIN_STRIP_THICKNESS : 0) - CONFIDENCE_STRIP_THICKNESS;
-  const confidenceStripLeftY = marginLeft - yResidueBand
-    - (showDomainStripY ? DOMAIN_STRIP_THICKNESS : 0) - CONFIDENCE_STRIP_THICKNESS;
-
-  // Index numbers sit beyond the whole stack.
-  const topIndexOffset = xResidueBand + topStripThickness;
-  const leftIndexOffset = yResidueBand + leftStripThickness;
-
-  // The safety-window bracket is an overlay rather than another band: its arms run from the axis
-  // out to just past the last annotation, framing the residues and their strips without
-  // reserving any space of its own. Its depth tracks the stack, and so tracks zoom.
-  const bracketTopSpan = topIndexOffset + 2;
-  const bracketLeftSpan = leftIndexOffset + 2;
 
   // Use live zoom/pan domains for ticks and clamp to valid sequence coordinates.
   // This prevents grid lines from being generated outside [0, sequence length].
@@ -626,9 +587,16 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
       // enclosed by the bracket rather than crossed by it. The letters are themselves drawn
       // beyond the strips (drawAxisLabels subtracts the same strip offsets), so this is the sum
       // of both: strips, then letters, then the spine.
+      const bracketGap = 4;
+      const topLabelClearance = showSequenceCharacters
+        ? topStripThickness + 10 + fontSize + bracketGap
+        : 0;
+      const leftLabelClearance = showSequenceCharacters
+        ? leftStripThickness + 12 + fontSize * 0.6 + bracketGap
+        : 0;
       drawSafetyWindows(
         ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false,
-        0, 0, bracketTopSpan, bracketLeftSpan
+        topStripThickness, leftStripThickness, topLabelClearance, leftLabelClearance
       );
       
       // Draw safety window highlight if applicable
@@ -703,17 +671,17 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         memberDescriptor,
         showSequenceCharacters,
         showSequenceIndices,
-        topIndexOffset,
-        leftIndexOffset
+        topStripThickness,
+        leftStripThickness
       );
     }
 
     // Draw pLDDT/IUPRED confidence strips along the axes, in the reserved margin band
     if (showConfidenceStripX && plddtRepresentative) {
-      drawConfidenceStripX(ctx, x, confidenceStripTopX, plddtRepresentative, representative.length);
+      drawConfidenceStripX(ctx, x, marginTop, plddtRepresentative, representative.length);
     }
     if (showConfidenceStripY && plddtMember) {
-      drawConfidenceStripY(ctx, y, confidenceStripLeftY, plddtMember, member.length);
+      drawConfidenceStripY(ctx, y, marginLeft, plddtMember, member.length);
     }
 
     // Draw UniProt domain annotation strips, just outside the confidence strip
