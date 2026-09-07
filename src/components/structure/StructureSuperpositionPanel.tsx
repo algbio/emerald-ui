@@ -18,6 +18,8 @@ import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../ut
 import type { StructureDataResult } from '../../hooks/useStructureData';
 import { downloadRawStructureFile, downloadStructureAsMmcif } from '../../utils/export/structureExport';
 import { AFConfidenceColorThemeProvider } from '../../utils/structure/afConfidenceColorTheme';
+import { DomainColorThemeProvider } from '../../utils/structure/domainColorTheme';
+import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { createStructureColorThemeParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import './StructureSuperpositionPanel.css';
 
@@ -110,11 +112,21 @@ interface StructureSuperpositionPanelProps {
    * buttons here so the original structures' raw file text doesn't need a duplicate fetch. */
   structureDataA?: StructureDataResult;
   structureDataB?: StructureDataResult;
+  /**
+   * Per-sequence UniProt domain annotations, used by "Colour by domain". Each structure is
+   * colored from its own list, but the palette is keyed by domain *name*, so a domain shared
+   * between the two proteins gets the same color in both - which is what makes it possible to
+   * see at a glance whether equivalent domains actually superpose.
+   */
+  proteinDomainsA?: ProteinDomain[];
+  proteinDomainsB?: ProteinDomain[];
 }
 
 export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelProps> = ({
   structureDataA,
   structureDataB,
+  proteinDomainsA,
+  proteinDomainsB,
 }) => {
   const { state } = useSequence();
   const { sequences, alignments, structureA, structureB } = state;
@@ -137,6 +149,10 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
   const [tmStats, setTmStats] = useState<TMAlignStats | null>(null);
   const [useSecondaryColors, setUseSecondaryColors] = useState(true);
   const [usePlddtColors, setUsePlddtColors] = useState(false);
+  // Mutually exclusive with pLDDT for the same reason as on the plain structure panels: both
+  // repaint every residue, so only one can actually be on screen.
+  const [useDomainColors, setUseDomainColors] = useState(false);
+  const hasAnyDomains = (proteinDomainsA?.length ?? 0) > 0 || (proteinDomainsB?.length ?? 0) > 0;
   const [showSafetyWindows, setShowSafetyWindows] = useState(true);
   const [hasSuperpositionLoaded, setHasSuperpositionLoaded] = useState(false);
 
@@ -275,6 +291,7 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
           return;
         }
         plugin.representation.structure.themes.colorThemeRegistry.add(AFConfidenceColorThemeProvider);
+        plugin.representation.structure.themes.colorThemeRegistry.add(DomainColorThemeProvider);
         pluginRef.current = plugin;
         setIsPluginReady(true);
       } catch (err) {
@@ -463,17 +480,19 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
     if (!isPluginReady || !hasSuperpositionLoaded || !pluginRef.current) return;
     const plugin = pluginRef.current;
 
-    const applyTheme = (which: 'a' | 'b', color: Color) => {
+    const applyTheme = (which: 'a' | 'b', color: Color, domains: ProteinDomain[]) => {
       const repr = reprRefsRef.current[which];
       const structureRef = structRefsRef.current[which];
       const structureObj = structureRef ? plugin.state.data.cells.get(structureRef)?.obj?.data : null;
       if (!repr || !structureObj) return;
 
-      const colorTheme = usePlddtColors
-        ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'af-confidence', {})
-        : useSecondaryColors
-          ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'uniform', { value: color })
-          : createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'uniform', {});
+      const colorTheme = useDomainColors
+        ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'domain-annotation', { domains })
+        : usePlddtColors
+          ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'af-confidence', {})
+          : useSecondaryColors
+            ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'uniform', { value: color })
+            : createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'uniform', {});
 
       const update = plugin.state.data.build()
         .to(repr)
@@ -482,9 +501,9 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
         console.warn(`Could not update structure ${which}'s color theme:`, err);
       });
     };
-    applyTheme('a', COLOR_A);
-    applyTheme('b', COLOR_B);
-  }, [isPluginReady, hasSuperpositionLoaded, useSecondaryColors, usePlddtColors]);
+    applyTheme('a', COLOR_A, proteinDomainsA ?? []);
+    applyTheme('b', COLOR_B, proteinDomainsB ?? []);
+  }, [isPluginReady, hasSuperpositionLoaded, useSecondaryColors, usePlddtColors, useDomainColors, proteinDomainsA, proteinDomainsB]);
 
   // Downloads the current (possibly TM-align-transformed) coordinates for a loaded structure as
   // mmCIF - the only format Mol* can re-serialize from its live in-memory state.
@@ -517,11 +536,29 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
           <button
             type="button"
             className={`structure-panel-toggle ${usePlddtColors ? 'active' : ''}`}
-            onClick={() => setUsePlddtColors(prev => !prev)}
+            onClick={() => {
+              setUsePlddtColors(prev => !prev);
+              setUseDomainColors(false);
+            }}
             title={usePlddtColors ? 'Switch off pLDDT coloring' : 'Color both structures by AlphaFold pLDDT confidence'}
           >
             Color by pLDDT: {usePlddtColors ? 'On' : 'Off'}
           </button>
+          {hasAnyDomains && (
+            <button
+              type="button"
+              className={`structure-panel-toggle ${useDomainColors ? 'active' : ''}`}
+              onClick={() => {
+                setUseDomainColors(prev => !prev);
+                setUsePlddtColors(false);
+              }}
+              title={useDomainColors
+                ? 'Switch off domain coloring'
+                : 'Color both structures by their UniProt domains - a domain shared by both proteins gets the same color, so you can see whether it superposes'}
+            >
+              Colour by domain: {useDomainColors ? 'On' : 'Off'}
+            </button>
+          )}
           <button
             type="button"
             className={`structure-panel-toggle ${showSafetyWindows ? 'active' : ''}`}

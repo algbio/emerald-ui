@@ -365,7 +365,12 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
     </div>
 
       {/* TM-align Superposition Panel — only shown when both structures are available */}
-      <StructureSuperpositionPanel structureDataA={structureDataA} structureDataB={structureDataB} />
+      <StructureSuperpositionPanel
+        structureDataA={structureDataA}
+        structureDataB={structureDataB}
+        proteinDomainsA={proteinDomainsA}
+        proteinDomainsB={proteinDomainsB}
+      />
     </>
   );
 };
