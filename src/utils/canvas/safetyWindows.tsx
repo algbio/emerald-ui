@@ -44,7 +44,10 @@ export function drawSafetyWindows(
     // X-axis safety window - draw bracket above
     const charStartX = x(window.startDot.x);
     const charEndX = x(window.endDot.x);
-    const bracketThickness = Math.max(2, fontSize * 0.15);
+    // Capped: the bracket's depth already grows with zoom (it spans the annotation stack), so
+    // letting the stroke grow with the font too turns it into a heavy slab over the residues
+    // instead of a frame around them.
+    const bracketThickness = Math.max(2, Math.min(4, fontSize * 0.15));
 
     // Determine if start and end points are within visible area
     const startXVisible = charStartX >= marginLeft && charStartX <= x.range()[1];

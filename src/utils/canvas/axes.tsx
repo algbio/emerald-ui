@@ -171,7 +171,7 @@ function drawXLabels(
   const visibleXEnd = Math.ceil(x.invert(xAxisEnd)) + 1;
   
   // Calculate where to position text vertically (ensure it's visible)
-  const verticalPosition = marginTop - 10;
+  const verticalPosition = marginTop - residueLabelPadX(fontSize);
   
   // Save current context
   ctx.save();
@@ -231,7 +231,7 @@ function drawYLabels(
       
       ctx.fillStyle = isInSafety ? 'green' : 'black';
       ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
-      ctx.fillText(tick.label, marginLeft - 12, yPos);
+      ctx.fillText(tick.label, marginLeft - residueLabelPadY(fontSize), yPos);
     }
   });
   
@@ -259,7 +259,7 @@ function wouldIndexLabelsOverlap(
 }
 
 // Hide sequence letters when adjacent labels would overlap at the current zoom level.
-function wouldCharacterLabelsOverlap(
+export function wouldCharacterLabelsOverlap(
   ctx: CanvasRenderingContext2D,
   x: ScaleLinear<number, number>,
   y: ScaleLinear<number, number>,
@@ -280,6 +280,19 @@ function wouldCharacterLabelsOverlap(
 }
 
 // Main function that uses all the helper functions
+/**
+ * Gap between the axis-side annotation strips and the residue letters that sit outside them.
+ * Proportional to the axis font rather than fixed: a constant gap is invisible at high zoom but
+ * reads as a band of empty space when the font shrinks, detaching each residue from the domain
+ * and pLDDT blocks describing it. Exported so the caller can size the letter band identically.
+ */
+export function residueLabelPadX(fontSize: number): number {
+  return Math.max(2, fontSize * 0.2);
+}
+export function residueLabelPadY(fontSize: number): number {
+  return Math.max(3, fontSize * 0.25);
+}
+
 export function drawAxisLabels(
   ctx: CanvasRenderingContext2D,
   xTicks: Array<{value: number; label: string}>,

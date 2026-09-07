@@ -23,6 +23,7 @@ import {
   findDomainAtResidue,
   DOMAIN_STRIP_THICKNESS
 } from '../../utils/canvas';
+import { wouldCharacterLabelsOverlap, residueLabelPadX, residueLabelPadY } from '../../utils/canvas/axes';
 import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { renderGraph, findClosestEdge, getAllEdges } from '../../utils/canvas/graphRenderer';
 import { buildPathFromEdge, generateAlignmentFromPath, validatePath, calculateDistanceFromOptimalPath, type SelectedPath } from '../../utils/canvas/pathSelection';
@@ -205,6 +206,12 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // (e.g. safety window brackets) need to shift out by this much so they don't overlap the strips.
   const topStripThickness = marginTop - marginTopProp;
   const leftStripThickness = marginLeft - marginLeftProp;
+  // Offscreen context used only to measure the axis font, so the "are the residue letters
+  // actually drawn at this zoom?" test below matches drawAxisLabels' own test exactly.
+  const measureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  if (!measureCanvasRef.current && typeof document !== 'undefined') {
+    measureCanvasRef.current = document.createElement('canvas');
+  }
   
   // Feedback notifications hook
   const { notifySuccess, notifyError } = useFeedbackNotifications();
@@ -286,6 +293,30 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     width, height, marginTop, marginRight, marginBottom, marginLeft,
     representative, member, transform
   });
+
+  // ---- Axis annotation stack -----------------------------------------------------------------
+  // Ordered outward from the axis: pLDDT strip, domain strip, then the residue letters as the
+  // outermost layer, then the index numbers. The letters are only drawn when they fit, so the
+  // band they occupy has to be measured with the same test drawAxisLabels uses - reserving space
+  // for letters that are being suppressed is what left the annotations floating in empty space
+  // at lower zoom.
+  const measureCtx = measureCanvasRef.current?.getContext('2d') ?? null;
+  const characterOverlap = measureCtx
+    ? wouldCharacterLabelsOverlap(measureCtx, x, y, fontSize)
+    : { xOverlap: true, yOverlap: true };
+  const drawsXChars = showSequenceCharacters && !characterOverlap.xOverlap;
+  const drawsYChars = showSequenceCharacters && !characterOverlap.yOverlap;
+  // Depth of the letter band beyond the strips: the proportional gap, plus the glyph itself.
+  const xLetterBand = drawsXChars ? residueLabelPadX(fontSize) + fontSize : 0;
+  const yLetterBand = drawsYChars ? residueLabelPadY(fontSize) + fontSize * 0.6 : 0;
+
+  // The safety-window bracket is an overlay rather than another band: its arms run from the axis
+  // out to just past the residue letters, framing the whole stack without reserving any space of
+  // its own. Its depth is therefore the stack's depth, which tracks zoom through the font size,
+  // and it collapses with the letter band when the letters are suppressed instead of leaving
+  // long arms hanging over empty margin.
+  const bracketTopSpan = topStripThickness + xLetterBand + 2;
+  const bracketLeftSpan = leftStripThickness + yLetterBand + 2;
 
   // Use live zoom/pan domains for ticks and clamp to valid sequence coordinates.
   // This prevents grid lines from being generated outside [0, sequence length].
@@ -583,20 +614,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
 
     // Draw safety windows if enabled
     if (showSafetyWindows) {
-      // Outer offsets put the bracket spine beyond the residue letters, so the letters end up
-      // enclosed by the bracket rather than crossed by it. The letters are themselves drawn
-      // beyond the strips (drawAxisLabels subtracts the same strip offsets), so this is the sum
-      // of both: strips, then letters, then the spine.
-      const bracketGap = 4;
-      const topLabelClearance = showSequenceCharacters
-        ? topStripThickness + 10 + fontSize + bracketGap
-        : 0;
-      const leftLabelClearance = showSequenceCharacters
-        ? leftStripThickness + 12 + fontSize * 0.6 + bracketGap
-        : 0;
       drawSafetyWindows(
         ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false,
-        topStripThickness, leftStripThickness, topLabelClearance, leftLabelClearance
+        0, 0, bracketTopSpan, bracketLeftSpan
       );
       
       // Draw safety window highlight if applicable
