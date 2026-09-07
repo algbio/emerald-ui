@@ -583,7 +583,16 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
 
     // Draw safety windows if enabled
     if (showSafetyWindows) {
-      drawSafetyWindows(ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false, topStripThickness, leftStripThickness);
+      // Outer offsets put the bracket spine beyond the residue letters (drawXLabels draws at
+      // marginTop - 10, drawYLabels at marginLeft - 12, both in the axis font), so the letters
+      // end up enclosed by the bracket rather than crossed by it.
+      const bracketGap = 4;
+      const topLabelClearance = showSequenceCharacters ? 10 + fontSize + bracketGap : 0;
+      const leftLabelClearance = showSequenceCharacters ? 12 + fontSize * 0.6 + bracketGap : 0;
+      drawSafetyWindows(
+        ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false,
+        topStripThickness, leftStripThickness, topLabelClearance, leftLabelClearance
+      );
       
       // Draw safety window highlight if applicable
       if (highlightedWindow) {

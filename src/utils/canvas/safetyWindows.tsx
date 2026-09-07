@@ -11,15 +11,32 @@ export function drawSafetyWindows(
   marginTop: number,
   marginLeft: number,
   drawArrows: boolean = false,
-  // Extra space (in px) reserved outside marginTop/marginLeft for per-residue strips (pLDDT
-  // confidence, domain annotations) drawn closer to the axis - the bracket anchors shift out by
-  // this much so they never overlap those strips. Grid-boundary visibility clipping still uses
-  // the true marginTop/marginLeft, since that's unrelated to strip layout.
+  // The bracket spans the axis margin between two offsets measured inward from
+  // marginTop/marginLeft, and opens *towards* the axis so the residues it marks sit inside it:
+  //
+  //        spine  ─────────────────      <- outer offset (…LabelClearance), clears the letters
+  //   arm    │                    │  arm
+  //          ╵                    ╵      <- inner offset (…StripOffset), just clear of the strips
+  //          A  H  P  A  G                  the safety window's residues, enclosed
+  //   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓      <- pLDDT / domain strips
+  //   ───────────────────────────────    <- axis (marginTop)
+  //
+  // Inner offset keeps the arm tips off the per-residue strips; outer offset puts the spine
+  // beyond the residue letters, which are themselves positioned relative to the strip-enlarged
+  // margin. The caller computes both, since only it knows the axis font size and which strips
+  // are on. Grid-boundary visibility clipping still uses the true marginTop/marginLeft.
   topStripOffset: number = 0,
-  leftStripOffset: number = 0
+  leftStripOffset: number = 0,
+  topLabelClearance: number = 0,
+  leftLabelClearance: number = 0
 ) {
-  const bracketMarginTop = marginTop - topStripOffset;
-  const bracketMarginLeft = marginLeft - leftStripOffset;
+  // Arm tips stop just short of the strips; the spine sits at the outer offset, but never less
+  // than a minimum depth so the bracket still reads as a bracket when no clearance is supplied.
+  const minBracketSpan = Math.max(8, fontSize * 0.8);
+  const armTipTop = marginTop - topStripOffset - 3;
+  const spineTop = Math.min(marginTop - topLabelClearance, armTipTop - minBracketSpan);
+  const armTipLeft = marginLeft - leftStripOffset - 3;
+  const spineLeft = Math.min(marginLeft - leftLabelClearance, armTipLeft - minBracketSpan);
 
   safetyWindows.forEach(window => {
     if (!window.startDot || !window.endDot) return;
@@ -27,7 +44,6 @@ export function drawSafetyWindows(
     // X-axis safety window - draw bracket above
     const charStartX = x(window.startDot.x);
     const charEndX = x(window.endDot.x);
-    const bracketHeight = Math.max(8, fontSize * 0.8);
     const bracketThickness = Math.max(2, fontSize * 0.15);
 
     // Determine if start and end points are within visible area
@@ -44,25 +60,24 @@ export function drawSafetyWindows(
       ctx.lineWidth = bracketThickness;
       ctx.lineJoin = 'miter';
 
-      // Draw the horizontal line regardless
+      // Spine runs along the outer edge, so the residues sit between it and the axis
       ctx.beginPath();
-      ctx.moveTo(clippedStartX, bracketMarginTop - 5 - bracketThickness/2);
-      ctx.lineTo(clippedEndX, bracketMarginTop - 5 - bracketThickness/2);
+      ctx.moveTo(clippedStartX, spineTop + bracketThickness/2);
+      ctx.lineTo(clippedEndX, spineTop + bracketThickness/2);
       ctx.stroke();
 
-      // Only draw start vertical if it's visible
+      // Arms drop from the spine towards the axis, closing the bracket around the residues
       if (startXVisible) {
         ctx.beginPath();
-        ctx.moveTo(clippedStartX, bracketMarginTop - bracketHeight - 5);
-        ctx.lineTo(clippedStartX, bracketMarginTop - 5);
+        ctx.moveTo(clippedStartX, spineTop);
+        ctx.lineTo(clippedStartX, armTipTop);
         ctx.stroke();
       }
 
-      // Only draw end vertical if it's visible
       if (endXVisible) {
         ctx.beginPath();
-        ctx.moveTo(clippedEndX, bracketMarginTop - 5);
-        ctx.lineTo(clippedEndX, bracketMarginTop - bracketHeight - 5);
+        ctx.moveTo(clippedEndX, spineTop);
+        ctx.lineTo(clippedEndX, armTipTop);
         ctx.stroke();
       }
 
@@ -71,9 +86,10 @@ export function drawSafetyWindows(
       if (((clippedEndX - clippedStartX) > arrowSize * 3 )&& drawArrows) {
         ctx.fillStyle = 'green';
         ctx.beginPath();
-        ctx.moveTo(clippedStartX + arrowSize * 2, bracketMarginTop - bracketHeight/2 - 5);
-        ctx.lineTo(clippedStartX + arrowSize, bracketMarginTop - bracketHeight/2 - 5 - arrowSize/2);
-        ctx.lineTo(clippedStartX + arrowSize, bracketMarginTop - bracketHeight/2 - 5 + arrowSize/2);
+        const arrowY = (spineTop + armTipTop) / 2;
+        ctx.moveTo(clippedStartX + arrowSize * 2, arrowY);
+        ctx.lineTo(clippedStartX + arrowSize, arrowY - arrowSize/2);
+        ctx.lineTo(clippedStartX + arrowSize, arrowY + arrowSize/2);
         ctx.fill();
       }
     }
@@ -81,7 +97,6 @@ export function drawSafetyWindows(
     // Y-axis safety window - draw bracket to the left
     const charStartY = y(window.startDot.y);
     const charEndY = y(window.endDot.y);
-    const bracketWidth = Math.max(8, fontSize * 0.8);
 
     // In canvas, Y increases downward, so we need to ensure the correct ordering
     const topY = Math.min(charStartY, charEndY);
@@ -96,32 +111,31 @@ export function drawSafetyWindows(
     const clippedBottomY = Math.min(y.range()[1], bottomY);
 
     if (clippedBottomY > clippedTopY) {
-      const rectLeft = Math.max(5, bracketMarginLeft - bracketWidth - 5);
+      const spineX = Math.max(5, spineLeft);
 
       // Draw bracket with square ends
       ctx.strokeStyle = 'green';
       ctx.lineWidth = bracketThickness;
       ctx.lineJoin = 'miter';
 
-      // Draw vertical line regardless
+      // Spine runs along the outer edge, so the residues sit between it and the axis
       ctx.beginPath();
-      ctx.moveTo(bracketMarginLeft - 5 - bracketThickness/2, clippedTopY);
-      ctx.lineTo(bracketMarginLeft - 5 - bracketThickness/2, clippedBottomY);
+      ctx.moveTo(spineX + bracketThickness/2, clippedTopY);
+      ctx.lineTo(spineX + bracketThickness/2, clippedBottomY);
       ctx.stroke();
 
-      // Only draw top horizontal if it's visible
+      // Arms reach from the spine towards the axis, closing the bracket around the residues
       if (topYVisible) {
         ctx.beginPath();
-        ctx.moveTo(rectLeft, clippedTopY);
-        ctx.lineTo(bracketMarginLeft - 5, clippedTopY);
+        ctx.moveTo(spineX, clippedTopY);
+        ctx.lineTo(armTipLeft, clippedTopY);
         ctx.stroke();
       }
 
-      // Only draw bottom horizontal if it's visible
       if (bottomYVisible) {
         ctx.beginPath();
-        ctx.moveTo(rectLeft, clippedBottomY);
-        ctx.lineTo(bracketMarginLeft - 5, clippedBottomY);
+        ctx.moveTo(spineX, clippedBottomY);
+        ctx.lineTo(armTipLeft, clippedBottomY);
         ctx.stroke();
       }
 
@@ -130,9 +144,10 @@ export function drawSafetyWindows(
       if ((clippedBottomY - clippedTopY) > arrowSize * 3 && drawArrows) {
         ctx.fillStyle = 'green';
         ctx.beginPath();
-        ctx.moveTo(rectLeft + bracketWidth/2, clippedTopY + arrowSize * 2);
-        ctx.lineTo(rectLeft + bracketWidth/2 - arrowSize/2, clippedTopY + arrowSize);
-        ctx.lineTo(rectLeft + bracketWidth/2 + arrowSize/2, clippedTopY + arrowSize);
+        const arrowX = (spineX + armTipLeft) / 2;
+        ctx.moveTo(arrowX, clippedTopY + arrowSize * 2);
+        ctx.lineTo(arrowX - arrowSize/2, clippedTopY + arrowSize);
+        ctx.lineTo(arrowX + arrowSize/2, clippedTopY + arrowSize);
         ctx.fill();
       }
     }
