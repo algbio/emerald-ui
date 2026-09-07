@@ -847,7 +847,7 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
               className="external-link-button external-link-reactome"
               title={`Find pathways containing ${uniprotId} in Reactome`}
             >
-              🔄 Reactome
+              🧩 Reactome
             </button>
           )}
 
