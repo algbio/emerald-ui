@@ -315,8 +315,17 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   // its own. Its depth is therefore the stack's depth, which tracks zoom through the font size,
   // and it collapses with the letter band when the letters are suppressed instead of leaving
   // long arms hanging over empty margin.
-  const bracketTopSpan = topStripThickness + xLetterBand + 2;
-  const bracketLeftSpan = leftStripThickness + yLetterBand + 2;
+  // Clearance between the tallest residue glyph and the bracket spine. Proportional so it holds
+  // at every zoom, and generous enough to cover the stroke itself: the spine is stroked centred
+  // on its path, so up to half the line width reaches back towards the letters and a couple of
+  // pixels of nominal gap left the bracket touching the taller glyphs.
+  // Capped at the top end: past a certain size more clearance buys nothing, and the axis font is
+  // itself uncapped, so an unbounded gap pushes the spine off the canvas at extreme zoom.
+  const bracketGap = Math.max(7, Math.min(14, fontSize * 0.35));
+  // Clamped so the spine always stays on canvas, even when very large glyphs would otherwise
+  // push the whole bracket out of the margin.
+  const bracketTopSpan = Math.min(topStripThickness + xLetterBand + bracketGap, marginTop - 6);
+  const bracketLeftSpan = Math.min(leftStripThickness + yLetterBand + bracketGap, marginLeft - 6);
 
   // Use live zoom/pan domains for ticks and clamp to valid sequence coordinates.
   // This prevents grid lines from being generated outside [0, sequence length].
