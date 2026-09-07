@@ -1177,6 +1177,17 @@ input[type="file"] {
   object-fit: contain;
 }
 
+.app-title-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+}
+
+.app-title-link:hover {
+  color: inherit;
+  text-decoration: none;
+}
 /* Center the subtitle below the app title */
 .app-title + p {
   text-align: center;
