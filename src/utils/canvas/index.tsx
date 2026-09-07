@@ -6,3 +6,5 @@ export * from './alignments';
 export * from './safetyWindows';
 export * from './interactions';
 export * from './minimap';
+export * from './confidenceStrip';
+export * from './domainStrip';

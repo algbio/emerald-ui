@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { TextAlignment, PathSelectionResult } from '../../types/PointGrid';
 import { exportAlignmentAsFasta, copyAlignmentFastaToClipboard } from '../../utils/export/fastaUtils';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import { extractUniProtId } from '../../utils/api/uniprotUtils';
 import type { SequenceSafetyWindow } from '../../utils/sequence/safetyWindowUtils';
+import { CostMatrixType, type CostMatrixTypeValue } from '../../utils/api/EmeraldService';
+import { scoreGappedAlignment } from '../../utils/sequence/alignmentScoring';
 import './SequenceAlignmentViewer.css';
 
 interface SequenceAlignmentViewerProps {
@@ -13,6 +15,14 @@ interface SequenceAlignmentViewerProps {
   memberDescriptor?: string;
   representativeSafetyWindows?: SequenceSafetyWindow[]; // Safety windows for representative sequence
   memberSafetyWindows?: SequenceSafetyWindow[]; // Safety windows for member sequence
+  costMatrixType?: CostMatrixTypeValue;
+  gapCost?: number;
+  startGap?: number;
+  // Controlled active-tab state, lifted to the shared parent so sibling panels (e.g. the
+  // Safety/Unsafe Windows copy buttons) can know which alignment is currently on screen.
+  // Falls back to internal state when not provided.
+  activeTab?: 'optimal' | 'custom';
+  onActiveTabChange?: (tab: 'optimal' | 'custom') => void;
 }
 
 /**
@@ -183,114 +193,28 @@ const groupBySegments = (
   return segments;
 };
 
-/**
- * Checks if an aligned pair falls ON the diagonal line of a safety window.
- * A safety window is a diagonal from (repStart, memStart) to (repEnd, memEnd).
- * A point is on this diagonal if the offset from start is the same for both sequences.
- */
-const isOnSafetyWindowDiagonal = (
-  repPos: number,
-  memPos: number,
-  repWindow: SequenceSafetyWindow,
-  memWindow: SequenceSafetyWindow
-): boolean => {
-  // Check if position is within bounds of both windows
-  if (repPos < repWindow.startPosition || repPos > repWindow.endPosition) return false;
-  if (memPos < memWindow.startPosition || memPos > memWindow.endPosition) return false;
-  
-  // Check if the offset from start is the same (point is on the diagonal)
-  const repOffset = repPos - repWindow.startPosition;
-  const memOffset = memPos - memWindow.startPosition;
-  
-  return repOffset === memOffset;
-};
-
-/**
- * Filters and clips safety windows to only include the portions that the alignment path goes through.
- * A safety window is "traversed" if there's at least one alignment position where
- * both sequences have a non-gap character that falls ON the diagonal line of the safety window.
- * 
- * The returned windows are clipped to only cover the range that the path actually traverses.
- * 
- * Note: repSafetyWindows[i] and memSafetyWindows[i] are paired - they come from the same
- * alignment entry and represent the same diagonal line in the alignment plot.
- */
-const filterSafetyWindowsByPath = (
-  repSeq: string,
-  memSeq: string,
-  repSafetyWindows: SequenceSafetyWindow[],
-  memSafetyWindows: SequenceSafetyWindow[]
-): { filteredRepWindows: SequenceSafetyWindow[]; filteredMemWindows: SequenceSafetyWindow[] } => {
-  // Build a set of (repCharPos, memCharPos) pairs that represent diagonal moves in the alignment
-  // These are positions where the path goes through a cell (both sequences align)
-  const alignedPairs: Array<{ repPos: number; memPos: number }> = [];
-  
-  let repCharPos = 0;
-  let memCharPos = 0;
-  
-  for (let i = 0; i < repSeq.length; i++) {
-    const repChar = repSeq[i];
-    const memChar = memSeq[i];
-    const repIsGap = repChar === '-';
-    const memIsGap = memChar === '-';
-    
-    if (!repIsGap) repCharPos++;
-    if (!memIsGap) memCharPos++;
-    
-    // A diagonal move (match/mismatch) is when neither sequence has a gap
-    if (!repIsGap && !memIsGap) {
-      alignedPairs.push({ repPos: repCharPos, memPos: memCharPos });
-    }
-  }
-  
-  const filteredRepWindows: SequenceSafetyWindow[] = [];
-  const filteredMemWindows: SequenceSafetyWindow[] = [];
-  
-  // The windows are paired by index - check each pair together
-  const numPairs = Math.min(repSafetyWindows.length, memSafetyWindows.length);
-  
-  for (let i = 0; i < numPairs; i++) {
-    const repWindow = repSafetyWindows[i];
-    const memWindow = memSafetyWindows[i];
-    
-    // Find all aligned pairs that fall ON the diagonal line of this safety window
-    const pairsOnDiagonal = alignedPairs.filter(pair => 
-      isOnSafetyWindowDiagonal(pair.repPos, pair.memPos, repWindow, memWindow)
-    );
-    
-    if (pairsOnDiagonal.length > 0) {
-      // Clip the windows to only the range that the path actually traverses
-      const minRepPos = Math.min(...pairsOnDiagonal.map(p => p.repPos));
-      const maxRepPos = Math.max(...pairsOnDiagonal.map(p => p.repPos));
-      const minMemPos = Math.min(...pairsOnDiagonal.map(p => p.memPos));
-      const maxMemPos = Math.max(...pairsOnDiagonal.map(p => p.memPos));
-      
-      filteredRepWindows.push({
-        startPosition: minRepPos,
-        endPosition: maxRepPos,
-        color: repWindow.color
-      });
-      
-      filteredMemWindows.push({
-        startPosition: minMemPos,
-        endPosition: maxMemPos,
-        color: memWindow.color
-      });
-    }
-  }
-  
-  return { filteredRepWindows, filteredMemWindows };
-};
-
-const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({ 
+const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   alignment, 
   pathSelectionResult,
   representativeDescriptor,
   memberDescriptor,
   representativeSafetyWindows = [],
-  memberSafetyWindows = []
+  memberSafetyWindows = [],
+  costMatrixType = CostMatrixType.BLOSUM62,
+  gapCost,
+  startGap,
+  activeTab: controlledActiveTab,
+  onActiveTabChange
 }) => {
-  const [activeTab, setActiveTab] = useState<'optimal' | 'custom'>('optimal');
+  const [internalActiveTab, setInternalActiveTab] = useState<'optimal' | 'custom'>('optimal');
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  // controlledActiveTab is always defined once a parent passes it (default 'optimal'), so it
+  // always wins over internalActiveTab above - clicking must therefore notify the parent
+  // directly via onActiveTabChange, not just update the (otherwise-ignored) internal state.
+  const setActiveTab = (tab: 'optimal' | 'custom') => {
+    setInternalActiveTab(tab);
+    onActiveTabChange?.(tab);
+  };
   const [showSafetyWindowHighlight, setShowSafetyWindowHighlight] = useState(true);
   const { notifySuccess, notifyError, notifyCopySuccess } = useFeedbackNotifications();
   
@@ -303,33 +227,56 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   
   // Default to custom if we only have custom, optimal if we only have optimal
   const effectiveActiveTab = showTabs ? activeTab : (hasCustomAlignment ? 'custom' : 'optimal');
+
+  // Report the effective (not just clicked) tab up to the parent, so sibling panels know
+  // which alignment is actually on screen even when tabs aren't shown (only one type exists).
+  useEffect(() => {
+    onActiveTabChange?.(effectiveActiveTab);
+  }, [effectiveActiveTab, onActiveTabChange]);
   
-  // Pre-compute filtered safety windows for optimal path
-  const optimalFilteredWindows = useMemo(() => {
-    if (!hasOptimalAlignment || representativeSafetyWindows.length === 0 || memberSafetyWindows.length === 0) {
-      return { filteredRepWindows: [], filteredMemWindows: [] };
-    }
-    return filterSafetyWindowsByPath(
+  // Safety window highlighting here uses the raw, unclipped window positions (the same
+  // startPosition/endPosition the graph's own bracket annotations are drawn from - see
+  // extractSafetyWindowsFromAlignments), rather than clipping each window down to only the
+  // portion that lands exactly on the alignment's diagonal. That diagonal-only clipping breaks
+  // as soon as a gap appears anywhere inside a window's range: a gap shifts the rep/mem offset
+  // relationship, so every position after it stops satisfying the "on the diagonal" check and
+  // gets excluded, silently truncating the highlight at the first internal gap even though nothing
+  // is actually wrong with the window. Using the raw window range keeps this panel's highlighting
+  // identical to what the graph shows, gaps included, for both the optimal and custom tabs (a
+  // window's positions are defined in the original ungapped sequences, so they apply to any
+  // complete alignment of the same two sequences, not just the one they were first computed from).
+
+  // Real substitution-matrix alignment score/match/mismatch/gap counts, computed client-side
+  // using the exact matrices and gap formula from the EMERALD WASM build (see substitutionMatrices.ts)
+  const optimalScoreBreakdown = useMemo(() => {
+    if (!hasOptimalAlignment) return null;
+    return scoreGappedAlignment(
       alignment.representative.sequence,
       alignment.member.sequence,
-      representativeSafetyWindows,
-      memberSafetyWindows
+      costMatrixType,
+      gapCost,
+      startGap
     );
-  }, [hasOptimalAlignment, alignment, representativeSafetyWindows, memberSafetyWindows]);
-  
-  // Pre-compute filtered safety windows for custom path
-  const customFilteredWindows = useMemo(() => {
-    if (!hasCustomAlignment || representativeSafetyWindows.length === 0 || memberSafetyWindows.length === 0) {
-      return { filteredRepWindows: [], filteredMemWindows: [] };
-    }
-    return filterSafetyWindowsByPath(
+  }, [hasOptimalAlignment, alignment, costMatrixType, gapCost, startGap]);
+
+  const customScoreBreakdown = useMemo(() => {
+    if (!hasCustomAlignment) return null;
+    return scoreGappedAlignment(
       pathSelectionResult.alignedRepresentative,
       pathSelectionResult.alignedMember,
-      representativeSafetyWindows,
-      memberSafetyWindows
+      costMatrixType,
+      gapCost,
+      startGap
     );
-  }, [hasCustomAlignment, pathSelectionResult, representativeSafetyWindows, memberSafetyWindows]);
-  
+  }, [hasCustomAlignment, pathSelectionResult, costMatrixType, gapCost, startGap]);
+
+  // Score difference from optimal: true substitution-matrix score delta, distinct from the
+  // existing edge-probability-based "Distance from Optimal" metric shown for custom paths
+  const scoreDifferenceFromOptimal = useMemo(() => {
+    if (!optimalScoreBreakdown || !customScoreBreakdown) return null;
+    return customScoreBreakdown.score - optimalScoreBreakdown.score;
+  }, [optimalScoreBreakdown, customScoreBreakdown]);
+
   // Early return if no alignment data
   if (!hasOptimalAlignment && !hasCustomAlignment) {
     return (
@@ -358,13 +305,15 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
     return null;
   }
   
-  // Select the appropriate filtered windows based on active tab
-  const { filteredRepWindows, filteredMemWindows } = effectiveActiveTab === 'custom' 
-    ? customFilteredWindows 
-    : optimalFilteredWindows;
-  
-  // Check if we have any filtered safety windows to highlight
+  // Raw window positions (same for either tab - see comment above)
+  const filteredRepWindows = representativeSafetyWindows;
+  const filteredMemWindows = memberSafetyWindows;
+
+  // Check if we have any safety windows to highlight
   const hasFilteredSafetyWindows = filteredRepWindows.length > 0 || filteredMemWindows.length > 0;
+
+  // Score/match/mismatch/gap stats for whichever tab is currently active
+  const activeScoreBreakdown = effectiveActiveTab === 'custom' ? customScoreBreakdown : optimalScoreBreakdown;
   
   // Extract sequence name from descriptor
   // Prefer UniProt accession code if available, otherwise fall back to title
@@ -478,17 +427,19 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
     }
   };
 
+  // "Path Length" for the custom path is the edge count already computed elsewhere
+  // (pathSelectionResult.pathLength); the optimal alignment has no equivalent precomputed
+  // value, so use the alignment's own column count (repSeq.length), which is the same
+  // "number of steps through the DP grid" concept.
+  const effectivePathLength = effectiveActiveTab === 'custom' && pathSelectionResult
+    ? pathSelectionResult.pathLength
+    : repSeq.length;
+
   return (
     <div className="sequence-alignment-viewer">
       <div className="alignment-section-header">
         <div className="alignment-header-left">
           <h3>Safety Windows Mapped on Sequence Alignment</h3>
-          {effectiveActiveTab === 'custom' && pathSelectionResult && (
-            <div className="alignment-stats">
-              <span>Path Length: {pathSelectionResult.pathLength}</span>
-              <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
-            </div>
-          )}
         </div>
         <div className="alignment-actions">
           {hasFilteredSafetyWindows && (
@@ -518,7 +469,27 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
           </div>
         </div>
       </div>
-      
+
+      {activeScoreBreakdown && (
+        <div className="alignment-stats">
+          <div className="alignment-stats-row">
+            <span>Path Length: {effectivePathLength}</span>
+            <span>Score: {activeScoreBreakdown.score}</span>
+            <span>Matches: {activeScoreBreakdown.matches}</span>
+            <span>Mismatches: {activeScoreBreakdown.mismatches}</span>
+            <span>Gaps: {activeScoreBreakdown.gapCount}</span>
+          </div>
+          {effectiveActiveTab === 'custom' && pathSelectionResult && (
+            <div className="alignment-stats-row">
+              <span>Distance from Optimal: {pathSelectionResult.distanceFromOptimal}%</span>
+              {scoreDifferenceFromOptimal !== null && (
+                <span>Score from Optimal: {scoreDifferenceFromOptimal > 0 ? '+' : ''}{scoreDifferenceFromOptimal}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {showTabs && (
         <div className="alignment-tabs">
           <button 

@@ -171,7 +171,7 @@ function drawXLabels(
   const visibleXEnd = Math.ceil(x.invert(xAxisEnd)) + 1;
   
   // Calculate where to position text vertically (ensure it's visible)
-  const verticalPosition = marginTop - 10;
+  const verticalPosition = marginTop - residueLabelPadX(fontSize);
   
   // Save current context
   ctx.save();
@@ -231,7 +231,7 @@ function drawYLabels(
       
       ctx.fillStyle = isInSafety ? 'green' : 'black';
       ctx.font = `${isInSafety ? 'bold' : 'normal'} ${fontSize}px monospace`;
-      ctx.fillText(tick.label, marginLeft - 12, yPos);
+      ctx.fillText(tick.label, marginLeft - residueLabelPadY(fontSize), yPos);
     }
   });
   
@@ -259,7 +259,7 @@ function wouldIndexLabelsOverlap(
 }
 
 // Hide sequence letters when adjacent labels would overlap at the current zoom level.
-function wouldCharacterLabelsOverlap(
+export function wouldCharacterLabelsOverlap(
   ctx: CanvasRenderingContext2D,
   x: ScaleLinear<number, number>,
   y: ScaleLinear<number, number>,
@@ -280,6 +280,19 @@ function wouldCharacterLabelsOverlap(
 }
 
 // Main function that uses all the helper functions
+/**
+ * Gap between the axis-side annotation strips and the residue letters that sit outside them.
+ * Proportional to the axis font rather than fixed: a constant gap is invisible at high zoom but
+ * reads as a band of empty space when the font shrinks, detaching each residue from the domain
+ * and pLDDT blocks describing it. Exported so the caller can size the letter band identically.
+ */
+export function residueLabelPadX(fontSize: number): number {
+  return Math.max(2, fontSize * 0.2);
+}
+export function residueLabelPadY(fontSize: number): number {
+  return Math.max(3, fontSize * 0.25);
+}
+
 export function drawAxisLabels(
   ctx: CanvasRenderingContext2D,
   xTicks: Array<{value: number; label: string}>,
@@ -294,8 +307,17 @@ export function drawAxisLabels(
   representativeDescriptor?: string,
   memberDescriptor?: string,
   showSequenceCharacters: boolean = true,
-  showSequenceIndices: boolean = true
+  showSequenceIndices: boolean = true,
+  // Space (px) taken by the per-residue strips (pLDDT, domain) drawn between the axis and the
+  // labels. marginTop/marginLeft already include it, so without subtracting it back out the
+  // residue letters and index numbers get drawn on top of the strips. Only *placement* is
+  // shifted - clipping and visible-range bounds keep using the true margins, which still mark
+  // where the plot area actually begins.
+  topStripOffset: number = 0,
+  leftStripOffset: number = 0
 ) {
+  const labelMarginTop = marginTop - topStripOffset;
+  const labelMarginLeft = marginLeft - leftStripOffset;
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
 
@@ -317,9 +339,9 @@ export function drawAxisLabels(
   // Draw index markers only if enabled (either full or minimal based on overlap)
   if (showSequenceIndices) {
     if (xOverlap) {
-      drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
+      drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, labelMarginTop, isInSafetyWindow);
     } else {
-      drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, marginTop, isInSafetyWindow);
+      drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, labelMarginTop, isInSafetyWindow);
     }
   }
 
@@ -349,9 +371,9 @@ export function drawAxisLabels(
   // Draw Y index markers only if enabled
   if (showSequenceIndices) {
     if (yOverlap) {
-      drawMinimalYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
+      drawMinimalYIndexMarkers(ctx, y, marginTop, labelMarginLeft, fontSize, yStringLength, isInSafetyWindow);
     } else {
-      drawYIndexMarkers(ctx, y, marginTop, marginLeft, fontSize, yStringLength, isInSafetyWindow);
+      drawYIndexMarkers(ctx, y, marginTop, labelMarginLeft, fontSize, yStringLength, isInSafetyWindow);
     }
   }
 
@@ -381,17 +403,17 @@ export function drawAxisLabels(
   if (showSequenceCharacters) {
     // Draw each axis only when adjacent characters have enough space.
     if (!characterOverlap.yOverlap) {
-      drawYLabels(ctx, yTicks, y, marginTop, marginLeft, fontSize, isInSafetyWindow);
+      drawYLabels(ctx, yTicks, y, marginTop, labelMarginLeft, fontSize, isInSafetyWindow);
     }
 
     if (!characterOverlap.xOverlap) {
-      drawXLabels(ctx, xTicks, x, marginTop, marginLeft, fontSize, isInSafetyWindow);
+      drawXLabels(ctx, xTicks, x, labelMarginTop, marginLeft, fontSize, isInSafetyWindow);
     }
   }
   
   // Draw selected safety window indices if provided
   if (selectedSafetyWindow) {
-    drawSafetyWindowIndices(ctx, x, y, marginTop, marginLeft, fontSize, selectedSafetyWindow);
+    drawSafetyWindowIndices(ctx, x, y, marginTop, marginLeft, fontSize, selectedSafetyWindow, topStripOffset, leftStripOffset);
   }
 }
 
@@ -602,7 +624,12 @@ export function drawSafetyWindowIndices(
   marginTop: number,
   marginLeft: number,
   fontSize: number,
-  safetyWindow: SafetyWindowBounds
+  safetyWindow: SafetyWindowBounds,
+  // See drawAxisLabels: these shift the index *placement* off the per-residue strips. This
+  // function reads marginTop for X placement but Y bounds (and marginLeft vice versa), so it
+  // takes the offsets rather than pre-shifted margins.
+  topStripOffset: number = 0,
+  leftStripOffset: number = 0
 ) {
   if (!safetyWindow || (safetyWindow.xStart === undefined && safetyWindow.yStart === undefined)) {
     return; // No safety window selected
@@ -628,7 +655,7 @@ export function drawSafetyWindowIndices(
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       // Add 1 for 1-indexed display
-      ctx.fillText(`${safetyWindow.xStart + 1}`, xStartPos, marginTop - xIndexOffset);
+      ctx.fillText(`${safetyWindow.xStart + 1}`, xStartPos, marginTop - topStripOffset - xIndexOffset);
     }
     
     // End index - place above the axis with vertical offset, centered on character
@@ -637,7 +664,7 @@ export function drawSafetyWindowIndices(
     if (xEndPos <= x.range()[1]) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`${safetyWindow.xEnd}`, xEndPos, marginTop - xIndexOffset);
+      ctx.fillText(`${safetyWindow.xEnd}`, xEndPos, marginTop - topStripOffset - xIndexOffset);
     }
   }
   
@@ -649,7 +676,7 @@ export function drawSafetyWindowIndices(
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       // Add 1 for 1-indexed display
-      ctx.fillText(`${safetyWindow.yStart + 1}`, marginLeft - yIndexOffset, yStartPos);
+      ctx.fillText(`${safetyWindow.yStart + 1}`, marginLeft - leftStripOffset - yIndexOffset, yStartPos);
     }
     
     // End index - place to the left of the axis, centered on character
@@ -658,7 +685,7 @@ export function drawSafetyWindowIndices(
     if (yEndPos <= y.range()[1]) {
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${safetyWindow.yEnd}`, marginLeft - yIndexOffset, yEndPos);
+      ctx.fillText(`${safetyWindow.yEnd}`, marginLeft - leftStripOffset - yIndexOffset, yEndPos);
     }
   }
   

@@ -116,13 +116,23 @@
 .structure-header-top h3 {
   margin: 0;
   flex: 1 1 auto;
+  /* Allow the heading to shrink instead of pushing the controls past the panel edge */
+  min-width: 0;
 }
 
+/* The controls sit on their own full-width row (flex-basis: 100%) below the heading, left
+   aligned so the row starts on the same edge as the UniProt/PDB badges in .structure-info
+   directly underneath. Sharing the heading's row instead left them right-aligned and ragged,
+   with a wrapped button stranded on its own. The row must also stay shrinkable (min-width: 0)
+   - with flex-shrink: 0 it was laid out at max-content width, its own flex-wrap never took
+   effect, and the last button (e.g. "Download mmCIF") overflowed the panel's right edge. */
 .structure-panel-controls {
   display: flex;
   gap: 0.5rem;
-  flex-shrink: 0;
+  flex: 1 1 100%;
+  min-width: 0;
   flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .structure-panel-toggle {
@@ -238,4 +248,17 @@
   border-radius: 4px;
   border: 1px solid #bee5eb;
   text-align: center;
+}
+
+.structure-loading-placeholder {
+  background: #d1ecf1;
+  color: #0c5460;
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #bee5eb;
+  text-align: center;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

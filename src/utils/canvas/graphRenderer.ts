@@ -21,6 +21,8 @@ export interface GraphRenderingOptions {
   selectedPath?: SelectedPath;
   hoveredEdge?: Edge;
   selectedIndividualEdges?: Edge[];
+  /** The currently-displayed alignment variant in the Window Selection tab, highlighted in green */
+  highlightedVariantPath?: SelectedPath | null;
 }
 
 /**
@@ -63,6 +65,11 @@ export function renderGraph(
   // 4. Individual selected edges (red highlighting)
   if (options.selectedIndividualEdges && options.selectedIndividualEdges.length > 0) {
     renderSelectedIndividualEdges(context, options.selectedIndividualEdges);
+  }
+
+  // 4b. Highlighted alignment variant from the Window Selection tab (green)
+  if (options.highlightedVariantPath) {
+    renderHighlightedVariantPath(context, options.highlightedVariantPath);
   }
 
   // 5. Hovered edge highlighting (top layer)
@@ -188,6 +195,42 @@ function renderSelectedPath(
   ctx.stroke();
 
   // Clear shadow for subsequent drawing
+  ctx.shadowBlur = 0;
+}
+
+/**
+ * Render the currently-displayed alignment variant from the Window Selection tab, in green,
+ * so cycling through variants (Prev/Next) is reflected live on the graph.
+ */
+function renderHighlightedVariantPath(
+  context: RenderingContext,
+  path: SelectedPath
+): void {
+  const { ctx, x, y } = context;
+
+  if (!path.isValid || path.edges.length === 0) return;
+
+  ctx.strokeStyle = 'rgba(16, 163, 74, 0.9)'; // Green, distinct from blue/orange-red/red/yellow
+  ctx.lineWidth = 4;
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.shadowColor = 'rgba(16, 163, 74, 0.3)';
+  ctx.shadowBlur = 8;
+
+  ctx.beginPath();
+  let isFirstEdge = true;
+
+  path.edges.forEach(edge => {
+    if (isFirstEdge) {
+      ctx.moveTo(x(edge.from[0]), y(edge.from[1]));
+      isFirstEdge = false;
+    }
+    ctx.lineTo(x(edge.to[0]), y(edge.to[1]));
+  });
+
+  ctx.stroke();
   ctx.shadowBlur = 0;
 }
 

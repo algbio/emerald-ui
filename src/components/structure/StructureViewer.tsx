@@ -3,8 +3,13 @@ import { createPluginUI } from 'molstar/lib/mol-plugin-ui';
 import { DefaultPluginUISpec, type PluginUISpec } from 'molstar/lib/mol-plugin-ui/spec';
 import { PluginCommands } from 'molstar/lib/mol-plugin/commands';
 import { renderReact18 } from 'molstar/lib/mol-plugin-ui/react18';
+import { AFConfidenceColorThemeProvider } from '../../utils/structure/afConfidenceColorTheme';
+import { DomainColorThemeProvider } from '../../utils/structure/domainColorTheme';
+import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { Asset } from 'molstar/lib/mol-util/assets';
 import { StructureElement } from 'molstar/lib/mol-model/structure';
+import { StateTransforms } from 'molstar/lib/mol-plugin-state/transforms';
+import { createStructureColorThemeParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import { MarkerAction, MarkerActions } from 'molstar/lib/mol-util/marker-action';
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSafetyWindowsHighlighting } from '../../hooks/useSafetyWindowsHighlighting';
@@ -50,7 +55,13 @@ interface StructureViewerProps {
   /** Custom colors for cartoon representation (hex color codes) */
   cartoonColors?: string[]; // Array of up to 8 hex colors like ['#FF0000', '#00FF00', ...]
   /** Cartoon color scheme to use - colors the backbone by different criteria */
-  cartoonColorScheme?: 'chain-id' | 'secondary-structure' | 'b-factor' | 'uniform';
+  cartoonColorScheme?: 'chain-id' | 'secondary-structure' | 'b-factor' | 'uniform' | 'domain';
+  /**
+   * UniProt domain annotations for this structure, used by the 'domain' color scheme. Comes from
+   * the same useProteinDomains fetch that feeds the alignment graph's domain strip, so a domain
+   * keeps one color across the 2D strip and the 3D structure.
+   */
+  domains?: ProteinDomain[];
 }
 
 export const StructureViewer: React.FC<StructureViewerProps> = ({
@@ -67,10 +78,18 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
   onError,
   safetyWindows = [],
   enableSafetyWindowHighlighting = false,
-  cartoonColorScheme = 'chain-id'
+  cartoonColorScheme = 'chain-id',
+  domains
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pluginRef = useRef<any>(null);
+  // The cartoon representation's own state-tree node, captured after each load so the color
+  // effect below can update its theme directly - the hierarchy manager's component list
+  // (`structures[i].components`) turned out to stay empty for structures loaded through the
+  // plain builders API used here (no preset applied), so updateRepresentationsTheme silently
+  // no-ops against it.
+  const reprRef = useRef<any>(null);
+  const structureRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [isPluginReady, setIsPluginReady] = useState<boolean>(false);
@@ -160,6 +179,9 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
         spec: getPluginSpec()
       });
       
+      plugin.representation.structure.themes.colorThemeRegistry.add(AFConfidenceColorThemeProvider);
+      plugin.representation.structure.themes.colorThemeRegistry.add(DomainColorThemeProvider);
+
       pluginRef.current = plugin;
       setIsPluginReady(true);
       setInitAttempts(0); // Reset attempts on success
@@ -311,12 +333,17 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
 
       // Apply default representation (cartoon + ball-and-stick for ligands)
       try {
-        // Map the color scheme to valid Mol* values
+        // Map the color scheme to valid Mol* values. 'af-confidence' and 'domain-annotation' are
+        // the two custom themes registered on this plugin instance above; the rest are built in.
         let colorScheme: string = 'chain-id';
+        let colorParams: Record<string, unknown> = {};
         if (cartoonColorScheme === 'secondary-structure') {
           colorScheme = 'secondary-structure';
         } else if (cartoonColorScheme === 'b-factor') {
-          colorScheme = 'uncertainty';
+          colorScheme = 'af-confidence';
+        } else if (cartoonColorScheme === 'domain') {
+          colorScheme = 'domain-annotation';
+          colorParams = { domains: domains ?? [] };
         } else if (cartoonColorScheme === 'uniform') {
           colorScheme = 'uniform';
         } else {
@@ -328,9 +355,12 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
           {
             type: 'cartoon',
             color: colorScheme,
+            colorParams,
             size: 'uniform',
           }
         );
+        reprRef.current = repr;
+        structureRef.current = structure.cell?.obj?.data ?? null;
 
         // Ensure the representation is fully updated
         if (repr && pluginRef.current.managers.structure) {
@@ -640,6 +670,42 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
     }
   }, [safetyWindows, enableSafetyWindowHighlighting, isPluginReady]);
 
+  // Apply the cartoon color scheme in place when it changes, without reloading the structure.
+  // Forcing a full reload (e.g. via a remounting `key` prop) to change just the color theme was
+  // tried first and found to throw inside Mol*'s updateRepresentations on remount ("Cannot read
+  // properties of undefined (reading 'indexOf')") - re-creating the whole plugin/structure just
+  // to flip a color is also wasteful. Updating via the hierarchy manager
+  // (updateRepresentationsTheme against structures[i].components) was tried next, but that
+  // component list stays empty for structures loaded through the plain builders API used here
+  // (no hierarchy preset applied), so it silently no-ops. Updating the representation's own
+  // state-tree node directly - the same node captured in reprRef when it was first created -
+  // is the mechanism both of those higher-level helpers ultimately go through, and works
+  // regardless of hierarchy/component tracking.
+  useEffect(() => {
+    if (!isPluginReady || !pluginRef.current || !reprRef.current || !structureRef.current) return;
+    const plugin = pluginRef.current;
+
+    let colorScheme: string = 'chain-id';
+    let colorParams: Record<string, unknown> = {};
+    if (cartoonColorScheme === 'secondary-structure') colorScheme = 'secondary-structure';
+    else if (cartoonColorScheme === 'b-factor') colorScheme = 'af-confidence';
+    else if (cartoonColorScheme === 'domain') {
+      colorScheme = 'domain-annotation';
+      colorParams = { domains: domains ?? [] };
+    } else if (cartoonColorScheme === 'uniform') colorScheme = 'uniform';
+
+    const colorTheme = createStructureColorThemeParams(plugin, structureRef.current, 'cartoon', colorScheme, colorParams);
+    const update = plugin.state.data.build()
+      .to(reprRef.current)
+      .update(StateTransforms.Representation.StructureRepresentation3D, (old: any) => ({ ...old, colorTheme }));
+    plugin.runTask(plugin.state.data.updateTree(update)).catch((err: unknown) => {
+      console.warn('Could not update representation color theme:', err);
+    });
+    // `domains` is included so the coloring refreshes if the UniProt fetch resolves after the
+    // domain scheme is already selected (the hook's module-level cache keeps the array
+    // reference stable, so this doesn't re-run on every render).
+  }, [cartoonColorScheme, domains, isPluginReady]);
+
   const handleRetryInitialization = () => {
     setError('');
     setInitAttempts(0);
@@ -769,6 +835,31 @@ export const StructureViewer: React.FC<StructureViewerProps> = ({
               title={`View ${uniprotId} in LIGYSIS Database`}
             >
               💊 LIGYSIS
+            </button>
+          )}
+
+          {/* Reactome resolves a UniProt accession through its search endpoint - the direct
+              /content/detail/{accession} form 404s, since detail pages are keyed by Reactome's
+              own stable ids (R-HSA-...) rather than by UniProt accession. */}
+          {uniprotId && (
+            <button
+              onClick={() => window.open(`https://reactome.org/content/query?q=${encodeURIComponent(uniprotId)}`, '_blank')}
+              className="external-link-button external-link-reactome"
+              title={`Find pathways containing ${uniprotId} in Reactome`}
+            >
+              🧩 Reactome
+            </button>
+          )}
+
+          {/* STRING maps the accession to its own protein id server-side; the /network/{id} path
+              form is rejected (403), so the identifiers query is the supported entry point. */}
+          {uniprotId && (
+            <button
+              onClick={() => window.open(`https://string-db.org/cgi/network?identifiers=${encodeURIComponent(uniprotId)}`, '_blank')}
+              className="external-link-button external-link-string"
+              title={`View the interaction network for ${uniprotId} in STRING`}
+            >
+              🕸️ STRING
             </button>
           )}
         </div>

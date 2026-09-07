@@ -169,6 +169,17 @@
   color: #6A4C93;
 }
 
+/* Each service keeps a distinct hue from its neighbours so the row stays scannable. */
+.external-link-reactome {
+  border-color: #1B7B8C;
+  color: #1B7B8C;
+}
+
+.external-link-string {
+  border-color: #C2185B;
+  color: #C2185B;
+}
+
 /* Control buttons styling */
 .structure-viewer-controls {
   display: flex;

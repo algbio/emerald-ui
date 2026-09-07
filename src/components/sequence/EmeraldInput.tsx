@@ -36,7 +36,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
     const basicValidation = sequences.sequenceA.trim().length > 0 && 
       sequences.sequenceB.trim().length > 0 &&
       params.alpha > 0.5 && params.alpha <= 1 &&
-      params.delta >= 0 && params.delta <= 32;
+      params.delta >= 0 && params.delta <= 64;
     
     // Use the context's canRunAlignment for asterisk validation
     const alignmentValidation = canRunAlignment();
@@ -432,7 +432,7 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
               id="delta-slider"
               type="range"
               min="0"
-              max="32"
+              max="64"
               step="1"
               value={params.delta}
               onChange={(e) => dispatch({
@@ -443,8 +443,8 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
             />
             <div className="slider-marks">
               <span>0</span>
-              <span>16</span>
               <span>32</span>
+              <span>64</span>
             </div>
           </div>
         </div>

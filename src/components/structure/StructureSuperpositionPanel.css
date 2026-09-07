@@ -21,6 +21,13 @@
   align-items: center;
 }
 
+.superposition-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .superposition-viewer {
   width: 100%;
   aspect-ratio: 16 / 9;

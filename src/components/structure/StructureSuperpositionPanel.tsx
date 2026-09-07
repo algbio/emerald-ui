@@ -15,7 +15,17 @@ import { MarkerAction, MarkerActions } from 'molstar/lib/mol-util/marker-action'
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSequence } from '../../context/SequenceContext';
 import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
+import type { StructureDataResult } from '../../hooks/useStructureData';
+import { downloadRawStructureFile, downloadStructureAsMmcif } from '../../utils/export/structureExport';
+import { AFConfidenceColorThemeProvider } from '../../utils/structure/afConfidenceColorTheme';
+import { DomainColorThemeProvider } from '../../utils/structure/domainColorTheme';
+import type { ProteinDomain } from '../../hooks/useProteinDomains';
+import { createStructureColorThemeParams } from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import './StructureSuperpositionPanel.css';
+
+function sanitizeForFilename(value: string): string {
+  return (value || 'structure').replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 60);
+}
 
 interface TMAlignStats {
   tmScoreA: number;
@@ -97,17 +107,52 @@ async function resolveStructureSource(
   throw new Error('No structure source provided');
 }
 
-export const StructureSuperpositionPanel: React.FC = () => {
+interface StructureSuperpositionPanelProps {
+  /** Shared AlphaFold fetch results (from useStructureData), reused for the "Download PDB"
+   * buttons here so the original structures' raw file text doesn't need a duplicate fetch. */
+  structureDataA?: StructureDataResult;
+  structureDataB?: StructureDataResult;
+  /**
+   * Per-sequence UniProt domain annotations, used by "Colour by domain". Each structure is
+   * colored from its own list, but the palette is keyed by domain *name*, so a domain shared
+   * between the two proteins gets the same color in both - which is what makes it possible to
+   * see at a glance whether equivalent domains actually superpose.
+   */
+  proteinDomainsA?: ProteinDomain[];
+  proteinDomainsB?: ProteinDomain[];
+}
+
+export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelProps> = ({
+  structureDataA,
+  structureDataB,
+  proteinDomainsA,
+  proteinDomainsB,
+}) => {
   const { state } = useSequence();
   const { sequences, alignments, structureA, structureB } = state;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const pluginRef = useRef<any>(null);
+  // State-tree cell refs for the loaded structures, captured once TM-align finishes, so the
+  // download buttons can pull each structure's *current* (possibly transformed) coordinates
+  // straight from Mol*'s live state rather than re-fetching or re-deriving them.
+  const structRefsRef = useRef<{ a: string | null; b: string | null; alignedB: string | null }>({ a: null, b: null, alignedB: null });
+  // Representation state-tree nodes (and the structure object each was built from), captured so
+  // the color effect below can update their color theme directly - updateRepresentationsTheme
+  // against the hierarchy manager's component list turned out to silently no-op here too (see
+  // the matching note in StructureViewer.tsx), since these structures are loaded via the plain
+  // builders API without a hierarchy preset applied.
+  const reprRefsRef = useRef<{ a: any; b: any }>({ a: null, b: null });
   const [isPluginReady, setIsPluginReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [tmStats, setTmStats] = useState<TMAlignStats | null>(null);
   const [useSecondaryColors, setUseSecondaryColors] = useState(true);
+  const [usePlddtColors, setUsePlddtColors] = useState(false);
+  // Mutually exclusive with pLDDT for the same reason as on the plain structure panels: both
+  // repaint every residue, so only one can actually be on screen.
+  const [useDomainColors, setUseDomainColors] = useState(false);
+  const hasAnyDomains = (proteinDomainsA?.length ?? 0) > 0 || (proteinDomainsB?.length ?? 0) > 0;
   const [showSafetyWindows, setShowSafetyWindows] = useState(true);
   const [hasSuperpositionLoaded, setHasSuperpositionLoaded] = useState(false);
 
@@ -245,6 +290,8 @@ export const StructureSuperpositionPanel: React.FC = () => {
           plugin.dispose();
           return;
         }
+        plugin.representation.structure.themes.colorThemeRegistry.add(AFConfidenceColorThemeProvider);
+        plugin.representation.structure.themes.colorThemeRegistry.add(DomainColorThemeProvider);
         pluginRef.current = plugin;
         setIsPluginReady(true);
       } catch (err) {
@@ -319,15 +366,20 @@ export const StructureSuperpositionPanel: React.FC = () => {
                 color: 'uniform' as const,
               };
 
-          await plugin.builders.structure.representation.addRepresentation(structure, representationParams);
-          return structure;
+          const repr = await plugin.builders.structure.representation.addRepresentation(structure, representationParams);
+          return { structure, repr };
         };
 
         // ---- Load both structures ----
-        const structNodeA = await loadOne(srcA.url, srcA.format, COLOR_A);
+        const { structure: structNodeA, repr: reprA } = await loadOne(srcA.url, srcA.format, COLOR_A);
         if (cancelled) return;
-        const structNodeB = await loadOne(srcB.url, srcB.format, COLOR_B);
+        const { structure: structNodeB, repr: reprB } = await loadOne(srcB.url, srcB.format, COLOR_B);
         if (cancelled) return;
+        structRefsRef.current.a = structNodeA.ref;
+        structRefsRef.current.b = structNodeB.ref;
+        structRefsRef.current.alignedB = null;
+        reprRefsRef.current.a = reprA;
+        reprRefsRef.current.b = reprB;
 
         // ---- Extract C-alpha loci ----
         const caQuery = compile<StructureSelection>(
@@ -358,7 +410,7 @@ export const StructureSuperpositionPanel: React.FC = () => {
         const result = tmAlign(lociA, lociB);
 
         // ---- Apply transformation to structure B ----
-        const update = plugin.state.data
+        const transformBuilder = plugin.state.data
           .build()
           .to(structNodeB)
           .insert(StateTransforms.Model.TransformStructureConformation, {
@@ -367,7 +419,8 @@ export const StructureSuperpositionPanel: React.FC = () => {
               params: { data: result.bTransform, transpose: false },
             },
           });
-        await plugin.runTask(plugin.state.data.updateTree(update));
+        await plugin.runTask(plugin.state.data.updateTree(transformBuilder));
+        structRefsRef.current.alignedB = transformBuilder.ref;
 
         if (cancelled) return;
 
@@ -405,7 +458,8 @@ export const StructureSuperpositionPanel: React.FC = () => {
     structureB?.uniprotId,
     structureB?.pdbId,
     structureB?.fileContent,
-    useSecondaryColors,
+    // useSecondaryColors intentionally excluded - color changes are applied in place by the
+    // effect below, without re-running TM-align and reloading both structures from scratch.
   ]);
 
   useEffect(() => {
@@ -419,6 +473,51 @@ export const StructureSuperpositionPanel: React.FC = () => {
     safetyWindowsB,
   ]);
 
+  // Apply the color scheme in place when either color toggle changes, without re-running
+  // TM-align or reloading the structures. "Color by pLDDT" overrides "Color by Chain" when both
+  // are on, matching the same override relationship used on the plain structure panels.
+  useEffect(() => {
+    if (!isPluginReady || !hasSuperpositionLoaded || !pluginRef.current) return;
+    const plugin = pluginRef.current;
+
+    const applyTheme = (which: 'a' | 'b', color: Color, domains: ProteinDomain[]) => {
+      const repr = reprRefsRef.current[which];
+      const structureRef = structRefsRef.current[which];
+      const structureObj = structureRef ? plugin.state.data.cells.get(structureRef)?.obj?.data : null;
+      if (!repr || !structureObj) return;
+
+      const colorTheme = useDomainColors
+        ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'domain-annotation', { domains })
+        : usePlddtColors
+          ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'af-confidence', {})
+          : useSecondaryColors
+            ? createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'uniform', { value: color })
+            : createStructureColorThemeParams(plugin, structureObj, 'cartoon', 'uniform', {});
+
+      const update = plugin.state.data.build()
+        .to(repr)
+        .update(StateTransforms.Representation.StructureRepresentation3D, (old: any) => ({ ...old, colorTheme }));
+      plugin.runTask(plugin.state.data.updateTree(update)).catch((err: unknown) => {
+        console.warn(`Could not update structure ${which}'s color theme:`, err);
+      });
+    };
+    applyTheme('a', COLOR_A, proteinDomainsA ?? []);
+    applyTheme('b', COLOR_B, proteinDomainsB ?? []);
+  }, [isPluginReady, hasSuperpositionLoaded, useSecondaryColors, usePlddtColors, useDomainColors, proteinDomainsA, proteinDomainsB]);
+
+  // Downloads the current (possibly TM-align-transformed) coordinates for a loaded structure as
+  // mmCIF - the only format Mol* can re-serialize from its live in-memory state.
+  const handleDownloadMmcif = (which: 'a' | 'b' | 'alignedB') => {
+    const plugin = pluginRef.current;
+    const ref = structRefsRef.current[which];
+    if (!plugin || !ref) return;
+    const structure = plugin.state.data.cells.get(ref)?.obj?.data;
+    if (!structure) return;
+    const label = which === 'a' ? sequences.descriptorA : sequences.descriptorB;
+    const suffix = which === 'alignedB' ? '_aligned' : '';
+    downloadStructureAsMmcif(structure, sanitizeForFilename(label), `${sanitizeForFilename(label)}${suffix}.cif`);
+  };
+
   if (!shouldShow) return null;
 
   return (
@@ -430,10 +529,36 @@ export const StructureSuperpositionPanel: React.FC = () => {
             type="button"
             className={`structure-panel-toggle ${useSecondaryColors ? 'active' : ''}`}
             onClick={() => setUseSecondaryColors(prev => !prev)}
-            title={useSecondaryColors ? 'Switch to basic gray coloring' : 'Switch to two-protein coloring'}
+            title={useSecondaryColors ? 'Switch to basic gray coloring' : 'Switch to color by chain'}
           >
-            Colors: {useSecondaryColors ? 'On' : 'Off'}
+            Color by Chain: {useSecondaryColors ? 'On' : 'Off'}
           </button>
+          <button
+            type="button"
+            className={`structure-panel-toggle ${usePlddtColors ? 'active' : ''}`}
+            onClick={() => {
+              setUsePlddtColors(prev => !prev);
+              setUseDomainColors(false);
+            }}
+            title={usePlddtColors ? 'Switch off pLDDT coloring' : 'Color both structures by AlphaFold pLDDT confidence'}
+          >
+            Color by pLDDT: {usePlddtColors ? 'On' : 'Off'}
+          </button>
+          {hasAnyDomains && (
+            <button
+              type="button"
+              className={`structure-panel-toggle ${useDomainColors ? 'active' : ''}`}
+              onClick={() => {
+                setUseDomainColors(prev => !prev);
+                setUsePlddtColors(false);
+              }}
+              title={useDomainColors
+                ? 'Switch off domain coloring'
+                : 'Color both structures by their UniProt domains - a domain shared by both proteins gets the same color, so you can see whether it superposes'}
+            >
+              Colour by domain: {useDomainColors ? 'On' : 'Off'}
+            </button>
+          )}
           <button
             type="button"
             className={`structure-panel-toggle ${showSafetyWindows ? 'active' : ''}`}
@@ -444,6 +569,55 @@ export const StructureSuperpositionPanel: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {hasSuperpositionLoaded && (
+        <div className="superposition-downloads">
+          {structureDataA?.rawContent && structureDataA.format === 'pdb' && (
+            <button
+              type="button"
+              className="structure-panel-toggle"
+              onClick={() => downloadRawStructureFile(structureDataA.rawContent!, 'pdb', `${sanitizeForFilename(sequences.descriptorA)}.pdb`)}
+              title="Download the original (pre-alignment) Sequence A structure as a PDB file"
+            >
+              Download A: PDB
+            </button>
+          )}
+          <button
+            type="button"
+            className="structure-panel-toggle"
+            onClick={() => handleDownloadMmcif('a')}
+            title="Download the original (pre-alignment) Sequence A structure as an mmCIF file"
+          >
+            Download A: mmCIF
+          </button>
+          {structureDataB?.rawContent && structureDataB.format === 'pdb' && (
+            <button
+              type="button"
+              className="structure-panel-toggle"
+              onClick={() => downloadRawStructureFile(structureDataB.rawContent!, 'pdb', `${sanitizeForFilename(sequences.descriptorB)}.pdb`)}
+              title="Download the original (pre-alignment) Sequence B structure as a PDB file"
+            >
+              Download B: PDB
+            </button>
+          )}
+          <button
+            type="button"
+            className="structure-panel-toggle"
+            onClick={() => handleDownloadMmcif('b')}
+            title="Download the original (pre-alignment) Sequence B structure as an mmCIF file"
+          >
+            Download B: mmCIF
+          </button>
+          <button
+            type="button"
+            className="structure-panel-toggle"
+            onClick={() => handleDownloadMmcif('alignedB')}
+            title="Download Sequence B's TM-align-superposed (aligned to A) structure as an mmCIF file - Mol* cannot re-export transformed coordinates as PDB, only mmCIF"
+          >
+            Download Alignment: mmCIF
+          </button>
+        </div>
+      )}
       <p className="structures-subtitle">
         Structural superposition computed using TM-align.{' '}
         <span className="legend-dot legend-dot--a" />{' '}
