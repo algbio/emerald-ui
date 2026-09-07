@@ -14,28 +14,29 @@ export function drawSafetyWindows(
   // The bracket spans the axis margin between two offsets measured inward from
   // marginTop/marginLeft, and opens *towards* the axis so the residues it marks sit inside it:
   //
-  //        spine  ─────────────────      <- outer offset (…LabelClearance), clears the letters
-  //   arm    │                    │  arm
-  //          ╵                    ╵      <- inner offset (…StripOffset), just clear of the strips
-  //          A  H  P  A  G                  the safety window's residues, enclosed
-  //   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓      <- pLDDT / domain strips
+  //        spine  ─────────────────      <- …LabelClearance, just beyond the letters
+  //   arm    │  A  H  P  A  G      │  arm    the safety window's residues, enclosed
+  //          ╵                     ╵     <- …ArmInset, level with the foot of the letters
+  //   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓      <- pLDDT / domain strips (not crossed)
   //   ───────────────────────────────    <- axis (marginTop)
   //
-  // Inner offset keeps the arm tips off the per-residue strips; outer offset puts the spine
-  // beyond the residue letters, which are themselves positioned relative to the strip-enlarged
-  // margin. The caller computes both, since only it knows the axis font size and which strips
-  // are on. Grid-boundary visibility clipping still uses the true marginTop/marginLeft.
-  topStripOffset: number = 0,
-  leftStripOffset: number = 0,
+  // Arm inset marks where the arms stop, measured inward from the margin - the caller sets it to
+  // the inner edge of the residue letters, so the bracket closes around the residues and stops
+  // there rather than continuing across the annotation strips to the axis. Label clearance puts
+  // the spine beyond the letters. The caller computes both, since only it knows the axis font
+  // size and which strips are on. Grid-boundary visibility clipping still uses the true
+  // marginTop/marginLeft.
+  armInsetTop: number = 0,
+  armInsetLeft: number = 0,
   topLabelClearance: number = 0,
   leftLabelClearance: number = 0
 ) {
-  // Arm tips stop just short of the strips; the spine sits at the outer offset, but never less
-  // than a minimum depth so the bracket still reads as a bracket when no clearance is supplied.
+  // The spine sits at the outer offset, but never less than a minimum depth from the arm tips,
+  // so the bracket still reads as a bracket when no clearance is supplied.
   const minBracketSpan = Math.max(8, fontSize * 0.8);
-  const armTipTop = marginTop - topStripOffset - 3;
+  const armTipTop = marginTop - armInsetTop;
   const spineTop = Math.min(marginTop - topLabelClearance, armTipTop - minBracketSpan);
-  const armTipLeft = marginLeft - leftStripOffset - 3;
+  const armTipLeft = marginLeft - armInsetLeft;
   const spineLeft = Math.min(marginLeft - leftLabelClearance, armTipLeft - minBracketSpan);
 
   safetyWindows.forEach(window => {

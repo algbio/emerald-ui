@@ -310,11 +310,14 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   const xLetterBand = drawsXChars ? residueLabelPadX(fontSize) + fontSize : 0;
   const yLetterBand = drawsYChars ? residueLabelPadY(fontSize) + fontSize * 0.6 : 0;
 
-  // The safety-window bracket is an overlay rather than another band: its arms run from the axis
-  // out to just past the residue letters, framing the whole stack without reserving any space of
-  // its own. Its depth is therefore the stack's depth, which tracks zoom through the font size,
-  // and it collapses with the letter band when the letters are suppressed instead of leaving
-  // long arms hanging over empty margin.
+  // The safety-window bracket is an overlay rather than another band: it reserves no space of its
+  // own. The arms close on the residue letters' own inner edge - they stop where the residues
+  // stop rather than carrying on across the strips to the axis - and the spine sits just beyond
+  // the letters, so the bracket wraps the residues and nothing else. Its depth is the letter
+  // band's depth, which tracks zoom through the font size, and it collapses with that band when
+  // the letters are suppressed instead of leaving long arms hanging over empty margin.
+  const bracketArmInsetTop = topStripThickness + residueLabelPadX(fontSize);
+  const bracketArmInsetLeft = leftStripThickness + residueLabelPadY(fontSize);
   // Clearance between the tallest residue glyph and the bracket spine. Proportional so it holds
   // at every zoom, and generous enough to cover the stroke itself: the spine is stroked centred
   // on its path, so up to half the line width reaches back towards the letters and a couple of
@@ -625,7 +628,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     if (showSafetyWindows) {
       drawSafetyWindows(
         ctx, safetyWindows, x, y, fontSize, marginTop, marginLeft, false,
-        0, 0, bracketTopSpan, bracketLeftSpan
+        bracketArmInsetTop, bracketArmInsetLeft, bracketTopSpan, bracketLeftSpan
       );
       
       // Draw safety window highlight if applicable
