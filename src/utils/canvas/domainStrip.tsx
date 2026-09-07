@@ -3,6 +3,7 @@
 import type { ScaleLinear } from 'd3-scale';
 import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { getDomainColor } from '../colors/domainColorScale';
+import { clampSpanToAxis } from './axisSpan';
 
 export const DOMAIN_STRIP_THICKNESS = 10;
 
@@ -14,10 +15,10 @@ export function drawDomainStripX(
   domains: ProteinDomain[]
 ) {
   for (const domain of domains) {
-    const px0 = x(domain.start - 1);
-    const px1 = x(domain.end);
+    const span = clampSpanToAxis(x, x(domain.start - 1), x(domain.end));
+    if (!span) continue;
     ctx.fillStyle = getDomainColor(domain.name);
-    ctx.fillRect(Math.min(px0, px1), stripTop, Math.max(1, Math.abs(px1 - px0)), DOMAIN_STRIP_THICKNESS);
+    ctx.fillRect(span.start, stripTop, span.size, DOMAIN_STRIP_THICKNESS);
   }
 }
 
@@ -29,10 +30,10 @@ export function drawDomainStripY(
   domains: ProteinDomain[]
 ) {
   for (const domain of domains) {
-    const py0 = y(domain.start - 1);
-    const py1 = y(domain.end);
+    const span = clampSpanToAxis(y, y(domain.start - 1), y(domain.end));
+    if (!span) continue;
     ctx.fillStyle = getDomainColor(domain.name);
-    ctx.fillRect(stripLeft, Math.min(py0, py1), DOMAIN_STRIP_THICKNESS, Math.max(1, Math.abs(py1 - py0)));
+    ctx.fillRect(stripLeft, span.start, DOMAIN_STRIP_THICKNESS, span.size);
   }
 }
 

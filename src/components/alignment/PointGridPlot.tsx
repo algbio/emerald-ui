@@ -1170,8 +1170,21 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // The plot area in base (untransformed) pixel coordinates: at scale 1 the two sequences
+    // occupy exactly this box. Using it as both the viewport extent and the translate extent
+    // bounds panning to the sequences themselves, and a minimum scale of 1 makes "fully zoomed
+    // out" mean "the whole alignment" rather than an unbounded field of empty space. Without
+    // these the graph could be dragged arbitrarily far off in either axis, or zoomed out until
+    // the alignment was a dot.
+    const plotArea: [[number, number], [number, number]] = [
+      [marginLeft, marginTop],
+      [width - marginRight, height - marginBottom],
+    ];
+
     const zoom = d3.zoom()
-      .scaleExtent([0.1, 100])
+      .scaleExtent([1, 100])
+      .extent(plotArea)
+      .translateExtent(plotArea)
       // Disable drag-to-pan while the rectangle-selection tool is armed (scroll-to-zoom
       // stays enabled), so left-click-drag draws a selection instead of panning. Preserves
       // d3-zoom's own default filter (ignore right-click/ctrl so right-click can still be used
@@ -1192,7 +1205,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
     return () => {
       selection.on('.zoom', null);
     };
-  }, []);
+    // Re-bound when the plot area changes - the margins grow and shrink as the pLDDT and domain
+    // strips are toggled, and the bounds have to follow or panning is constrained to a stale box.
+  }, [width, height, marginTop, marginRight, marginBottom, marginLeft, onTransformChange]);
 
   const activeDomainHit = pinnedDomain || hoveredDomain;
 
