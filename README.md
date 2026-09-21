@@ -71,6 +71,8 @@ EMERALD-UI gratefully builds on two open-source visualization ecosystems:
 - **Mol\*** for interactive macromolecular 3D structure rendering and analysis. Project: [https://molstar.org/](https://molstar.org/) | Repository: [https://github.com/molstar/molstar](https://github.com/molstar/molstar)
 - **D3.js** for visualization primitives used in our alignment plots. Project: [https://d3js.org/](https://d3js.org/) | Repository: [https://github.com/d3/d3](https://github.com/d3/d3)
 
+Claude coding agent is used only for front-end development (User interface); all code has been tested and validated. None of the back-end development (EMERALD algorithm) involves coding agents.
+
 ## Citation
 
 Please cite the following reference when using EMERALD-UI for your research:
@@ -164,3 +166,5 @@ Contributions are welcome! Please feel free to [Report a Problem](https://github
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
