@@ -422,6 +422,31 @@
   margin: 2rem 0;
 }
 
+.tutorial-video-section {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.tutorial-video-section h3 {
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+}
+
+.tutorial-video {
+  max-width: 800px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.tutorial-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .step {
   display: flex;
   margin-bottom: 2rem;
