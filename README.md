@@ -8,6 +8,10 @@
 
 EMERALD-UI provides advanced visualization of optimal and suboptimal protein sequence alignments, enabling researchers to explore conserved / robust regions between these alignments. These conserved regions are the alignment-safe windows introduced by the [EMERALD algorithm](https://doi.org/10.1186/s13059-023-03008-6).
 
+## Video Tutorial
+
+### https://www.youtube.com/watch?v=Fbi7LlvoZTY
+
 ## About EMERALD
 
 EMERALD goes beyond traditional pairwise sequence alignment by identifying not just the optimal alignment, but also suboptimal alignments and regions (_safety windows_) where alignments are consistently reliable across different scoring schemes. This has been described in [Sensitive inference of alignment-safe intervals from biodiverse protein sequence clusters using EMERALD, Genome Biology 2023](https://doi.org/10.1186/s13059-023-03008-6).
