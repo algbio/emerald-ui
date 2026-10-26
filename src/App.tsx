@@ -19,6 +19,7 @@ import { extractUniProtId } from './utils/api/uniprotUtils'
 
 const GRAPH_WIDTH = 900;
 const GRAPH_HEIGHT = 900;
+const TUTORIAL_VIDEO_ID = 'Fbi7LlvoZTY';
 
 // Create a separate component for the app content to use the context hook
 function AppContent() {
@@ -263,6 +264,20 @@ function AppContent() {
         
         {isGettingStartedExpanded && (
           <div className="no-data-message">
+            <div className="tutorial-video-section">
+              <h3>Video Tutorial</h3>
+              <div className="tutorial-video">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${TUTORIAL_VIDEO_ID}`}
+                  title="EMERALD-UI video tutorial"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
             <p>Welcome! Follow these simple steps to analyze your protein sequences:</p>
             
             <div className="getting-started-steps">
