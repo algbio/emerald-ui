@@ -27,6 +27,9 @@ interface SafetyWindowInfo {
 interface SafetyWindowsInfoPanelProps {
   safetyWindows: Alignment[];
   selectedWindowId: string | null;
+  // Residues before position 0 of each sequence when part of a protein was aligned
+  residueOffsetX?: number;
+  residueOffsetY?: number;
   hoveredWindowId: string | null;
   onWindowHover: (windowId: string | null) => void;
   onNavigateToPrevious: () => void;
@@ -75,6 +78,8 @@ interface SafetyWindowsInfoPanelProps {
 export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({ 
   safetyWindows,
   selectedWindowId,
+  residueOffsetX = 0,
+  residueOffsetY = 0,
   hoveredWindowId,
   onWindowHover,
   onNavigateToPrevious,
@@ -287,6 +292,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
     currentGaps[currentGapIndex], 
     [currentGaps, currentGapIndex]
   );
+  const gapResidueOffset = currentGapType === 'representative' ? residueOffsetX : residueOffsetY;
 
   // Highly optimized gap highlighting - only highlight after user stops navigating
   const debouncedGapHighlight = useCallback((gapInfo: {type: 'representative' | 'member'; start: number; end: number} | null) => {
@@ -809,11 +815,11 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                   <div className="coordinate-info">
                     <div className="axis-info">
                       <span className="axis-label">X-axis ({representativeDescriptor || 'Reference'}):</span>
-                      <span className="coordinates">{extractedWindow.xStart + 1}-{extractedWindow.xEnd}</span>
+                      <span className="coordinates">{extractedWindow.xStart + residueOffsetX + 1}-{extractedWindow.xEnd + residueOffsetX}</span>
                     </div>
                     <div className="axis-info">
                       <span className="axis-label">Y-axis ({memberDescriptor || 'Member'}):</span>
-                      <span className="coordinates">{extractedWindow.yStart + 1}-{extractedWindow.yEnd}</span>
+                      <span className="coordinates">{extractedWindow.yStart + residueOffsetY + 1}-{extractedWindow.yEnd + residueOffsetY}</span>
                     </div>
                   </div>
 
@@ -1014,11 +1020,11 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                       <div className="coordinate-info">
                         <div className="axis-info">
                           <span className="axis-label">X-axis ({representativeDescriptor || 'Reference'}):</span>
-                          <span className="coordinates">{effectiveXStart + 1}-{effectiveXEnd}</span>
+                          <span className="coordinates">{effectiveXStart + residueOffsetX + 1}-{effectiveXEnd + residueOffsetX}</span>
                         </div>
                         <div className="axis-info">
                           <span className="axis-label">Y-axis ({memberDescriptor || 'Member'}):</span>
-                          <span className="coordinates">{effectiveYStart + 1}-{effectiveYEnd}</span>
+                          <span className="coordinates">{effectiveYStart + residueOffsetY + 1}-{effectiveYEnd + residueOffsetY}</span>
                         </div>
                       </div>
 
@@ -1222,7 +1228,7 @@ export const SafetyWindowsInfoPanel: React.FC<SafetyWindowsInfoPanelProps> = ({
                           Gap {currentGapIndex + 1}
                         </span>
                         <span className="gap-info-position">
-                          Position {currentGap.start + 1}-{currentGap.end} 
+                          Position {currentGap.start + gapResidueOffset + 1}-{currentGap.end + gapResidueOffset} 
                           (Gap length: {currentGap.end - currentGap.start})
                         </span>
                       </div>

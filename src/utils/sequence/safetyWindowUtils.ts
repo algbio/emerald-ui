@@ -1,6 +1,7 @@
 // Utility functions for converting alignment safety windows to sequence positions
 
 import type { Alignment } from '../../types/PointGrid';
+import type { ResidueRange } from './regionUtils';
 
 export interface SequenceSafetyWindow {
   startPosition: number;
@@ -166,6 +167,86 @@ export function filterSafetyWindowsByPath(
   }
 
   return { filteredRepWindows, filteredMemWindows };
+}
+
+/** Two residues the alignment pairs together, as residue numbers of each protein. */
+export interface ResiduePair {
+  a: number;
+  b: number;
+}
+
+/**
+ * The residue pairs of one safety window, given in plot coordinates (0-based, end exclusive).
+ *
+ * A window with equal spans pairs its residues one to one. If the spans differ the window contains
+ * a gap, so the pairs are read from the gapped alignment instead, and can be empty if that
+ * alignment does not pass through the window.
+ */
+export function getSafetyWindowResiduePairs(
+  window: { xStart: number; xEnd: number; yStart: number; yEnd: number },
+  gappedRepresentative: string | undefined,
+  gappedMember: string | undefined,
+  offsetA: number,
+  offsetB: number
+): ResiduePair[] {
+  const pairs: ResiduePair[] = [];
+
+  if (window.xEnd - window.xStart === window.yEnd - window.yStart) {
+    for (let i = 0; i < window.xEnd - window.xStart; i++) {
+      pairs.push({ a: window.xStart + i + 1 + offsetA, b: window.yStart + i + 1 + offsetB });
+    }
+    return pairs;
+  }
+
+  if (!gappedRepresentative || !gappedMember) return pairs;
+
+  let repPos = 0;
+  let memPos = 0;
+  for (let i = 0; i < gappedRepresentative.length; i++) {
+    const repIsGap = gappedRepresentative[i] === '-';
+    const memIsGap = gappedMember[i] === '-';
+    if (!repIsGap) repPos++;
+    if (!memIsGap) memPos++;
+    if (!repIsGap && !memIsGap &&
+        repPos > window.xStart && repPos <= window.xEnd &&
+        memPos > window.yStart && memPos <= window.yEnd) {
+      pairs.push({ a: repPos + offsetA, b: memPos + offsetB });
+    }
+  }
+  return pairs;
+}
+
+export interface SafetyWindowRanges {
+  number: number; // Same numbering as the safety windows panel
+  // Residue numbers of each protein, null where the window covers no residues of that sequence.
+  rangeA: ResidueRange | null;
+  rangeB: ResidueRange | null;
+}
+
+/** Each safety window as a pair of residue ranges, kept paired, unlike merged windows. */
+export function getSafetyWindowRanges(alignments: Alignment[], offsetA: number, offsetB: number): SafetyWindowRanges[] {
+  const toRange = (start: number, end: number, offset: number): ResidueRange | null =>
+    Math.floor(end) > Math.floor(start)
+      ? { start: Math.floor(start) + 1 + offset, end: Math.floor(end) + offset }
+      : null;
+
+  return alignments
+    .filter(alignment => alignment.startDot && alignment.endDot)
+    .map((alignment, index) => ({
+      number: index + 1,
+      rangeA: toRange(alignment.startDot!.x, alignment.endDot!.x, offsetA),
+      rangeB: toRange(alignment.startDot!.y, alignment.endDot!.y, offsetB),
+    }));
+}
+
+/** Moves windows from positions in an aligned region to residue numbers of the protein. */
+export function shiftSafetyWindows(windows: SequenceSafetyWindow[], residueOffset: number): SequenceSafetyWindow[] {
+  if (residueOffset === 0) return windows;
+  return windows.map(window => ({
+    ...window,
+    startPosition: window.startPosition + residueOffset,
+    endPosition: window.endPosition + residueOffset,
+  }));
 }
 
 /**

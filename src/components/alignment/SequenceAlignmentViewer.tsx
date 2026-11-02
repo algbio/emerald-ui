@@ -15,6 +15,9 @@ interface SequenceAlignmentViewerProps {
   memberDescriptor?: string;
   representativeSafetyWindows?: SequenceSafetyWindow[]; // Safety windows for representative sequence
   memberSafetyWindows?: SequenceSafetyWindow[]; // Safety windows for member sequence
+  // Residues before position 0 of each sequence when part of a protein was aligned
+  residueOffsetX?: number;
+  residueOffsetY?: number;
   costMatrixType?: CostMatrixTypeValue;
   gapCost?: number;
   startGap?: number;
@@ -200,6 +203,8 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
   memberDescriptor,
   representativeSafetyWindows = [],
   memberSafetyWindows = [],
+  residueOffsetX = 0,
+  residueOffsetY = 0,
   costMatrixType = CostMatrixType.BLOSUM62,
   gapCost,
   startGap,
@@ -528,7 +533,7 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
                   ? groupBySegments(repSeq, filteredRepWindows).map((segment, segIdx) => (
                       <span
                         key={`seg-${segIdx}`}
-                        title={segment.safetyWindow ? `Safety Window: ${segment.safetyWindow.startPosition}-${segment.safetyWindow.endPosition}` : undefined}
+                        title={segment.safetyWindow ? `Safety Window: ${segment.safetyWindow.startPosition + residueOffsetX}-${segment.safetyWindow.endPosition + residueOffsetX}` : undefined}
                       >
                         {segment.chars.map((char, charIdx) => (
                           <span 
@@ -574,7 +579,7 @@ const SequenceAlignmentViewer: React.FC<SequenceAlignmentViewerProps> = ({
                   ? groupBySegments(memSeq, filteredMemWindows).map((segment, segIdx) => (
                       <span
                         key={`seg-${segIdx}`}
-                        title={segment.safetyWindow ? `Safety Window: ${segment.safetyWindow.startPosition}-${segment.safetyWindow.endPosition}` : undefined}
+                        title={segment.safetyWindow ? `Safety Window: ${segment.safetyWindow.startPosition + residueOffsetY}-${segment.safetyWindow.endPosition + residueOffsetY}` : undefined}
                       >
                         {segment.chars.map((char, charIdx) => (
                           <span 

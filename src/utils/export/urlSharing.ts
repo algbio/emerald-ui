@@ -1,6 +1,7 @@
 // Utility functions for URL-based sharing of alignments with UniProt sequences
 
 import { extractUniProtId } from '../api/uniprotUtils';
+import type { ResidueRange } from '../sequence/regionUtils';
 import {
   DEFAULT_ALPHA,
   DEFAULT_DELTA,
@@ -33,7 +34,22 @@ export interface ShareableAlignmentData {
   gapCost?: number;
   startGap?: number;
   costMatrixType?: number;
+  rangeA?: ResidueRange;
+  rangeB?: ResidueRange;
 }
+
+const formatRangeParam = (range: ResidueRange): string => `${range.start}-${range.end}`;
+
+// Checked against the protein once its length is known; this only checks the form.
+const parseRangeParam = (value: string | null): ResidueRange | undefined => {
+  if (!value) return undefined;
+  const match = value.match(/^(\d+)-(\d+)$/);
+  if (!match) {
+    console.warn('Invalid residue range in URL:', value);
+    return undefined;
+  }
+  return { start: parseInt(match[1], 10), end: parseInt(match[2], 10) };
+};
 
 /**
  * Extract shareable data from current URL parameters
@@ -115,7 +131,9 @@ export const getShareableDataFromUrl = (): ShareableAlignmentData | null => {
       delta: parsedDelta,
       gapCost: parsedGapCost,
       startGap: parsedStartGap,
-      costMatrixType: parsedCostMatrixType
+      costMatrixType: parsedCostMatrixType,
+      rangeA: parseRangeParam(urlParams.get('rangeA')),
+      rangeB: parseRangeParam(urlParams.get('rangeB'))
     };
   } catch (error) {
     console.error('Error parsing URL parameters:', error);
@@ -135,7 +153,9 @@ export const generateShareableUrl = (
   accessionB?: string,
   gapCost?: number,
   startGap?: number,
-  costMatrixType?: number
+  costMatrixType?: number,
+  regionA?: ResidueRange | null,
+  regionB?: ResidueRange | null
 ): string | null => {
   try {
     // Validate input parameters
@@ -191,6 +211,13 @@ export const generateShareableUrl = (
     }
     if (costMatrixType !== undefined && costMatrixType !== DEFAULT_COST_MATRIX_TYPE) { // 2 is BLOSUM62 (default)
       params.set('costMatrixType', costMatrixType.toString());
+    }
+    
+    if (regionA) {
+      params.set('rangeA', formatRangeParam(regionA));
+    }
+    if (regionB) {
+      params.set('rangeB', formatRangeParam(regionB));
     }
     
     // Get the base URL without any existing parameters

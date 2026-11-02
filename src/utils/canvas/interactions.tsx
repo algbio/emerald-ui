@@ -11,7 +11,9 @@ export function drawHoverHighlight(
   marginLeft: number,
   representative: string,
   member: string,
-  alignments: Alignment[] = []
+  alignments: Alignment[] = [],
+  residueOffsetX: number = 0,
+  residueOffsetY: number = 0
 ) {
   const cellX = x(hoveredCell.x);
   const cellY = y(hoveredCell.y);
@@ -48,7 +50,7 @@ export function drawHoverHighlight(
   );
   
   // Prepare text lines
-  const baseText = `${representative[hoveredCell.x]} → ${member[hoveredCell.y]}, (${hoveredCell.x}, ${hoveredCell.y})`;
+  const baseText = `${representative[hoveredCell.x]} → ${member[hoveredCell.y]}, (${hoveredCell.x + residueOffsetX + 1}, ${hoveredCell.y + residueOffsetY + 1})`;
   const textLines = [baseText];
   
   // Separate optimal path edges from regular edges

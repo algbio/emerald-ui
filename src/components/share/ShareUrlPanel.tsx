@@ -7,6 +7,7 @@ import {
   DEFAULT_START_GAP,
   DEFAULT_COST_MATRIX_TYPE
 } from '../../utils/sequence/defaultEmeraldParams';
+import { useSequence } from '../../context/SequenceContext';
 import '../shared/Panel.css';
 import './ShareUrlPanel.css';
 
@@ -49,6 +50,7 @@ const ShareUrlPanel: React.FC<ShareUrlPanelProps> = ({
   startGap,
   costMatrixType
 }) => {
+  const { state: { submittedAlignment } } = useSequence();
   const [isCopied, setIsCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const [browserSupport, setBrowserSupport] = useState<{ supported: boolean; missingFeatures: string[] } | null>(null);
@@ -70,7 +72,7 @@ const ShareUrlPanel: React.FC<ShareUrlPanelProps> = ({
     return null;
   }
   
-  const shareUrl = generateShareableUrl(descriptorA, descriptorB, alpha, delta, accessionA, accessionB, gapCost, startGap, costMatrixType);
+  const shareUrl = generateShareableUrl(descriptorA, descriptorB, alpha, delta, accessionA, accessionB, gapCost, startGap, costMatrixType, submittedAlignment?.regionA, submittedAlignment?.regionB);
   
   if (!shareUrl) {
     return null;

@@ -14,7 +14,12 @@ import { Color } from 'molstar/lib/mol-util/color';
 import { MarkerAction, MarkerActions } from 'molstar/lib/mol-util/marker-action';
 import 'molstar/lib/mol-plugin-ui/skin/light.scss';
 import { useSequence } from '../../context/SequenceContext';
-import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
+import ProteinArchitecture from '../sequence/ProteinArchitecture';
+import { extractSafetyWindowsFromAlignments, getSafetyWindowRanges, getSafetyWindowResiduePairs, mergeSafetyWindows, shiftSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
+import type { ResiduePair } from '../../utils/sequence/safetyWindowUtils';
+import { MIN_SUPERPOSITION_PAIRS, readCaResidues, superposeOnPairs } from '../../utils/structure/windowSuperposition';
+import type { CaResidueMap } from '../../utils/structure/windowSuperposition';
+import { getResidueOffset } from '../../utils/sequence/regionUtils';
 import type { StructureDataResult } from '../../hooks/useStructureData';
 import { downloadRawStructureFile, downloadStructureAsMmcif } from '../../utils/export/structureExport';
 import { AFConfidenceColorThemeProvider } from '../../utils/structure/afConfidenceColorTheme';
@@ -32,6 +37,12 @@ interface TMAlignStats {
   tmScoreB: number;
   rmsd: number;
   alignedLength: number;
+}
+
+interface SuperpositionWindow {
+  number: number; // Same numbering as the safety windows panel
+  pairs: ResiduePair[];
+  disabledReason: string | null;
 }
 
 // Color constants for the two structures
@@ -129,7 +140,7 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
   proteinDomainsB,
 }) => {
   const { state } = useSequence();
-  const { sequences, alignments, structureA, structureB } = state;
+  const { sequences, alignments, structureA, structureB, submittedAlignment } = state;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const pluginRef = useRef<any>(null);
@@ -137,6 +148,8 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
   // download buttons can pull each structure's *current* (possibly transformed) coordinates
   // straight from Mol*'s live state rather than re-fetching or re-deriving them.
   const structRefsRef = useRef<{ a: string | null; b: string | null; alignedB: string | null }>({ a: null, b: null, alignedB: null });
+  // Kept so that returning to the global view does not have to rerun TM-align.
+  const tmAlignTransformRef = useRef<unknown>(null);
   // Representation state-tree nodes (and the structure object each was built from), captured so
   // the color effect below can update their color theme directly - updateRepresentationsTheme
   // against the hierarchy manager's component list turned out to silently no-op here too (see
@@ -147,6 +160,11 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [tmStats, setTmStats] = useState<TMAlignStats | null>(null);
+  const [caResidues, setCaResidues] = useState<{ a: CaResidueMap; b: CaResidueMap } | null>(null);
+  // Number of the safety window to superpose on, null for global TM-align.
+  const [selectedWindowNumber, setSelectedWindowNumber] = useState<number | null>(null);
+  // Bumped once a transform is on screen, because that replaces what the highlights were set on.
+  const [transformRevision, setTransformRevision] = useState(0);
   const [useSecondaryColors, setUseSecondaryColors] = useState(true);
   const [usePlddtColors, setUsePlddtColors] = useState(false);
   // Mutually exclusive with pLDDT for the same reason as on the plain structure panels: both
@@ -162,8 +180,81 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
       : { sequenceA: [], sequenceB: [] }),
     [alignments]
   );
-  const safetyWindowsA = useMemo(() => mergeSafetyWindows(safetyWindowMapping.sequenceA), [safetyWindowMapping]);
-  const safetyWindowsB = useMemo(() => mergeSafetyWindows(safetyWindowMapping.sequenceB), [safetyWindowMapping]);
+  // Structures are numbered for the whole protein, windows for what was aligned.
+  const offsetA = getResidueOffset(submittedAlignment?.regionA);
+  const offsetB = getResidueOffset(submittedAlignment?.regionB);
+  const safetyWindowsA = useMemo(() => mergeSafetyWindows(shiftSafetyWindows(safetyWindowMapping.sequenceA, offsetA)), [safetyWindowMapping, offsetA]);
+  const safetyWindowsB = useMemo(() => mergeSafetyWindows(shiftSafetyWindows(safetyWindowMapping.sequenceB, offsetB)), [safetyWindowMapping, offsetB]);
+
+  const superpositionWindows = useMemo<SuperpositionWindow[]>(() => {
+    if (!caResidues) return [];
+    const textAlignment = alignments.find(alignment => alignment.textAlignment)?.textAlignment;
+
+    return alignments
+      .filter(alignment => alignment.startDot && alignment.endDot)
+      .map((alignment, index) => {
+        const allPairs = getSafetyWindowResiduePairs(
+          {
+            xStart: Math.floor(alignment.startDot!.x),
+            xEnd: Math.floor(alignment.endDot!.x),
+            yStart: Math.floor(alignment.startDot!.y),
+            yEnd: Math.floor(alignment.endDot!.y),
+          },
+          textAlignment?.representative.sequence,
+          textAlignment?.member.sequence,
+          offsetA,
+          offsetB
+        );
+        const pairs = allPairs.filter(pair => caResidues.a.has(pair.a) && caResidues.b.has(pair.b));
+
+        // Residue numbers in an uploaded or PDB file need not match sequence positions.
+        const matchesSequence = (residue: string, expected: string | undefined) =>
+          residue === 'X' || expected === 'X' || residue === expected;
+        const numberingMatches = pairs.every(pair =>
+          matchesSequence(caResidues.a.get(pair.a)!.letter, submittedAlignment?.sequenceA[pair.a - offsetA - 1]) &&
+          matchesSequence(caResidues.b.get(pair.b)!.letter, submittedAlignment?.sequenceB[pair.b - offsetB - 1])
+        );
+
+        let disabledReason: string | null = null;
+        if (!numberingMatches) {
+          disabledReason = 'structure numbering does not match the sequence';
+        } else if (pairs.length < MIN_SUPERPOSITION_PAIRS) {
+          disabledReason = `needs at least ${MIN_SUPERPOSITION_PAIRS} residue pairs`;
+        }
+        return { number: index + 1, pairs, disabledReason };
+      });
+  }, [alignments, caResidues, offsetA, offsetB, submittedAlignment]);
+
+  const usableWindows = useMemo(
+    () => superpositionWindows.filter(window => !window.disabledReason),
+    [superpositionWindows]
+  );
+  const selectedWindow = usableWindows.find(window => window.number === selectedWindowNumber) ?? null;
+  const windowFit = useMemo(
+    () => (selectedWindow && caResidues ? superposeOnPairs(selectedWindow.pairs, caResidues.a, caResidues.b) : null),
+    [selectedWindow, caResidues]
+  );
+
+  const highlightedWindowsA = useMemo(() => (selectedWindow
+    ? [{ startPosition: selectedWindow.pairs[0].a, endPosition: selectedWindow.pairs[selectedWindow.pairs.length - 1].a }]
+    : safetyWindowsA), [selectedWindow, safetyWindowsA]);
+  const highlightedWindowsB = useMemo(() => (selectedWindow
+    ? [{ startPosition: selectedWindow.pairs[0].b, endPosition: selectedWindow.pairs[selectedWindow.pairs.length - 1].b }]
+    : safetyWindowsB), [selectedWindow, safetyWindowsB]);
+
+  const windowRanges = useMemo(() => getSafetyWindowRanges(alignments, offsetA, offsetB), [alignments, offsetA, offsetB]);
+  const markedRangesA = selectedWindow
+    ? [{ start: highlightedWindowsA[0].startPosition, end: highlightedWindowsA[0].endPosition }]
+    : windowRanges.flatMap(window => (window.rangeA ? [window.rangeA] : []));
+  const markedRangesB = selectedWindow
+    ? [{ start: highlightedWindowsB[0].startPosition, end: highlightedWindowsB[0].endPosition }]
+    : windowRanges.flatMap(window => (window.rangeB ? [window.rangeB] : []));
+
+  const stepWindow = (direction: 1 | -1) => {
+    const current = usableWindows.findIndex(window => window.number === selectedWindowNumber);
+    const next = (current + direction + usableWindows.length) % usableWindows.length;
+    setSelectedWindowNumber(usableWindows[next].number);
+  };
 
   const hasStructureA = !!(structureA?.uniprotId || structureA?.pdbId || structureA?.fileContent);
   const hasStructureB = !!(structureB?.uniprotId || structureB?.pdbId || structureB?.fileContent);
@@ -237,8 +328,8 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
     const dataB = structures[1]?.cell?.obj?.data;
     if (!dataA || !dataB) return;
 
-    const lociA = createSafetyWindowLoci(dataA, safetyWindowsA);
-    const lociB = createSafetyWindowLoci(dataB, safetyWindowsB);
+    const lociA = createSafetyWindowLoci(dataA, highlightedWindowsA);
+    const lociB = createSafetyWindowLoci(dataB, highlightedWindowsB);
 
     if (!StructureElement.Loci.isEmpty(lociA) && selectionManager.fromLoci) {
       selectionManager.fromLoci('set', lociA);
@@ -325,6 +416,8 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
       setIsLoading(true);
       setError('');
       setTmStats(null);
+      setCaResidues(null);
+      setSelectedWindowNumber(null);
       setHasSuperpositionLoaded(false);
 
       try {
@@ -421,12 +514,17 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
           });
         await plugin.runTask(plugin.state.data.updateTree(transformBuilder));
         structRefsRef.current.alignedB = transformBuilder.ref;
+        tmAlignTransformRef.current = result.bTransform;
 
         if (cancelled) return;
 
         // ---- Reset camera ----
         await PluginCommands.Camera.Reset(plugin, {});
 
+        // Source units, because the loci above resolve to only a fraction of the C-alpha atoms.
+        const residueLociA = StructureSelection.toLociWithSourceUnits(caQuery(new QueryContext(dataA))) as StructureElement.Loci;
+        const residueLociB = StructureSelection.toLociWithSourceUnits(caQuery(new QueryContext(dataB))) as StructureElement.Loci;
+        setCaResidues({ a: readCaResidues(residueLociA), b: readCaResidues(residueLociB) });
         setHasSuperpositionLoaded(true);
         setTmStats({
           tmScoreA: result.tmScoreA,
@@ -469,9 +567,41 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
     isPluginReady,
     hasSuperpositionLoaded,
     showSafetyWindows,
-    safetyWindowsA,
-    safetyWindowsB,
+    highlightedWindowsA,
+    highlightedWindowsB,
+    transformRevision,
   ]);
+
+  // A new alignment has its own windows, so a selection does not carry over to it.
+  useEffect(() => {
+    setSelectedWindowNumber(null);
+  }, [alignments]);
+
+  // Only structure B's transform changes, so switching view reloads nothing and keeps the colors.
+  const windowTransform = windowFit?.bTransform ?? null;
+  useEffect(() => {
+    const plugin = pluginRef.current;
+    const alignedRef = structRefsRef.current.alignedB;
+    const transform = windowTransform ?? tmAlignTransformRef.current;
+    if (!isPluginReady || !hasSuperpositionLoaded || !plugin || !alignedRef || !transform) return;
+
+    let cancelled = false;
+    const update = plugin.state.data.build().to(alignedRef).update({
+      transform: { name: 'matrix', params: { data: transform, transpose: false } },
+    });
+    plugin.runTask(plugin.state.data.updateTree(update))
+      .then(() => PluginCommands.Camera.Reset(plugin, {}))
+      .then(() => {
+        if (!cancelled) setTransformRevision(revision => revision + 1);
+      })
+      .catch((err: unknown) => {
+        console.warn('Could not update the superposition:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPluginReady, hasSuperpositionLoaded, windowTransform]);
 
   // Apply the color scheme in place when either color toggle changes, without re-running
   // TM-align or reloading the structures. "Color by pLDDT" overrides "Color by Chain" when both
@@ -619,7 +749,9 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
         </div>
       )}
       <p className="structures-subtitle">
-        Structural superposition computed using TM-align.{' '}
+        {selectedWindow
+          ? `Structure B fitted to A on the residue pairs of safety window ${selectedWindow.number} only, so other parts of the proteins can sit far apart.`
+          : 'Structural superposition computed using TM-align.'}{' '}
         <span className="legend-dot legend-dot--a" />{' '}
         {sequences.descriptorA || 'Sequence A'} (Sequence A){' '}
         <span className="legend-dot legend-dot--b" />{' '}
@@ -644,6 +776,18 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
             <span className="tm-stat-label">Aligned residues</span>
             <span className="tm-stat-value">{tmStats.alignedLength}</span>
           </div>
+          {selectedWindow && windowFit && (
+            <>
+              <div className="tm-stat-item">
+                <span className="tm-stat-label">Window RMSD</span>
+                <span className="tm-stat-value">{windowFit.rmsd.toFixed(3)} Å</span>
+              </div>
+              <div className="tm-stat-item">
+                <span className="tm-stat-label">Window residue pairs</span>
+                <span className="tm-stat-value">{selectedWindow.pairs.length}</span>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -657,6 +801,84 @@ export const StructureSuperpositionPanel: React.FC<StructureSuperpositionPanelPr
       {error && (
         <div className="superposition-error">
           <p>{error}</p>
+        </div>
+      )}
+
+      {submittedAlignment && hasSuperpositionLoaded && (
+        <div className="superposition-architecture">
+          <div>
+            <h3 className="superposition-architecture-title">Sequence A</h3>
+            <ProteinArchitecture
+              label="A"
+              tone="light"
+              sequenceLength={submittedAlignment.fullLengthA}
+              uniprotId={structureA?.uniprotId}
+              shadedRange={submittedAlignment.regionA}
+              windowRanges={markedRangesA}
+            />
+          </div>
+          <div>
+            <h3 className="superposition-architecture-title">Sequence B</h3>
+            <ProteinArchitecture
+              label="B"
+              tone="light"
+              sequenceLength={submittedAlignment.fullLengthB}
+              uniprotId={structureB?.uniprotId}
+              shadedRange={submittedAlignment.regionB}
+              windowRanges={markedRangesB}
+            />
+          </div>
+        </div>
+      )}
+
+      {hasSuperpositionLoaded && superpositionWindows.length > 0 && (
+        <div className="superposition-window-selector">
+          <span className="superposition-window-label">Superpose on:</span>
+          <button
+            type="button"
+            className={`structure-panel-toggle window-mode-button ${!selectedWindow ? 'active' : ''}`}
+            onClick={() => setSelectedWindowNumber(null)}
+          >
+            Global
+          </button>
+          <button
+            type="button"
+            className={`structure-panel-toggle window-mode-button ${selectedWindow ? 'active' : ''}`}
+            onClick={() => setSelectedWindowNumber(usableWindows[0].number)}
+            disabled={usableWindows.length === 0}
+          >
+            Safety window
+          </button>
+          {selectedWindow && (
+            <>
+              <button
+                type="button"
+                className="nav-button"
+                onClick={() => stepWindow(-1)}
+                aria-label="Previous safety window"
+                disabled={usableWindows.length < 2}
+              >
+                <span className="nav-arrow">‹</span>
+              </button>
+              <span className="window-current-box superposition-window-current">
+                Window {selectedWindow.number} of {superpositionWindows.length}
+              </span>
+              <button
+                type="button"
+                className="nav-button"
+                onClick={() => stepWindow(1)}
+                aria-label="Next safety window"
+                disabled={usableWindows.length < 2}
+              >
+                <span className="nav-arrow">›</span>
+              </button>
+            </>
+          )}
+          {usableWindows.length < superpositionWindows.length && (
+            <span className="superposition-window-note">
+              {superpositionWindows.length - usableWindows.length} of {superpositionWindows.length} windows unavailable: {superpositionWindows.find(window => window.disabledReason)?.disabledReason}.
+            </span>
+          )}
         </div>
       )}
 

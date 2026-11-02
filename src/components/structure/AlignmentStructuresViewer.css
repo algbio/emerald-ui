@@ -262,3 +262,40 @@
   align-items: center;
   justify-content: center;
 }
+
+.safety-window-scroller {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0.5rem 0 1rem;
+}
+
+.window-mode-button {
+  min-height: 40px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+.window-mode-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.window-current-box {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: #059669;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.structure-header .protein-architecture {
+  margin-top: 0.75rem;
+}

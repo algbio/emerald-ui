@@ -39,6 +39,14 @@ export const normalizeProteinSequenceInput = (value: string): string => {
   return value.replace(/^\uFEFF/, '').replace(/\s+/g, '').toUpperCase();
 };
 
+// The sequence as it is submitted for alignment: no FASTA header, whitespace or trailing '*'.
+// Residue numbers refer to this form, not to the raw textarea contents.
+export const cleanProteinSequence = (value: string): string => {
+  const extracted = extractLeadingFastaHeader(value);
+  const withoutHeader = extracted.hadHeader ? extracted.sequence : value;
+  return normalizeProteinSequenceInput(withoutHeader).replace(/\*+$/, '');
+};
+
 export const hasInvalidProteinSequenceCharacters = (value: string): boolean => {
   return !VALID_PROTEIN_SEQUENCE_REGEX.test(value);
 };

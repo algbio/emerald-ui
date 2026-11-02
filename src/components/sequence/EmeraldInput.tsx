@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSequence } from '../../context/SequenceContext';
 import { useFeedbackNotifications } from '../../hooks/useFeedbackNotifications';
 import StructureFileUploader from '../structure/StructureFileUploader';
 import type { CostMatrixTypeValue } from '../../utils/api/EmeraldService';
 import { triggerCounterIncrement } from '../ui/AlignmentCounter';
+import RegionSelector from './RegionSelector';
+import { cleanProteinSequence } from '../../utils/sequence/fastaInput';
+import { getRegionLength } from '../../utils/sequence/regionUtils';
+import { extractUniProtId } from '../../utils/api/uniprotUtils';
+import { isValidUniProtAccession } from '../../utils/api/uniprotFetcher';
 // import type { StructureData } from '../../utils/structure/pdbParser';
 import './EmeraldInput.css';
+
+// The descriptor is the usual source, but UniProt search results are labelled by entry name
+// (e.g. HXA1_HUMAN) and keep the accession in its own field.
+const resolveUniProtId = (descriptor: string, accession: string): string | null =>
+  extractUniProtId(descriptor) || (isValidUniProtAccession(accession) ? accession.trim().toUpperCase() : null);
 
 interface EmeraldInputProps {
   onSubmit: (sequences: {
@@ -19,7 +29,11 @@ interface EmeraldInputProps {
 const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   // Get state and dispatch from context
   const { state, dispatch, runAlignment, fetchSequenceA, fetchSequenceB, loadStructureFileA, loadStructureFileB, canRunAlignment, getValidationWarnings } = useSequence();
-  const { sequences, params, alignmentStatus, fetchStatusA, fetchErrorA, fetchStatusB, fetchErrorB } = state;
+  const { sequences, regionA, regionB, params, alignmentStatus, fetchStatusA, fetchErrorA, fetchStatusB, fetchErrorB } = state;
+  const cleanSequenceA = cleanProteinSequence(sequences.sequenceA);
+  const cleanSequenceB = cleanProteinSequence(sequences.sequenceB);
+  const uniprotIdA = useMemo(() => resolveUniProtId(sequences.descriptorA, sequences.accessionA), [sequences.descriptorA, sequences.accessionA]);
+  const uniprotIdB = useMemo(() => resolveUniProtId(sequences.descriptorB, sequences.accessionB), [sequences.descriptorB, sequences.accessionB]);
   
   // Feedback notifications
   const { notifySuccess, notifyError, notifyInfo, showError } = useFeedbackNotifications();
@@ -64,10 +78,12 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
   const handleSubmit = async () => {
     if (isValid) {
       // Check if sequences are very large and might cause memory issues
-      const seqProduct = sequences.sequenceA.length * sequences.sequenceB.length;
+      const submittedLengthA = getRegionLength(cleanSequenceA, regionA);
+      const submittedLengthB = getRegionLength(cleanSequenceB, regionB);
+      const seqProduct = submittedLengthA * submittedLengthB;
       if (seqProduct > 1500000) { // Threshold based on observed failures
         const warnMsg = `Warning: The sequences you're trying to align are very large ` +
-                       `(${sequences.sequenceA.length}×${sequences.sequenceB.length} characters). ` +
+                       `(${submittedLengthA}×${submittedLengthB} characters). ` +
                        `This might cause memory issues in your browser. Do you want to continue anyway?`;
         
         if (!window.confirm(warnMsg)) {
@@ -400,6 +416,36 @@ const EmeraldInput: React.FC<EmeraldInputProps> = ({ onSubmit }) => {
           </div>
         </div>
         
+        {/* Region selection */}
+        {(cleanSequenceA || cleanSequenceB) && (
+          <div className="emerald-full-width">
+            <h3 className="region-selection-title">Region to Align</h3>
+            <p className="region-selection-description">
+              Runs align the whole proteins unless a region is selected. Click a domain or linker, drag the window or enter residue numbers. Shift-click extends a selection across several features.
+            </p>
+            <div className="region-selection-grid">
+              {cleanSequenceA && (
+                <RegionSelector
+                  label="A"
+                  sequenceLength={cleanSequenceA.length}
+                  uniprotId={uniprotIdA}
+                  region={regionA}
+                  onRegionChange={(region) => dispatch({ type: 'SET_REGION_A', payload: region })}
+                />
+              )}
+              {cleanSequenceB && (
+                <RegionSelector
+                  label="B"
+                  sequenceLength={cleanSequenceB.length}
+                  uniprotId={uniprotIdB}
+                  region={regionB}
+                  onRegionChange={(region) => dispatch({ type: 'SET_REGION_B', payload: region })}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Parameters */}
         <div className="emerald-column">
           <div className="slider-container">

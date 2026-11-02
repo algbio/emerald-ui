@@ -53,13 +53,14 @@ function getVisibleIndexRange(
   return { start, end };
 }
 
-function buildRegularIndexPositions(start: number, end: number, step: number = 10): number[] {
+// residueOffset is the residues before position 0, so markers land on round residue numbers.
+function buildRegularIndexPositions(start: number, end: number, residueOffset: number = 0, step: number = 10): number[] {
   const positions = new Set<number>();
 
   positions.add(start);
   positions.add(end);
 
-  const firstStep = Math.ceil(start / step) * step;
+  const firstStep = Math.ceil((start + residueOffset + 1) / step) * step - residueOffset - 1;
   for (let i = firstStep; i <= end; i += step) {
     positions.add(i);
   }
@@ -75,7 +76,8 @@ function drawXIndexMarkers(
   fontSize: number,
   sequenceLength: number,
   marginTop: number,
-  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean
+  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean,
+  residueOffset: number = 0
 ) {
   // Get actual X axis range end point
   const xAxisEnd = x.range()[1];
@@ -93,7 +95,7 @@ function drawXIndexMarkers(
   const visibleRange = getVisibleIndexRange(x, marginLeft, xAxisEnd, sequenceLength);
   if (!visibleRange) return;
 
-  const positions = buildRegularIndexPositions(visibleRange.start, visibleRange.end);
+  const positions = buildRegularIndexPositions(visibleRange.start, visibleRange.end, residueOffset);
 
   for (const i of positions) {
     const xPos = x(i + 0.5);
@@ -104,7 +106,7 @@ function drawXIndexMarkers(
         ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
       }
 
-      ctx.fillText(i.toString(), xPos, marginTop - topOffset);
+      ctx.fillText(`${i + residueOffset + 1}`, xPos, marginTop - topOffset);
     }
   }
 }
@@ -117,7 +119,8 @@ function drawYIndexMarkers(
   marginLeft: number,
   fontSize: number,
   sequenceLength: number,
-  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean
+  isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean,
+  residueOffset: number = 0
 ) {
   ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
   ctx.fillStyle = '#555';
@@ -133,7 +136,7 @@ function drawYIndexMarkers(
   const visibleRange = getVisibleIndexRange(y, marginTop, yAxisEnd, sequenceLength);
   if (!visibleRange) return;
 
-  const positions = buildRegularIndexPositions(visibleRange.start, visibleRange.end);
+  const positions = buildRegularIndexPositions(visibleRange.start, visibleRange.end, residueOffset);
 
   for (const i of positions) {
     const yPos = y(i + 0.5);
@@ -144,7 +147,7 @@ function drawYIndexMarkers(
         ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
       }
 
-      ctx.fillText(i.toString(), marginLeft - leftOffset, yPos);
+      ctx.fillText(`${i + residueOffset + 1}`, marginLeft - leftOffset, yPos);
     }
   }
 }
@@ -314,7 +317,10 @@ export function drawAxisLabels(
   // shifted - clipping and visible-range bounds keep using the true margins, which still mark
   // where the plot area actually begins.
   topStripOffset: number = 0,
-  leftStripOffset: number = 0
+  leftStripOffset: number = 0,
+  // Residues before position 0 on each axis, so numbers are always residues of the protein.
+  residueOffsetX: number = 0,
+  residueOffsetY: number = 0
 ) {
   const labelMarginTop = marginTop - topStripOffset;
   const labelMarginLeft = marginLeft - leftStripOffset;
@@ -339,9 +345,9 @@ export function drawAxisLabels(
   // Draw index markers only if enabled (either full or minimal based on overlap)
   if (showSequenceIndices) {
     if (xOverlap) {
-      drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, labelMarginTop, isInSafetyWindow);
+      drawMinimalXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, labelMarginTop, isInSafetyWindow, residueOffsetX);
     } else {
-      drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, labelMarginTop, isInSafetyWindow);
+      drawXIndexMarkers(ctx, x, marginLeft, fontSize, xStringLength, labelMarginTop, isInSafetyWindow, residueOffsetX);
     }
   }
 
@@ -371,9 +377,9 @@ export function drawAxisLabels(
   // Draw Y index markers only if enabled
   if (showSequenceIndices) {
     if (yOverlap) {
-      drawMinimalYIndexMarkers(ctx, y, marginTop, labelMarginLeft, fontSize, yStringLength, isInSafetyWindow);
+      drawMinimalYIndexMarkers(ctx, y, marginTop, labelMarginLeft, fontSize, yStringLength, isInSafetyWindow, residueOffsetY);
     } else {
-      drawYIndexMarkers(ctx, y, marginTop, labelMarginLeft, fontSize, yStringLength, isInSafetyWindow);
+      drawYIndexMarkers(ctx, y, marginTop, labelMarginLeft, fontSize, yStringLength, isInSafetyWindow, residueOffsetY);
     }
   }
 
@@ -413,7 +419,7 @@ export function drawAxisLabels(
   
   // Draw selected safety window indices if provided
   if (selectedSafetyWindow) {
-    drawSafetyWindowIndices(ctx, x, y, marginTop, marginLeft, fontSize, selectedSafetyWindow, topStripOffset, leftStripOffset);
+    drawSafetyWindowIndices(ctx, x, y, marginTop, marginLeft, fontSize, selectedSafetyWindow, topStripOffset, leftStripOffset, residueOffsetX, residueOffsetY);
   }
 }
 
@@ -426,6 +432,7 @@ export function drawMinimalXIndexMarkers(
   sequenceLength: number,
   marginTop: number,
   isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean,
+  residueOffset: number = 0
 ) {
   // Get actual X axis range end point
   const xAxisEnd = x.range()[1];
@@ -457,7 +464,7 @@ export function drawMinimalXIndexMarkers(
     ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
   }
   
-  ctx.fillText(xStart.toString(), xStartPos, marginTop - topOffset);
+  ctx.fillText(`${xStart + residueOffset + 1}`, xStartPos, marginTop - topOffset);
   
   // Draw middle index marker (only if it's different from start and end and we have enough space)
   const rangeWidth = Math.abs(x(xEnd) - x(xStart));
@@ -471,7 +478,7 @@ export function drawMinimalXIndexMarkers(
         ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
       }
       
-      ctx.fillText(xMiddle.toString(), xMiddlePos, marginTop - topOffset);
+      ctx.fillText(`${xMiddle + residueOffset + 1}`, xMiddlePos, marginTop - topOffset);
     }
   }
 
@@ -484,7 +491,7 @@ export function drawMinimalXIndexMarkers(
         ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
       }
 
-      ctx.fillText(xEnd.toString(), xEndPos, marginTop - topOffset);
+      ctx.fillText(`${xEnd + residueOffset + 1}`, xEndPos, marginTop - topOffset);
     }
   }
 }
@@ -498,6 +505,7 @@ export function drawMinimalYIndexMarkers(
   fontSize: number,
   sequenceLength: number,
   isInSafetyWindow?: (position: number, axis: 'x' | 'y') => boolean,
+  residueOffset: number = 0
 ) {
   ctx.font = `${Math.max(10, fontSize * 0.8)}px monospace`;
   ctx.fillStyle = '#555';
@@ -527,7 +535,7 @@ export function drawMinimalYIndexMarkers(
     ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
   }
   
-  ctx.fillText(yStart.toString(), marginLeft - leftOffset, yStartPos);
+  ctx.fillText(`${yStart + residueOffset + 1}`, marginLeft - leftOffset, yStartPos);
   
   // Draw middle index marker (only if it's different from start and end and we have enough space)
   const rangeHeight = Math.abs(y(yEnd) - y(yStart));
@@ -541,7 +549,7 @@ export function drawMinimalYIndexMarkers(
         ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
       }
       
-      ctx.fillText(yMiddle.toString(), marginLeft - leftOffset, yMiddlePos);
+      ctx.fillText(`${yMiddle + residueOffset + 1}`, marginLeft - leftOffset, yMiddlePos);
     }
   }
 
@@ -554,7 +562,7 @@ export function drawMinimalYIndexMarkers(
         ctx.font = `${isInSafety ? 'bold' : 'normal'} ${Math.max(10, fontSize * 0.8)}px monospace`;
       }
 
-      ctx.fillText(yEnd.toString(), marginLeft - leftOffset, yEndPos);
+      ctx.fillText(`${yEnd + residueOffset + 1}`, marginLeft - leftOffset, yEndPos);
     }
   }
 }
@@ -629,7 +637,9 @@ export function drawSafetyWindowIndices(
   // function reads marginTop for X placement but Y bounds (and marginLeft vice versa), so it
   // takes the offsets rather than pre-shifted margins.
   topStripOffset: number = 0,
-  leftStripOffset: number = 0
+  leftStripOffset: number = 0,
+  residueOffsetX: number = 0,
+  residueOffsetY: number = 0
 ) {
   if (!safetyWindow || (safetyWindow.xStart === undefined && safetyWindow.yStart === undefined)) {
     return; // No safety window selected
@@ -655,7 +665,7 @@ export function drawSafetyWindowIndices(
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       // Add 1 for 1-indexed display
-      ctx.fillText(`${safetyWindow.xStart + 1}`, xStartPos, marginTop - topStripOffset - xIndexOffset);
+      ctx.fillText(`${safetyWindow.xStart + residueOffsetX + 1}`, xStartPos, marginTop - topStripOffset - xIndexOffset);
     }
     
     // End index - place above the axis with vertical offset, centered on character
@@ -664,7 +674,7 @@ export function drawSafetyWindowIndices(
     if (xEndPos <= x.range()[1]) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`${safetyWindow.xEnd}`, xEndPos, marginTop - topStripOffset - xIndexOffset);
+      ctx.fillText(`${safetyWindow.xEnd + residueOffsetX}`, xEndPos, marginTop - topStripOffset - xIndexOffset);
     }
   }
   
@@ -676,7 +686,7 @@ export function drawSafetyWindowIndices(
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       // Add 1 for 1-indexed display
-      ctx.fillText(`${safetyWindow.yStart + 1}`, marginLeft - leftStripOffset - yIndexOffset, yStartPos);
+      ctx.fillText(`${safetyWindow.yStart + residueOffsetY + 1}`, marginLeft - leftStripOffset - yIndexOffset, yStartPos);
     }
     
     // End index - place to the left of the axis, centered on character
@@ -685,7 +695,7 @@ export function drawSafetyWindowIndices(
     if (yEndPos <= y.range()[1]) {
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${safetyWindow.yEnd}`, marginLeft - leftStripOffset - yIndexOffset, yEndPos);
+      ctx.fillText(`${safetyWindow.yEnd + residueOffsetY}`, marginLeft - leftStripOffset - yIndexOffset, yEndPos);
     }
   }
   

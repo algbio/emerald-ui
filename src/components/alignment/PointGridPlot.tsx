@@ -55,6 +55,8 @@ export interface PointGridPlotRef {
       showOptimalPath: boolean;
     };
     exportState: {
+      residueOffsetX: number;
+      residueOffsetY: number;
       selectedSafetyWindow: Alignment | null;
       hoveredSafetyWindow: Alignment | null;
       highlightedGap: {type: 'representative' | 'member'; start: number; end: number} | null;
@@ -130,6 +132,9 @@ interface PointGridProps {
   domainMode?: 'on' | 'off';
   domainsRepresentative?: ProteinDomain[] | null;
   domainsMember?: ProteinDomain[] | null;
+  // Residues before position 0 on each axis when part of a protein was aligned
+  residueOffsetX?: number;
+  residueOffsetY?: number;
   // Rectangle window selection ("Extracted Windows" tool)
   enableRectangleSelection?: boolean;
   onRectangleSelected?: (selection: RectangleSelection) => void;
@@ -179,6 +184,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
   domainMode = 'off',
   domainsRepresentative,
   domainsMember,
+  residueOffsetX = 0,
+  residueOffsetY = 0,
   enableRectangleSelection = false,
   onRectangleSelected,
   extractedWindow,
@@ -386,6 +393,8 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showOptimalPath
       },
       exportState: {
+        residueOffsetX,
+        residueOffsetY,
         selectedSafetyWindow: selectedWindow || null,
         hoveredSafetyWindow: hoveredSafetyWindowId
           ? safetyWindows.find((_, index) => `safety-window-${index}` === hoveredSafetyWindowId) || null
@@ -508,7 +517,11 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
           representativeDescriptor,
           memberDescriptor,
           showSequenceCharacters,
-          showSequenceIndices
+          showSequenceIndices,
+          0,
+          0,
+          residueOffsetX,
+          residueOffsetY
         );
       }
       
@@ -704,7 +717,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         showSequenceCharacters,
         showSequenceIndices,
         topStripThickness,
-        leftStripThickness
+        leftStripThickness,
+        residueOffsetX,
+        residueOffsetY
       );
     }
 
@@ -786,7 +801,9 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
         marginLeft, 
         representative, 
         member,
-        alignments
+        alignments,
+        residueOffsetX,
+        residueOffsetY
       );
     }
 
@@ -1284,7 +1301,7 @@ const PointGridPlot = forwardRef<PointGridPlotRef, PointGridProps>(({
             </button>
           )}
           <div className="domain-tooltip-name">{activeDomainHit.domain.name}</div>
-          <div className="domain-tooltip-range">Residues {activeDomainHit.domain.start}-{activeDomainHit.domain.end}</div>
+          <div className="domain-tooltip-range">Residues {activeDomainHit.domain.displayStart ?? activeDomainHit.domain.start}-{activeDomainHit.domain.displayEnd ?? activeDomainHit.domain.end}</div>
         </div>
       )}
     </div>

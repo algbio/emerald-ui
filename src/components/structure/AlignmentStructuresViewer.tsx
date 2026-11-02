@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSequence } from '../../context/SequenceContext';
 import { StructureViewer } from './StructureViewer';
-import { extractSafetyWindowsFromAlignments, mergeSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
+import { extractSafetyWindowsFromAlignments, getSafetyWindowRanges, mergeSafetyWindows, shiftSafetyWindows } from '../../utils/sequence/safetyWindowUtils';
+import ProteinArchitecture from '../sequence/ProteinArchitecture';
+import type { ResidueRange } from '../../utils/sequence/regionUtils';
+import { getResidueOffset } from '../../utils/sequence/regionUtils';
 import './AlignmentStructuresViewer.css';
 import { StructureSuperpositionPanel } from './StructureSuperpositionPanel';
 import type { StructureDataResult } from '../../hooks/useStructureData';
@@ -38,7 +41,10 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
   proteinDomainsB,
 }) => {
   const { state } = useSequence();
-  const { sequences, alignments, structureA, structureB } = state;
+  const { sequences, alignments, structureA, structureB, submittedAlignment } = state;
+  // Number of the single safety window on show, null for all windows. Separate from the TM-align
+  // panel's selection, because moving that one refits the structures.
+  const [viewedWindowNumber, setViewedWindowNumber] = useState<number | null>(null);
   const [useSecondaryColorsA, setUseSecondaryColorsA] = useState(true);
   const [useSecondaryColorsB, setUseSecondaryColorsB] = useState(true);
   const [highlightSafetyWindowsA, setHighlightSafetyWindowsA] = useState(true);
@@ -66,8 +72,35 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
   console.log('Extracting safety windows from alignments:', alignments);
   const safetyWindowMapping = hasAlignments ? extractSafetyWindowsFromAlignments(alignments) : { sequenceA: [], sequenceB: [] };
   console.log('Safety windows mapping:', safetyWindowMapping);
-  const safetyWindowsA = mergeSafetyWindows(safetyWindowMapping.sequenceA);
-  const safetyWindowsB = mergeSafetyWindows(safetyWindowMapping.sequenceB);
+  // Structures are numbered for the whole protein, windows for what was aligned.
+  const offsetA = getResidueOffset(submittedAlignment?.regionA);
+  const offsetB = getResidueOffset(submittedAlignment?.regionB);
+  const safetyWindowsA = mergeSafetyWindows(shiftSafetyWindows(safetyWindowMapping.sequenceA, offsetA));
+  const safetyWindowsB = mergeSafetyWindows(shiftSafetyWindows(safetyWindowMapping.sequenceB, offsetB));
+
+  const windowRanges = getSafetyWindowRanges(alignments, offsetA, offsetB);
+  const viewedWindow = windowRanges.find(window => window.number === viewedWindowNumber) ?? null;
+
+  // A window can cover no residues of one sequence, which then has nothing to highlight.
+  const toStructureWindows = (range: ResidueRange | null) =>
+    range ? [{ startPosition: range.start, endPosition: range.end }] : [];
+  const shownWindowsA = viewedWindow ? toStructureWindows(viewedWindow.rangeA) : safetyWindowsA;
+  const shownWindowsB = viewedWindow ? toStructureWindows(viewedWindow.rangeB) : safetyWindowsB;
+  const markedRangesA = (viewedWindow ? [viewedWindow] : windowRanges).flatMap(window => (window.rangeA ? [window.rangeA] : []));
+  const markedRangesB = (viewedWindow ? [viewedWindow] : windowRanges).flatMap(window => (window.rangeB ? [window.rangeB] : []));
+
+  // A new alignment has its own windows, so a selection does not carry over to it.
+  useEffect(() => {
+    setViewedWindowNumber(null);
+  }, [alignments]);
+
+  const stepViewedWindow = (direction: 1 | -1) => {
+    const current = windowRanges.findIndex(window => window.number === viewedWindowNumber);
+    const next = current === -1
+      ? (direction === 1 ? 0 : windowRanges.length - 1)
+      : (current + direction + windowRanges.length) % windowRanges.length;
+    setViewedWindowNumber(windowRanges[next].number);
+  };
 
   // Debug logging
   console.log('AlignmentStructuresViewer debug:', {
@@ -113,6 +146,36 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
     <>
     <div className="alignment-structures-viewer">
       <h2 className="structures-title">Safety Windows Mapped on 3D structures</h2>
+      {windowRanges.length > 0 && (
+        <div className="safety-window-scroller">
+          <button
+            type="button"
+            className={`structure-panel-toggle window-mode-button ${!viewedWindow ? 'active' : ''}`}
+            onClick={() => setViewedWindowNumber(null)}
+          >
+            All windows
+          </button>
+          <button
+            type="button"
+            className="nav-button"
+            onClick={() => stepViewedWindow(-1)}
+            aria-label="Previous safety window on the 3D structures"
+          >
+            <span className="nav-arrow">‹</span>
+          </button>
+          <span className="window-current-box safety-window-scroller-current">
+            {viewedWindow ? `Window ${viewedWindow.number} of ${windowRanges.length}` : 'All windows'}
+          </span>
+          <button
+            type="button"
+            className="nav-button"
+            onClick={() => stepViewedWindow(1)}
+            aria-label="Next safety window on the 3D structures"
+          >
+            <span className="nav-arrow">›</span>
+          </button>
+        </div>
+      )}
       <div className="structures-container">
         {/* Sequence A Structure */}
         {hasStructureA && (
@@ -203,6 +266,16 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                   <span className="file-type">Uploaded {structureA.fileType?.toUpperCase()} file</span>
                 )}
               </div>
+              {submittedAlignment && (
+                <ProteinArchitecture
+                  label="A"
+                  tone="light"
+                  sequenceLength={submittedAlignment.fullLengthA}
+                  uniprotId={structureA.uniprotId}
+                  shadedRange={submittedAlignment.regionA}
+                  windowRanges={markedRangesA}
+                />
+              )}
             </div>
             {waitingOnSharedFetchA ? (
               <div className="structure-loading-placeholder">Loading structure…</div>
@@ -218,7 +291,7 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                 height={500}
                 showLoading={true}
                 showSequence={true}
-                safetyWindows={safetyWindowsA}
+                safetyWindows={shownWindowsA}
                 enableSafetyWindowHighlighting={highlightSafetyWindowsA && safetyWindowsA.length > 0}
                 cartoonColorScheme={useDomainColorsA
                   ? 'domain'
@@ -320,6 +393,16 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                   <span className="file-type">Uploaded {structureB.fileType?.toUpperCase()} file</span>
                 )}
               </div>
+              {submittedAlignment && (
+                <ProteinArchitecture
+                  label="B"
+                  tone="light"
+                  sequenceLength={submittedAlignment.fullLengthB}
+                  uniprotId={structureB.uniprotId}
+                  shadedRange={submittedAlignment.regionB}
+                  windowRanges={markedRangesB}
+                />
+              )}
             </div>
             {waitingOnSharedFetchB ? (
               <div className="structure-loading-placeholder">Loading structure…</div>
@@ -335,7 +418,7 @@ export const AlignmentStructuresViewer: React.FC<AlignmentStructuresViewerProps>
                 height={500}
                 showLoading={true}
                 showSequence={true}
-                safetyWindows={safetyWindowsB}
+                safetyWindows={shownWindowsB}
                 enableSafetyWindowHighlighting={highlightSafetyWindowsB && safetyWindowsB.length > 0}
                 cartoonColorScheme={useDomainColorsB
                   ? 'domain'
