@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Alignment } from '../components/alignment/PointGridPlot';
 import type { StructureData } from '../utils/structure/pdbParser';
@@ -9,9 +9,11 @@ import { getShareableDataFromUrl } from '../utils/export/urlSharing';
 import { convertOptimalPathToAlignment } from '../utils/sequence/optimalPathConverter';
 import {
   extractLeadingFastaHeader,
-  normalizeProteinSequenceInput,
+  cleanProteinSequence,
   hasInvalidProteinSequenceCharacters,
 } from '../utils/sequence/fastaInput';
+import { extractRegion, parseRegionInput } from '../utils/sequence/regionUtils';
+import type { ResidueRange } from '../utils/sequence/regionUtils';
 import {
   DEFAULT_ALPHA,
   DEFAULT_DELTA,
@@ -35,6 +37,11 @@ const validateSequenceAsterisks = (sequence: string) => {
   return { hasMiddleAsterisk, hasEndAsterisk };
 };
 
+// A region only applies to the protein it was chosen on, so it is dropped when the sequence
+// changes. Comparing cleaned sequences keeps it through the normalization done on submit.
+const keepRegionIfSameProtein = (region: ResidueRange | null, previousSequence: string, nextSequence: string) =>
+  cleanProteinSequence(previousSequence) === cleanProteinSequence(nextSequence) ? region : null;
+
 // Define the types for sequence data
 export interface SequenceData {
   sequenceA: string;
@@ -46,6 +53,20 @@ export interface SequenceData {
 }
 
 import type { CostMatrixTypeValue } from '../utils/api/EmeraldService';
+
+// What the most recent alignment was actually run on. Results are always read against this,
+// not the input fields, which can hold the whole protein or have been edited since.
+export interface SubmittedAlignment {
+  sequenceA: string;
+  sequenceB: string;
+  descriptorA: string;
+  descriptorB: string;
+  regionA: ResidueRange | null;
+  regionB: ResidueRange | null;
+  // Length of each whole cleaned protein, to tell whether annotation numbering applies to it.
+  fullLengthA: number;
+  fullLengthB: number;
+}
 
 // Parameters for Emerald algorithm
 export interface EmeraldParams {
@@ -59,8 +80,11 @@ export interface EmeraldParams {
 // Complete state shape
 interface SequenceState {
   sequences: SequenceData;
+  regionA: ResidueRange | null;
+  regionB: ResidueRange | null;
   params: EmeraldParams;
   alignments: Alignment[];
+  submittedAlignment: SubmittedAlignment | null;
   alignmentStatus: 'idle' | 'loading' | 'success' | 'error';
   alignmentError: string | null;
   fetchStatusA: 'idle' | 'loading' | 'success' | 'error';
@@ -103,6 +127,8 @@ const initialState: SequenceState = {
     accessionA: '',
     accessionB: ''
   },
+  regionA: null,
+  regionB: null,
   params: {
     alpha: DEFAULT_ALPHA,
     delta: DEFAULT_DELTA,
@@ -111,6 +137,7 @@ const initialState: SequenceState = {
     costMatrixType: DEFAULT_COST_MATRIX_TYPE  // Default to BLOSUM62
   },
   alignments: [],
+  submittedAlignment: null,
   alignmentStatus: 'idle',
   alignmentError: null,
   fetchStatusA: 'idle',
@@ -137,6 +164,8 @@ type SequenceAction =
   | { type: 'UPDATE_SEQUENCE_B'; payload: string }
   | { type: 'VALIDATE_SEQUENCE_A'; payload: { hasMiddleAsterisk: boolean; hasEndAsterisk: boolean } }
   | { type: 'VALIDATE_SEQUENCE_B'; payload: { hasMiddleAsterisk: boolean; hasEndAsterisk: boolean } }
+  | { type: 'SET_REGION_A'; payload: ResidueRange | null }
+  | { type: 'SET_REGION_B'; payload: ResidueRange | null }
   | { type: 'UPDATE_DESCRIPTOR_A'; payload: string }
   | { type: 'UPDATE_DESCRIPTOR_B'; payload: string }
   | { type: 'UPDATE_ACCESSION_A'; payload: string }
@@ -146,16 +175,16 @@ type SequenceAction =
   | { type: 'LOAD_STRUCTURE_FILE_A'; payload: StructureData }
   | { type: 'LOAD_STRUCTURE_FILE_B'; payload: StructureData }
   | { type: 'FETCH_SEQUENCE_A_START' }
-  | { type: 'FETCH_SEQUENCE_A_SUCCESS'; payload: { sequence: string; descriptor: string } }
+  | { type: 'FETCH_SEQUENCE_A_SUCCESS'; payload: { sequence: string; descriptor: string; region?: ResidueRange | null } }
   | { type: 'FETCH_SEQUENCE_A_ERROR'; payload: string }
   | { type: 'FETCH_SEQUENCE_B_START' }
-  | { type: 'FETCH_SEQUENCE_B_SUCCESS'; payload: { sequence: string; descriptor: string } }
+  | { type: 'FETCH_SEQUENCE_B_SUCCESS'; payload: { sequence: string; descriptor: string; region?: ResidueRange | null } }
   | { type: 'FETCH_SEQUENCE_B_ERROR'; payload: string }
   | { type: 'UPDATE_PARAMS'; payload: Partial<EmeraldParams> }
   | { type: 'LOAD_SEQUENCES'; payload: Partial<SequenceData> }
   | { type: 'RESET_SEQUENCES' }
   | { type: 'ALIGNMENT_START' }
-  | { type: 'ALIGNMENT_SUCCESS'; payload: Alignment[] }
+  | { type: 'ALIGNMENT_SUCCESS'; payload: { alignments: Alignment[]; submittedAlignment: SubmittedAlignment } }
   | { type: 'ALIGNMENT_ERROR'; payload: string }
   | { type: 'SET_STRUCTURE_A', payload: { uniprotId: string | null; pdbId?: string | null } }
   | { type: 'SET_STRUCTURE_B', payload: { uniprotId: string | null; pdbId?: string | null } }
@@ -172,6 +201,7 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
       return {
         ...state,
         sequences: { ...state.sequences, sequenceA: action.payload },
+        regionA: keepRegionIfSameProtein(state.regionA, state.sequences.sequenceA, action.payload),
         validation: {
           ...state.validation,
           sequenceA: validationA
@@ -182,10 +212,31 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
       return {
         ...state,
         sequences: { ...state.sequences, sequenceB: action.payload },
+        regionB: keepRegionIfSameProtein(state.regionB, state.sequences.sequenceB, action.payload),
         validation: {
           ...state.validation,
           sequenceB: validationB
         }
+      };
+    case 'SET_REGION_A':
+      // As with parameter changes, results are cleared so a plot never describes a different
+      // range from the one currently selected.
+      return {
+        ...state,
+        regionA: action.payload,
+        alignments: [],
+        submittedAlignment: null,
+        alignmentStatus: 'idle',
+        alignmentError: null
+      };
+    case 'SET_REGION_B':
+      return {
+        ...state,
+        regionB: action.payload,
+        alignments: [],
+        submittedAlignment: null,
+        alignmentStatus: 'idle',
+        alignmentError: null
       };
     case 'VALIDATE_SEQUENCE_A':
       return {
@@ -249,7 +300,9 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
           descriptorA: action.payload.descriptor,
           accessionA: ''
         },
+        regionA: keepRegionIfSameProtein(state.regionA, state.sequences.sequenceA, action.payload.sequence),
         alignments: [],
+        submittedAlignment: null,
         alignmentStatus: 'idle',
         alignmentError: null,
         fetchStatusA: 'idle',
@@ -276,7 +329,9 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
           descriptorB: action.payload.descriptor,
           accessionB: ''
         },
+        regionB: keepRegionIfSameProtein(state.regionB, state.sequences.sequenceB, action.payload.sequence),
         alignments: [],
+        submittedAlignment: null,
         alignmentStatus: 'idle',
         alignmentError: null,
         fetchStatusB: 'idle',
@@ -308,6 +363,9 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
           sequenceA: action.payload.sequence,
           descriptorA: action.payload.descriptor
         },
+        regionA: action.payload.region !== undefined
+          ? action.payload.region
+          : keepRegionIfSameProtein(state.regionA, state.sequences.sequenceA, action.payload.sequence),
         validation: {
           ...state.validation,
           sequenceA: validationResultA
@@ -335,6 +393,9 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
           sequenceB: action.payload.sequence,
           descriptorB: action.payload.descriptor
         },
+        regionB: action.payload.region !== undefined
+          ? action.payload.region
+          : keepRegionIfSameProtein(state.regionB, state.sequences.sequenceB, action.payload.sequence),
         validation: {
           ...state.validation,
           sequenceB: validationResultB
@@ -363,6 +424,7 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
           ...(paramsChanged
             ? {
                 alignments: [],
+                submittedAlignment: null,
                 alignmentStatus: 'idle' as const,
                 alignmentError: null,
               }
@@ -382,7 +444,10 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
         // Clear stale data so the new example starts fresh
         structureA: null,
         structureB: null,
+        regionA: null,
+        regionB: null,
         alignments: [],
+        submittedAlignment: null,
         alignmentStatus: 'idle',
         alignmentError: null,
         fetchStatusA: 'idle',
@@ -393,7 +458,9 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
     case 'RESET_SEQUENCES':
       return {
         ...state,
-        sequences: initialState.sequences
+        sequences: initialState.sequences,
+        regionA: null,
+        regionB: null
       };
     case 'ALIGNMENT_START':
       return {
@@ -404,7 +471,8 @@ const sequenceReducer = (state: SequenceState, action: SequenceAction): Sequence
     case 'ALIGNMENT_SUCCESS':
       return {
         ...state,
-        alignments: action.payload,
+        alignments: action.payload.alignments,
+        submittedAlignment: action.payload.submittedAlignment,
         alignmentStatus: 'success'
       };
     case 'ALIGNMENT_ERROR':
@@ -473,8 +541,8 @@ interface SequenceContextType {
   state: SequenceState;
   dispatch: React.Dispatch<SequenceAction>;
   runAlignment: () => Promise<{ success: boolean; submittedSequences?: Pick<SequenceData, 'sequenceA' | 'sequenceB' | 'descriptorA' | 'descriptorB'> }>;
-  fetchSequenceA: (accession: string) => Promise<{ success: boolean; error?: string }>;
-  fetchSequenceB: (accession: string) => Promise<{ success: boolean; error?: string }>;
+  fetchSequenceA: (accession: string, urlRange?: ResidueRange) => Promise<{ success: boolean; error?: string }>;
+  fetchSequenceB: (accession: string, urlRange?: ResidueRange) => Promise<{ success: boolean; error?: string }>;
   loadStructureFileA: (structureData: StructureData) => void;
   loadStructureFileB: (structureData: StructureData) => void;
   canRunAlignment: () => boolean;
@@ -490,6 +558,7 @@ interface SequenceProviderProps {
 
 export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(sequenceReducer, initialState);
+  const hasAutoRunSharedUrl = useRef(false);
 
   // Initialize from URL parameters on component mount
   useEffect(() => {
@@ -534,12 +603,12 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         
         // Fetch sequences automatically with error handling
         if (shareableData.seqA) {
-          fetchSequenceA(shareableData.seqA).catch(error => {
+          fetchSequenceA(shareableData.seqA, shareableData.rangeA).catch(error => {
             console.error('Failed to fetch sequence A from shared URL:', error);
           });
         }
         if (shareableData.seqB) {
-          fetchSequenceB(shareableData.seqB).catch(error => {
+          fetchSequenceB(shareableData.seqB, shareableData.rangeB).catch(error => {
             console.error('Failed to fetch sequence B from shared URL:', error);
           });
         }
@@ -549,11 +618,13 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
     }
   }, []); // Only run on mount
 
-  // Auto-run alignment when both sequences are loaded from shared URL
+  // Auto-run alignment when both sequences are loaded from shared URL. Only once: afterwards the
+  // user is in charge, and a region or parameter change must not start a new alignment on its own.
   useEffect(() => {
     const shareableData = getShareableDataFromUrl();
     
     if (shareableData && 
+        !hasAutoRunSharedUrl.current &&
         state.sequences.sequenceA && 
         state.sequences.sequenceB && 
         state.fetchStatusA === 'success' && 
@@ -561,6 +632,7 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         state.alignmentStatus === 'idle') {
       
       console.log('Auto-running alignment for shared URL');
+      hasAutoRunSharedUrl.current = true;
       runAlignment();
     }
   }, [state.sequences.sequenceA, state.sequences.sequenceB, state.fetchStatusA, state.fetchStatusB, state.alignmentStatus]);
@@ -808,18 +880,11 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       const extractedSequenceA = extractLeadingFastaHeader(sequences.sequenceA);
       const extractedSequenceB = extractLeadingFastaHeader(sequences.sequenceB);
 
-      const sequenceWithHeaderRemovedA = extractedSequenceA.hadHeader ? extractedSequenceA.sequence : sequences.sequenceA;
-      const sequenceWithHeaderRemovedB = extractedSequenceB.hadHeader ? extractedSequenceB.sequence : sequences.sequenceB;
-
-      const normalizedSequenceA = normalizeProteinSequenceInput(sequenceWithHeaderRemovedA);
-      const normalizedSequenceB = normalizeProteinSequenceInput(sequenceWithHeaderRemovedB);
-
       const descriptorA = sequences.descriptorA.trim() || extractedSequenceA.header;
       const descriptorB = sequences.descriptorB.trim() || extractedSequenceB.header;
       
-      // Remove trailing asterisks if present
-      const cleanSequenceA = normalizedSequenceA.replace(/\*+$/, '');
-      const cleanSequenceB = normalizedSequenceB.replace(/\*+$/, '');
+      const cleanSequenceA = cleanProteinSequence(sequences.sequenceA);
+      const cleanSequenceB = cleanProteinSequence(sequences.sequenceB);
 
       if (!cleanSequenceA || !cleanSequenceB) {
         dispatch({
@@ -863,11 +928,16 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
         dispatch({ type: 'UPDATE_SEQUENCE_B', payload: cleanSequenceB });
       }
       
+      // Only the selected stretch of each protein is aligned. Everything downstream works in
+      // positions within these strings, with the regions recording where they sit in the protein.
+      const submittedSequenceA = extractRegion(cleanSequenceA, state.regionA);
+      const submittedSequenceB = extractRegion(cleanSequenceB, state.regionB);
+
       // Call EmeraldService to generate alignment
       const result = await emeraldService.generateAlignment(
-        cleanSequenceA,
+        submittedSequenceA,
         descriptorA || 'Sequence A',
-        cleanSequenceB,
+        submittedSequenceB,
         descriptorB || 'Sequence B',
         params.alpha,
         params.delta,
@@ -877,22 +947,33 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
       );
       
       // Process the results using the function from FileUploader
-      const processedAlignments = processAlignmentResult(result, cleanSequenceA, cleanSequenceB);
+      const processedAlignments = processAlignmentResult(result, submittedSequenceA, submittedSequenceB);
       
       console.log('Alignment generated successfully:', result);
+
+      const submittedAlignment: SubmittedAlignment = {
+        sequenceA: submittedSequenceA,
+        sequenceB: submittedSequenceB,
+        descriptorA: descriptorA || 'Sequence A',
+        descriptorB: descriptorB || 'Sequence B',
+        regionA: state.regionA,
+        regionB: state.regionB,
+        fullLengthA: cleanSequenceA.length,
+        fullLengthB: cleanSequenceB.length
+      };
       
       dispatch({ 
         type: 'ALIGNMENT_SUCCESS', 
-        payload: processedAlignments 
+        payload: { alignments: processedAlignments, submittedAlignment }
       });
 
       return {
         success: true,
         submittedSequences: {
-          sequenceA: cleanSequenceA,
-          sequenceB: cleanSequenceB,
-          descriptorA: descriptorA || 'Sequence A',
-          descriptorB: descriptorB || 'Sequence B'
+          sequenceA: submittedSequenceA,
+          sequenceB: submittedSequenceB,
+          descriptorA: submittedAlignment.descriptorA,
+          descriptorB: submittedAlignment.descriptorB
         }
       };
       
@@ -906,14 +987,26 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
     }
   };
 
+  // A range from a shared link can only be checked now that the protein's length is known. One
+  // that does not fit is dropped rather than failing the whole link.
+  const resolveUrlRange = (urlRange: ResidueRange | undefined, sequence: string) => {
+    if (!urlRange) return undefined;
+    const { region, error } = parseRegionInput(String(urlRange.start), String(urlRange.end), cleanProteinSequence(sequence).length);
+    if (error) {
+      console.warn('Ignoring residue range from shared URL:', urlRange, error);
+      return undefined;
+    }
+    return region;
+  };
+
   // Function to fetch sequence A from UniProt
-  const fetchSequenceA = async (accession: string) => {
+  const fetchSequenceA = async (accession: string, urlRange?: ResidueRange) => {
     try {
       dispatch({ type: 'FETCH_SEQUENCE_A_START' });
       const result = await fetchUniProtSequence(accession);
       dispatch({ 
         type: 'FETCH_SEQUENCE_A_SUCCESS', 
-        payload: result 
+        payload: { ...result, region: resolveUrlRange(urlRange, result.sequence) }
       });
       return { success: true as const };
     } catch (error) {
@@ -927,13 +1020,13 @@ export const SequenceProvider: React.FC<SequenceProviderProps> = ({ children }) 
   };
 
   // Function to fetch sequence B from UniProt
-  const fetchSequenceB = async (accession: string) => {
+  const fetchSequenceB = async (accession: string, urlRange?: ResidueRange) => {
     try {
       dispatch({ type: 'FETCH_SEQUENCE_B_START' });
       const result = await fetchUniProtSequence(accession);
       dispatch({ 
         type: 'FETCH_SEQUENCE_B_SUCCESS', 
-        payload: result 
+        payload: { ...result, region: resolveUrlRange(urlRange, result.sequence) }
       });
       return { success: true as const };
     } catch (error) {

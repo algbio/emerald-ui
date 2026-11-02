@@ -38,6 +38,8 @@ interface VisualizationSettings {
 }
 
 interface ExportState {
+  residueOffsetX: number;
+  residueOffsetY: number;
   selectedSafetyWindow: Alignment | null;
   hoveredSafetyWindow: Alignment | null;
   highlightedGap: { type: 'representative' | 'member'; start: number; end: number } | null;
@@ -78,6 +80,8 @@ const defaultVisualizationSettings: VisualizationSettings = {
 };
 
 const defaultExportState: ExportState = {
+  residueOffsetX: 0,
+  residueOffsetY: 0,
   selectedSafetyWindow: null,
   hoveredSafetyWindow: null,
   highlightedGap: null,
@@ -289,7 +293,11 @@ const generateSVGContent = (
       representativeDescriptor,
       memberDescriptor,
       settings.showSequenceCharacters,
-      settings.showSequenceIndices
+      settings.showSequenceIndices,
+      0,
+      0,
+      state.residueOffsetX,
+      state.residueOffsetY
     );
   }
 
@@ -346,7 +354,9 @@ const generateSVGContent = (
       marginLeft,
       representative,
       member,
-      alignments
+      alignments,
+      state.residueOffsetX,
+      state.residueOffsetY
     );
   }
 

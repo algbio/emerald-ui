@@ -8,6 +8,8 @@ import { CostMatrixType, type CostMatrixTypeValue } from '../../utils/api/Emeral
 import type { VisualizationSettings } from './VisualizationSettingsPanel';
 import './AlignmentGraphWithInfoPanel.css';
 import { AlignmentStructuresViewer } from '../structure/AlignmentStructuresViewer';
+import { useSequence } from '../../context/SequenceContext';
+import { getResidueOffset } from '../../utils/sequence/regionUtils';
 import type { StructureDataResult } from '../../hooks/useStructureData';
 import type { ProteinDomain } from '../../hooks/useProteinDomains';
 import { validatePath, generateAlignmentFromPath, buildOptimalPathThroughSelectedEdges, calculateDistanceFromOptimalPath, enumeratePathsThroughRegion } from '../../utils/canvas/pathSelection';
@@ -92,6 +94,10 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
   // Feedback notifications hook
   const { notifySuccess, notifyError } = useFeedbackNotifications();
   
+  const { state: sequenceState } = useSequence();
+  const residueOffsetX = getResidueOffset(sequenceState.submittedAlignment?.regionA);
+  const residueOffsetY = getResidueOffset(sequenceState.submittedAlignment?.regionB);
+
   // Create ref for the PointGridPlot component
   const pointGridRef = useRef<PointGridPlotRef>(null);
   
@@ -216,9 +222,12 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
       resolvedAccessionB !== 'N/A' ? resolvedAccessionB : undefined,
       gapCost,
       startGap,
-      costMatrixType
+      costMatrixType,
+      sequenceState.submittedAlignment?.regionA,
+      sequenceState.submittedAlignment?.regionB
     );
   }, [
+    sequenceState.submittedAlignment,
     alpha,
     delta,
     representativeDescriptor,
@@ -541,6 +550,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
             domainMode={domainMode}
             domainsRepresentative={domainsRepresentative}
             domainsMember={domainsMember}
+            residueOffsetX={residueOffsetX}
+            residueOffsetY={residueOffsetY}
             enableRectangleSelection={rectangleSelectionMode}
             onRectangleSelected={handleRectangleSelected}
             extractedWindow={extractedWindow}
@@ -573,6 +584,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
           <SafetyWindowsInfoPanel
             safetyWindows={safetyWindows}
             selectedWindowId={selectedSafetyWindowId}
+            residueOffsetX={residueOffsetX}
+            residueOffsetY={residueOffsetY}
             hoveredWindowId={hoveredSafetyWindowId}
             onWindowHover={handleSafetyWindowHover}
             onNavigateToPrevious={handleNavigateToPrevious}
@@ -632,6 +645,8 @@ export const AlignmentGraphWithInfoPanel: React.FC<AlignmentGraphWithInfoPanelPr
       {(alignments.some(a => a.textAlignment) || pathSelectionResult) && (
         <div className="sequence-alignment-viewer-container">
           <SequenceAlignmentViewer
+            residueOffsetX={residueOffsetX}
+            residueOffsetY={residueOffsetY}
             alignment={alignments.find(a => a.textAlignment)?.textAlignment}
             pathSelectionResult={pathSelectionResult}
             representativeDescriptor={representativeDescriptor}

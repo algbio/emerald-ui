@@ -1,0 +1,127 @@
+.region-selection-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+}
+
+.region-selection-description {
+  font-size: 0.875rem;
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+}
+
+.region-selection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .region-selection-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.region-selector {
+  min-width: 0;
+}
+
+.region-selector-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.region-slider {
+  position: relative;
+  height: 20px;
+  margin: 10px 0 12px;
+  border-radius: 4px;
+  background: var(--border-color);
+}
+
+.region-slider-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 12px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.55);
+  cursor: grab;
+  touch-action: none;
+}
+
+.region-slider-window:active {
+  cursor: grabbing;
+}
+
+.region-slider-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: #10b981;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.region-slider-handle-start {
+  left: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.region-slider-handle-end {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.region-slider-window:focus-visible,
+.region-slider-handle:focus-visible {
+  outline: 2px solid var(--text-primary);
+}
+
+.region-selector-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.region-selector-fields {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.region-selector-row label {
+  margin-bottom: 0;
+}
+
+.emerald-input.region-selector-input {
+  width: 80px;
+}
+
+.region-selector-reset {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.region-selector-reset:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.region-selector-summary {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}

@@ -16,6 +16,7 @@ import { extractResidueBFactors } from './utils/structure/plddtParser'
 import { PLDDT_BINS } from './utils/colors/confidenceColorScale'
 import { useProteinDomains } from './hooks/useProteinDomains'
 import { extractUniProtId } from './utils/api/uniprotUtils'
+import { toRegionDomains, toRegionScores } from './utils/sequence/regionUtils'
 
 const GRAPH_WIDTH = 900;
 const GRAPH_HEIGHT = 900;
@@ -24,7 +25,7 @@ const TUTORIAL_VIDEO_ID = 'Fbi7LlvoZTY';
 // Create a separate component for the app content to use the context hook
 function AppContent() {
   const { state, dispatch } = useSequence();
-  const { sequences, alignments } = state;
+  const { alignments, submittedAlignment } = state;
   
   const [representative, setRepresentative] = useState("");
   const [member, setMember] = useState("");
@@ -65,30 +66,50 @@ function AppContent() {
   );
   // The strips themselves are gated on the same flag, so a stale accession can never keep
   // drawing UniProt-derived annotation after the descriptor stopped naming one.
-  const domainsRepresentative = hasUniProtAccession && domainMode === 'on' && proteinDomainsA.status === 'success' ? proteinDomainsA.domains : null;
-  const domainsMember = hasUniProtAccession && domainMode === 'on' && proteinDomainsB.status === 'success' ? proteinDomainsB.domains : null;
+  // Annotation is numbered against the UniProt sequence. If the aligned protein is a different
+  // length (e.g. a pasted fragment under the same accession), its numbering does not apply.
+  const annotationFitsA = !submittedAlignment || proteinDomainsA.sequenceLength === null || proteinDomainsA.sequenceLength === submittedAlignment.fullLengthA;
+  const annotationFitsB = !submittedAlignment || proteinDomainsB.sequenceLength === null || proteinDomainsB.sequenceLength === submittedAlignment.fullLengthB;
+  const regionA = submittedAlignment?.regionA ?? null;
+  const regionB = submittedAlignment?.regionB ?? null;
+
+  const domainsRepresentative = useMemo(() => (
+    annotationFitsA && hasUniProtAccession && domainMode === 'on' && proteinDomainsA.status === 'success'
+      ? toRegionDomains(proteinDomainsA.domains, regionA)
+      : null
+  ), [annotationFitsA, hasUniProtAccession, domainMode, proteinDomainsA, regionA]);
+
+  const domainsMember = useMemo(() => (
+    annotationFitsB && hasUniProtAccession && domainMode === 'on' && proteinDomainsB.status === 'success'
+      ? toRegionDomains(proteinDomainsB.domains, regionB)
+      : null
+  ), [annotationFitsB, hasUniProtAccession, domainMode, proteinDomainsB, regionB]);
 
   const plddtRepresentative = useMemo(() => {
-    if (!hasUniProtAccession || confidenceMode !== 'plddt' || structureDataA.status !== 'success' || !structureDataA.rawContent || !structureDataA.format) {
+    if (!annotationFitsA || !hasUniProtAccession || confidenceMode !== 'plddt' || structureDataA.status !== 'success' || !structureDataA.rawContent || !structureDataA.format) {
       return null;
     }
-    return extractResidueBFactors(structureDataA.rawContent, structureDataA.format);
-  }, [hasUniProtAccession, confidenceMode, structureDataA]);
+    const scores = extractResidueBFactors(structureDataA.rawContent, structureDataA.format);
+    if (regionA && scores.length !== submittedAlignment?.fullLengthA) return null;
+    return toRegionScores(scores, regionA);
+  }, [annotationFitsA, hasUniProtAccession, confidenceMode, structureDataA, regionA, submittedAlignment]);
 
   const plddtMember = useMemo(() => {
-    if (!hasUniProtAccession || confidenceMode !== 'plddt' || structureDataB.status !== 'success' || !structureDataB.rawContent || !structureDataB.format) {
+    if (!annotationFitsB || !hasUniProtAccession || confidenceMode !== 'plddt' || structureDataB.status !== 'success' || !structureDataB.rawContent || !structureDataB.format) {
       return null;
     }
-    return extractResidueBFactors(structureDataB.rawContent, structureDataB.format);
-  }, [hasUniProtAccession, confidenceMode, structureDataB]);
+    const scores = extractResidueBFactors(structureDataB.rawContent, structureDataB.format);
+    if (regionB && scores.length !== submittedAlignment?.fullLengthB) return null;
+    return toRegionScores(scores, regionB);
+  }, [annotationFitsB, hasUniProtAccession, confidenceMode, structureDataB, regionB, submittedAlignment]);
 
   // Update local state when context state changes
   useEffect(() => {
-    if (state.alignmentStatus === 'success') {
-      setRepresentative(sequences.sequenceA);
-      setMember(sequences.sequenceB);
-      setRepresentativeDescriptor(sequences.descriptorA);
-      setMemberDescriptor(sequences.descriptorB);
+    if (state.alignmentStatus === 'success' && submittedAlignment) {
+      setRepresentative(submittedAlignment.sequenceA);
+      setMember(submittedAlignment.sequenceB);
+      setRepresentativeDescriptor(submittedAlignment.descriptorA);
+      setMemberDescriptor(submittedAlignment.descriptorB);
       setLocalAlignments(alignments);
     } else if (alignments.length === 0) {
       // Clear all plot-driving local state when analysis results are invalidated
@@ -99,7 +120,7 @@ function AppContent() {
       setMemberDescriptor('');
       setLocalAlignments([]);
     }
-  }, [state.alignmentStatus, sequences, alignments]);
+  }, [state.alignmentStatus, submittedAlignment, alignments]);
 
   const handleAlignmentsGenerated = (data: {
     sequenceA: string;
@@ -134,7 +155,9 @@ function AppContent() {
     state.sequences.accessionB,
     state.params.gapCost,
     state.params.startGap,
-    state.params.costMatrixType
+    state.params.costMatrixType,
+    regionA,
+    regionB
   );
 
   const handleCopySequenceInfoLink = async () => {
@@ -405,8 +428,8 @@ function AppContent() {
           
           <div className="sequence-info">
             <h3>Sequence Information</h3>
-            <p><strong>X-axis (Horizontal): </strong> {representativeDescriptor}</p>
-            <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}</p>
+            <p><strong>X-axis (Horizontal): </strong> {representativeDescriptor}{submittedAlignment?.regionA && ` (residues ${submittedAlignment.regionA.start}-${submittedAlignment.regionA.end})`}</p>
+            <p><strong>Y-axis (Vertical): </strong> {memberDescriptor}{submittedAlignment?.regionB && ` (residues ${submittedAlignment.regionB.start}-${submittedAlignment.regionB.end})`}</p>
             {sequenceInfoShareUrl && (
               <div className="sequence-share-link-row">
                 <strong className="sequence-share-link-label">Shareable Link:</strong>
@@ -481,7 +504,7 @@ function AppContent() {
           </div>
 
           <AlignmentGraphWithInfoPanel
-            key={`${representative}-${member}`}
+            key={`${representative}-${member}-${regionA?.start}-${regionB?.start}`}
             representative={representative}
             member={member}
             representativeDescriptor={representativeDescriptor}

@@ -145,3 +145,42 @@
     min-width: 80px;
   }
 }
+
+.superposition-window-selector {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.superposition-architecture {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 1rem;
+}
+
+.superposition-architecture-title {
+  margin: 0 0 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+@media (max-width: 1024px) {
+  .superposition-architecture {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.superposition-window-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.superposition-window-note {
+  font-size: 0.8125rem;
+  color: #555;
+}

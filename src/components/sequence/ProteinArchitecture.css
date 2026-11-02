@@ -1,0 +1,130 @@
+.protein-architecture-dark {
+  --architecture-text: var(--text-secondary);
+  --architecture-line: var(--text-secondary);
+}
+
+.protein-architecture-light {
+  --architecture-text: #555;
+  --architecture-line: #999;
+}
+
+.protein-architecture-track {
+  position: relative;
+  height: 32px;
+}
+
+.protein-architecture-shade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.protein-architecture-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  margin-top: -2px;
+  background: var(--architecture-line);
+  border-radius: 2px;
+}
+
+.region-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  min-width: 4px;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.region-segment.clickable {
+  cursor: pointer;
+}
+
+.region-segment-linker.clickable:hover,
+.region-segment-linker.selected {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+.region-segment-domain {
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+.region-segment.clickable:hover,
+.region-segment.clickable:focus-visible,
+.region-segment.selected {
+  border-color: #10b981;
+  outline: none;
+}
+
+.region-segment.selected {
+  box-shadow: 0 0 0 2px #10b981;
+}
+
+.region-segment-label {
+  display: block;
+  padding: 0 4px;
+  overflow: hidden;
+  color: #111;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 28px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.protein-architecture-windows {
+  position: relative;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: rgba(128, 128, 128, 0.2);
+}
+
+.protein-architecture-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 2px;
+  background: #00cc66;
+}
+
+.protein-architecture-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--architecture-text);
+}
+
+.region-domain-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: var(--architecture-text);
+}
+
+.region-domain-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 2px;
+}
+
+.protein-architecture-note {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--architecture-text);
+}

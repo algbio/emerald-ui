@@ -4,20 +4,27 @@ export type ProteinDomainsStatus = 'idle' | 'loading' | 'success' | 'error' | 'u
 
 export interface ProteinDomain {
   name: string;
+  type: string; // UniProt feature type, e.g. "Domain" or "DNA binding"
   start: number; // 1-based, inclusive
   end: number; // 1-based, inclusive
+  // Set when start/end have been converted to positions within an aligned region.
+  displayStart?: number;
+  displayEnd?: number;
 }
 
 export interface ProteinDomainsResult {
   status: ProteinDomainsStatus;
   domains: ProteinDomain[];
   error: string | null;
+  // Length of the UniProt sequence the annotation is numbered against, null when not known.
+  sequenceLength: number | null;
 }
 
 interface UniProtFeature {
   type: string;
   description?: string;
-  location: { start: { value: number }; end: { value: number } };
+  // value is absent for positions UniProt lists as unknown
+  location: { start: { value?: number }; end: { value?: number } };
 }
 
 const cache = new Map<string, ProteinDomainsResult>();
@@ -44,7 +51,7 @@ const DOMAIN_LIKE_TYPES = new Set([
 
 async function fetchProteinDomains(uniprotId: string): Promise<ProteinDomainsResult> {
   try {
-    const response = await fetch(`https://rest.uniprot.org/uniprotkb/${uniprotId}.json?fields=ft_domain,ft_dna_bind,ft_region,ft_motif,ft_repeat,ft_zn_fing,ft_coiled`);
+    const response = await fetch(`https://rest.uniprot.org/uniprotkb/${uniprotId}.json?fields=sequence,ft_domain,ft_dna_bind,ft_region,ft_motif,ft_repeat,ft_zn_fing,ft_coiled`);
     if (!response.ok) {
       throw new Error(`UniProt API returned ${response.status}`);
     }
@@ -52,17 +59,20 @@ async function fetchProteinDomains(uniprotId: string): Promise<ProteinDomainsRes
     const features: UniProtFeature[] = data?.features ?? [];
     const domains = features
       .filter(f => DOMAIN_LIKE_TYPES.has(f.type))
+      .filter(f => typeof f.location.start.value === 'number' && typeof f.location.end.value === 'number')
       .map(f => ({
         name: f.description || f.type,
-        start: f.location.start.value,
-        end: f.location.end.value,
+        type: f.type,
+        start: f.location.start.value as number,
+        end: f.location.end.value as number,
       }));
-    return { status: 'success', domains, error: null };
+    return { status: 'success', domains, error: null, sequenceLength: data?.sequence?.length ?? null };
   } catch (err) {
     return {
       status: 'error',
       domains: [],
       error: err instanceof Error ? err.message : String(err),
+      sequenceLength: null,
     };
   }
 }
@@ -99,8 +109,8 @@ export function useProteinDomains(uniprotId: string | null | undefined): Protein
   }, [key]);
 
   if (!key) {
-    return { status: 'unavailable', domains: [], error: null };
+    return { status: 'unavailable', domains: [], error: null, sequenceLength: null };
   }
 
-  return cache.get(key) ?? { status: 'loading', domains: [], error: null };
+  return cache.get(key) ?? { status: 'loading', domains: [], error: null, sequenceLength: null };
 }
